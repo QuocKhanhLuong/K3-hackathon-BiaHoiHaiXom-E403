@@ -13,7 +13,7 @@ async def test_router_simple_query():
         "user_query": "Key là gì?",
         "selected_context": "Key dùng để so khớp với Query.",
     }
-    res = await router_node(state, model=fake_llm)
+    res = router_node(state, model=fake_llm)
     assert res["route"] == "simple"
     assert res["route_confidence"] > 0.0
 
@@ -25,7 +25,7 @@ async def test_router_clarify_query():
         "user_query": "Cái này hoạt động như thế nào?",
         "selected_context": "",
     }
-    res = await router_node(state, model=fake_llm)
+    res = router_node(state, model=fake_llm)
     assert res["route"] == "clarify"
 
 
@@ -36,7 +36,7 @@ async def test_router_check_query():
         "user_query": "Key và Value khác nhau như thế nào?",
         "selected_context": "Key dùng để so khớp với Query, Value chứa nội dung.",
     }
-    res = await router_node(state, model=fake_llm)
+    res = router_node(state, model=fake_llm)
     assert res["route"] == "check"
 
 
@@ -47,5 +47,5 @@ async def test_router_deep_query():
         "user_query": "Tại sao attention phải chia cho căn d_k?",
         "selected_context": "Chia cho căn d_k để giảm độ lớn gradient.",
     }
-    res = await router_node(state, model=fake_llm)
+    res = router_node(state, model=fake_llm)
     assert res["route"] == "deep"

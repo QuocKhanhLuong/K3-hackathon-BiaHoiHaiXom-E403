@@ -33,6 +33,10 @@ class DeterministicFakeChatModel(BaseChatModel):
     misconception_to_return: bool = False
     is_injection: bool = False
     custom_responses: list[Any] = Field(default_factory=list)
+    model_script: list[Any] = Field(default_factory=list)
+    faults: list[Any] = Field(default_factory=list)
+    faults_triggered: list[str] = Field(default_factory=list)
+    scenario_id: str = ""
 
     def _generate(
         self,
@@ -55,6 +59,71 @@ class DeterministicFakeChatModel(BaseChatModel):
 
         def _bind(input_val: Any) -> Any:
             input_str = str(input_val)
+            schema_name = getattr(schema, "__name__", str(schema))
+
+            # 1. Fault Injection Check
+            tool_mapping = {
+                "InjectionAssessment": "context_guard",
+                "RouteOutput": "router",
+                "ClarificationRequest": "generate_clarification",
+                "GroundedAnswer": "give_direct_answer",
+                "MicroCheck": "generate_check",
+                "CheckEvaluation": "evaluate_check",
+                "RepairPlan": "repair_misconception",
+                "GiveExampleOutput": "give_example",
+                "GiveHintOutput": "give_hint",
+                "MotivateOutput": "motivate",
+                "FollowUpSuggestions": "suggest_followups",
+            }
+            target_tool = tool_mapping.get(schema_name, schema_name)
+
+            for f in self.faults:
+                f_target = f.get("target") if isinstance(f, dict) else getattr(f, "target", "")
+                f_type = f.get("type") if isinstance(f, dict) else getattr(f, "type", "")
+                f_exc = f.get("exception") if isinstance(f, dict) else getattr(f, "exception", None)
+
+                if f_target in (schema_name, target_tool):
+                    if f_target not in self.faults_triggered:
+                        self.faults_triggered.append(f_target)
+                    if f_type == "raise":
+                        raise RuntimeError(f_exc or f"Injected fault raise on {f_target}")
+                    if f_type == "timeout":
+                        raise TimeoutError(f"Injected timeout fault on {f_target}")
+                    if f_type == "invalid_structured_output":
+                        raise ValueError(f"Injected invalid structured output on {f_target}")
+                    if f_type == "empty_output":
+                        return schema()
+
+            # 2. Scripted Output Fixture Check
+            if self.model_script:
+                for idx, script_item in enumerate(self.model_script):
+                    if isinstance(script_item, dict):
+                        s_name = script_item.get("schema") or script_item.get("schema_name")
+                    else:
+                        s_name = getattr(script_item, "schema_name", "")
+                        if callable(s_name):
+                            s_name = ""
+
+                    s_out = (
+                        script_item.get("output")
+                        if isinstance(script_item, dict)
+                        else getattr(script_item, "output", {})
+                    )
+                    if s_name in (schema_name, target_tool):
+                        # Consume item to handle multi-turn progression
+                        self.model_script.pop(idx)
+                        return schema(**s_out)
+
+                if schema == InjectionAssessment:
+                    return InjectionAssessment(
+                        injection_detected=self.is_injection,
+                        confidence=0.99 if self.is_injection else 0.05,
+                        reason="Deterministic test assessment",
+                    )
+
+                raise RuntimeError(
+                    f"missing_fixture_output: No scripted output for schema '{schema_name}' in scenario '{self.scenario_id}'"
+                )
 
             if schema == InjectionAssessment:
                 return InjectionAssessment(
@@ -79,6 +148,12 @@ class DeterministicFakeChatModel(BaseChatModel):
             if schema == GroundedAnswer:
                 return GroundedAnswer(
                     answer="Key dùng để so khớp với Query.",
+                    claims=[
+                        {
+                            "claim": "Key dùng để so khớp với Query.",
+                            "citation_ids": ["ctx_1"],
+                        }
+                    ],
                     citations=[
                         Citation(
                             citation_id="ctx_1",

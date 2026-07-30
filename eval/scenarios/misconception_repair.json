@@ -1,0 +1,128 @@
+[
+  {
+    "id": "REPAIR-GOLD-001",
+    "name": "Concept confusion repair and new check",
+    "description": "Student answers check wrong, system repairs misconception and issues new check",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["misconception_repair", "repair", "gold"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "check",
+            "confidence": 0.95,
+            "reason": "Yêu cầu kiểm tra"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Xem xét câu hỏi về AI IN ACTION dưới đây.",
+            "claims": [{"claim": "Xem xét câu hỏi về AI IN ACTION dưới đây.", "citation_ids": ["d1-p1"]}],
+            "citations": [{"citation_id": "d1-p1", "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"}]
+          }
+        },
+        {
+          "schema": "GiveExampleOutput",
+          "output": {"example": "Ví dụ 1", "relevance_explanation": "Minh họa"}
+        },
+        {
+          "schema": "MicroCheck",
+          "output": {
+            "question": "Câu hỏi kiểm tra 1: AI IN ACTION là gì?",
+            "question_type": "multiple_choice",
+            "target_concept": "AI IN ACTION",
+            "expected_answer": "Chủ đề slide 1",
+            "correct_option_id": "opt_a",
+            "options": [
+              {"option_id": "opt_a", "text": "Chủ đề slide 1"},
+              {"option_id": "opt_b", "text": "Hardware"},
+              {"option_id": "opt_c", "text": "Networking"}
+            ],
+            "explanation": "Chủ đề slide 1.",
+            "evidence": ["AI IN ACTION - Day 1 AI & LLM Foundation"]
+          }
+        },
+        {
+          "schema": "CheckEvaluation",
+          "output": {
+            "is_correct": false,
+            "score": 0.0,
+            "misconception_code": "topic_confusion",
+            "error_explanation": "Học viên nhầm lẫn chủ đề slide 1 với Hardware.",
+            "answer_evidence": "opt_b",
+            "recommended_repair_strategy": "review_concept_and_example"
+          }
+        },
+        {
+          "schema": "RepairPlan",
+          "output": {
+            "misconception_code": "topic_confusion",
+            "recommended_strategy": "review_concept_and_example",
+            "planned_tools": ["review_concept", "give_example"]
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Giải thích lại: Slide 1 tập trung vào AI IN ACTION và AI & LLM Foundation, không phải Hardware.",
+            "claims": [
+              {
+                "claim": "Slide 1 tập trung vào AI IN ACTION và AI & LLM Foundation, không phải Hardware.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [{"citation_id": "d1-p1", "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"}]
+          }
+        },
+        {
+          "schema": "GiveExampleOutput",
+          "output": {"example": "Ví dụ minh họa sửa sai 2", "relevance_explanation": "Giúp phân biệt"}
+        },
+        {
+          "schema": "MicroCheck",
+          "output": {
+            "question": "Câu hỏi mới sau khi giải thích: Slide 1 KHÔNG nói về điều gì?",
+            "question_type": "multiple_choice",
+            "target_concept": "AI IN ACTION",
+            "expected_answer": "Hardware",
+            "correct_option_id": "opt_b",
+            "options": [
+              {"option_id": "opt_a", "text": "AI IN ACTION"},
+              {"option_id": "opt_b", "text": "Hardware"},
+              {"option_id": "opt_c", "text": "Networking"}
+            ],
+            "explanation": "Slide 1 không nói về Hardware.",
+            "evidence": ["AI IN ACTION - Day 1 AI & LLM Foundation"]
+          }
+        }
+      ]
+    },
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Hãy kiểm tra kiến thức của tôi.",
+        "expected": {
+          "routes": ["check"],
+          "statuses": ["awaiting_check"],
+          "required_tools": ["router", "validate_understanding"]
+        }
+      },
+      {
+        "type": "action_response",
+        "input": "opt_b",
+        "expected": {
+          "statuses": ["awaiting_check"],
+          "required_tools": ["evaluate_check", "review_concept", "validate_understanding"],
+          "new_check_required": true,
+          "no_stale_citations": true
+        }
+      }
+    ]
+  }
+]

@@ -19,12 +19,15 @@ class LearningLoopState(TypedDict, total=False):
     grounding_error: str | None
     grounding_retry_count: int
     grounding_failure_type: str | None
+    grounding_uncovered_sentences: list[str]
+    grounding_invalid_citation_ids: list[str]
     abstention_message: str | None
 
     # Router classification
     route: Literal["simple", "clarify", "check", "deep"] | None
     route_confidence: float
     route_reason: str
+    route_source: Literal["structured_model", "deterministic_fallback"] | None
 
     # Workflow outputs & interrupt payload states
     clarification_question: str | None
@@ -33,6 +36,10 @@ class LearningLoopState(TypedDict, total=False):
     grounded_answer: str | None
     grounded_claims: list[dict[str, Any]]
     citations: list[dict[str, Any]]
+    # Internal grounding diagnostics retained when the public answer abstains.
+    candidate_answer: str | None
+    candidate_claims: list[dict[str, Any]]
+    candidate_citations: list[dict[str, Any]]
 
     check_question: dict[str, Any] | None
     student_check_answer: str | None

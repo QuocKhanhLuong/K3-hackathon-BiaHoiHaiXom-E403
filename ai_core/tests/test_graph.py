@@ -16,7 +16,7 @@ async def test_full_simple_flow():
     res = await ai_core.start_turn(
         thread_id="test_simple_1",
         question="Transformer là gì?",
-        selected_context="Key dùng để so khớp với Query.",
+        selected_context='[source source_id="ctx_1"]\nKey dùng để so khớp với Query.',
     )
 
     assert res["status"] == "completed"
@@ -36,7 +36,7 @@ async def test_clarification_flow_and_resume():
     res1 = await ai_core.start_turn(
         thread_id="test_clar_1",
         question="Cái này là gì?",
-        selected_context="Key dùng để so khớp với Query.",
+        selected_context='[source source_id="ctx_1"]\nKey dùng để so khớp với Query.',
     )
 
     assert res1["status"] == "awaiting_clarification"
@@ -49,11 +49,19 @@ async def test_clarification_flow_and_resume():
         student_input="Tôi muốn hỏi về cơ chế Attention",
     )
 
-    # A clarified conceptual question continues to the understanding-check
-    # interrupt before the learning loop can complete.
     assert res2["status"] == "awaiting_check"
-    assert res2["assistant_message"] != ""
+    assert res2["ui_payload"]["question"] != ""
     json.dumps(res2)
+
+    # Step 3: Resume the generated check and complete the turn
+    res3 = await ai_core.resume_turn(
+        thread_id="test_clar_1",
+        student_input="opt_a",
+    )
+
+    assert res3["status"] == "completed"
+    assert res3["assistant_message"] != ""
+    json.dumps(res3)
 
 
 @pytest.mark.asyncio
@@ -67,7 +75,7 @@ async def test_check_flow_correct_answer():
     res1 = await ai_core.start_turn(
         thread_id="test_check_correct_1",
         question="Key và Value khác nhau như thế nào?",
-        selected_context="Key dùng để so khớp với Query.",
+        selected_context='[source source_id="ctx_1"]\nKey dùng để so khớp với Query.',
     )
 
     assert res1["status"] == "awaiting_check"
@@ -99,7 +107,7 @@ async def test_check_flow_incorrect_answer_and_retry_limit():
     res1 = await ai_core.start_turn(
         thread_id=thread_id,
         question="Key và Value khác nhau như thế nào?",
-        selected_context="Key dùng để so khớp với Query.",
+        selected_context='[source source_id="ctx_1"]\nKey dùng để so khớp với Query.',
     )
     assert res1["status"] == "awaiting_check"
 

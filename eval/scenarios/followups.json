@@ -1,0 +1,74 @@
+[
+  {
+    "id": "FOLLOWUP-GOLD-001",
+    "name": "Deep dive generates specific followups",
+    "description": "Deep route question generates at least 2 relevant follow-up suggestions",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["followups", "deep", "gold"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "deep",
+            "confidence": 0.95,
+            "reason": "Giải thích chi tiết"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Nội dung Day 1 phân tích sâu về AI IN ACTION và AI & LLM Foundation.",
+            "claims": [
+              {
+                "claim": "Nội dung Day 1 phân tích sâu về AI IN ACTION và AI & LLM Foundation.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              }
+            ]
+          }
+        },
+        {
+          "schema": "FollowUpSuggestions",
+          "output": {
+            "followups": [
+              {
+                "label": "Chi tiết",
+                "question": "Ứng dụng thực tế của LLM Foundation là gì?"
+              },
+              {
+                "label": "Nâng cao",
+                "question": "Các bước phát triển mô hình LLM?"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Tại sao Day 1 lại phân tích kỹ về LLM Foundation?",
+        "expected": {
+          "routes": ["deep"],
+          "statuses": ["completed"],
+          "required_tools": ["router", "review_concept", "suggest_followups"],
+          "min_followups": 2,
+          "followup_schema_required": true,
+          "followups_unique": true,
+          "followups_not_duplicate_query": true,
+          "generic_followups_forbidden": true
+        }
+      }
+    ]
+  }
+]

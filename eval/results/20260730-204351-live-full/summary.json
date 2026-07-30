@@ -1,0 +1,379 @@
+{
+  "mode": "live",
+  "total_scenarios": 15,
+  "evaluated_scenarios_count": 15,
+  "exploratory_scenario_count": 0,
+  "scenario_pass_rate": {
+    "value": 13.33,
+    "evaluated_count": 15,
+    "passed_count": 2,
+    "failed_count": 13,
+    "status": "evaluated"
+  },
+  "gold_scenario_pass_rate": {
+    "value": 13.33,
+    "evaluated_count": 15,
+    "passed_count": 2,
+    "failed_count": 13,
+    "status": "evaluated"
+  },
+  "coverage_scenario_pass_rate": {
+    "value": null,
+    "evaluated_count": 0,
+    "passed_count": 0,
+    "failed_count": 0,
+    "status": "not_evaluated"
+  },
+  "turn_pass_rate": {
+    "value": 15.79,
+    "evaluated_count": 19,
+    "passed_count": 3,
+    "failed_count": 16,
+    "status": "evaluated"
+  },
+  "routing": {
+    "route_accuracy": {
+      "value": 90.91,
+      "evaluated_count": 11,
+      "passed_count": 10,
+      "failed_count": 1,
+      "status": "evaluated"
+    }
+  },
+  "tool_orchestration": {
+    "required_tool_recall": {
+      "value": 30.77,
+      "evaluated_count": 13,
+      "passed_count": 4,
+      "failed_count": 9,
+      "status": "evaluated"
+    },
+    "forbidden_tool_violation_rate": {
+      "value": 100.0,
+      "evaluated_count": 2,
+      "passed_count": 2,
+      "failed_count": 0,
+      "status": "evaluated"
+    }
+  },
+  "multi_turn": {
+    "multi_turn_completion_rate": {
+      "value": 0.0,
+      "evaluated_count": 4,
+      "passed_count": 0,
+      "failed_count": 4,
+      "status": "evaluated"
+    },
+    "stale_citation_rate": {
+      "value": 100.0,
+      "evaluated_count": 2,
+      "passed_count": 2,
+      "failed_count": 0,
+      "status": "evaluated"
+    }
+  },
+  "followups": {
+    "followup_quality_pass_rate": {
+      "value": 33.33,
+      "evaluated_count": 3,
+      "passed_count": 1,
+      "failed_count": 2,
+      "status": "evaluated"
+    }
+  },
+  "grounding": {
+    "grounding_pass_rate": {
+      "value": 0.0,
+      "evaluated_count": 4,
+      "passed_count": 0,
+      "failed_count": 4,
+      "status": "evaluated"
+    }
+  },
+  "repair": {
+    "misconception_repair_pass_rate": {
+      "value": 0.0,
+      "evaluated_count": 1,
+      "passed_count": 0,
+      "failed_count": 1,
+      "status": "evaluated"
+    }
+  },
+  "performance": {
+    "mean_latency_ms": 41231.89,
+    "p50_latency_ms": 41268,
+    "p95_latency_ms": 85386
+  },
+  "failures_by_category": {
+    "routing": [
+      {
+        "scenario_id": "CROSS-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "route_check",
+        "message": "Expected route in ['simple'], got 'check'"
+      }
+    ],
+    "multi_turn": [
+      {
+        "scenario_id": "CROSS-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "FAIL-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "FOLLOWUP-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "REPAIR-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "REPAIR-GOLD-001",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "MT-GOLD-001",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "MT-GOLD-002",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "MT-GOLD-002",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "MT-GOLD-003",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "MT-GOLD-003",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "RARE-ADV-006",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'awaiting_clarification'"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-002",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-003",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-005",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      }
+    ],
+    "grounding": [
+      {
+        "scenario_id": "CROSS-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "grounding_required",
+        "message": "Grounding check failed (citations=False, guard_ran=True, status_ok=False, valid_sources=True)"
+      },
+      {
+        "scenario_id": "MT-GOLD-001",
+        "turn_index": 2,
+        "assertion_name": "grounding_required",
+        "message": "Grounding check failed (citations=False, guard_ran=True, status_ok=False, valid_sources=True)"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "grounding_required",
+        "message": "Grounding check failed (citations=False, guard_ran=True, status_ok=False, valid_sources=True)"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-006",
+        "turn_index": 1,
+        "assertion_name": "grounding_required",
+        "message": "Grounding check failed (citations=True, guard_ran=True, status_ok=True, valid_sources=False)"
+      }
+    ],
+    "citation": [
+      {
+        "scenario_id": "CROSS-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "min_citations",
+        "message": "Expected min 2 citations, got 0"
+      },
+      {
+        "scenario_id": "MT-GOLD-003",
+        "turn_index": 1,
+        "assertion_name": "min_citations",
+        "message": "Expected min 1 citations, got 0"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "min_citations",
+        "message": "Expected min 1 citations, got 0"
+      }
+    ],
+    "reliability": [
+      {
+        "scenario_id": "FAIL-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "fault_not_triggered",
+        "message": "Specified fault target 'suggest_followups' was never triggered during execution"
+      }
+    ],
+    "tool_selection": [
+      {
+        "scenario_id": "FOLLOWUP-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['suggest_followups']. Executed: ['context_guard', 'router', 'review_concept', 'grounding_guard', 'grounding_failure']"
+      },
+      {
+        "scenario_id": "REPAIR-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['validate_understanding']. Executed: ['context_guard', 'router', 'review_concept', 'give_example', 'grounding_guard', 'grounding_failure']"
+      },
+      {
+        "scenario_id": "REPAIR-GOLD-001",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['evaluate_check', 'review_concept', 'validate_understanding']. Executed: []"
+      },
+      {
+        "scenario_id": "MT-GOLD-001",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['validate_understanding']. Executed: ['context_guard', 'router', 'ask_clarification', 'review_concept', 'grounding_guard', 'grounding_failure']"
+      },
+      {
+        "scenario_id": "MT-GOLD-002",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['validate_understanding']. Executed: ['context_guard', 'router', 'review_concept', 'give_example', 'grounding_guard', 'grounding_failure']"
+      },
+      {
+        "scenario_id": "MT-GOLD-002",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['evaluate_check']. Executed: []"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "allowed_tools",
+        "message": "Unallowed tools executed: ['grounding_failure']. Allowed set: {'output_guard', 'grounding_guard', 'context_guard', 'input_guard', 'router', 'give_direct_answer'}"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-002",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['suggest_followups']. Executed: ['context_guard', 'router', 'review_concept', 'grounding_guard', 'grounding_failure']"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-002",
+        "turn_index": 1,
+        "assertion_name": "allowed_tools",
+        "message": "Unallowed tools executed: ['grounding_failure']. Allowed set: {'grounding_guard', 'review_concept', 'context_guard', 'input_guard', 'router', 'suggest_followups', 'output_guard'}"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-003",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['validate_understanding']. Executed: ['context_guard', 'router', 'review_concept', 'give_example', 'grounding_guard', 'grounding_failure']"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-003",
+        "turn_index": 1,
+        "assertion_name": "allowed_tools",
+        "message": "Unallowed tools executed: ['grounding_failure']. Allowed set: {'grounding_guard', 'review_concept', 'give_example', 'output_guard', 'context_guard', 'input_guard', 'router', 'validate_understanding'}"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-005",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['validate_understanding']. Executed: ['context_guard', 'router', 'review_concept', 'give_example', 'grounding_guard', 'grounding_failure']"
+      }
+    ],
+    "followup": [
+      {
+        "scenario_id": "FOLLOWUP-GOLD-001",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 2 followups, got 0"
+      },
+      {
+        "scenario_id": "ROUTE-GOLD-002",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 2 followups, got 0"
+      }
+    ],
+    "repair": [
+      {
+        "scenario_id": "REPAIR-GOLD-001",
+        "turn_index": 2,
+        "assertion_name": "new_check_required",
+        "message": "New check evaluation failed (has_check=False, distinct=True)"
+      }
+    ],
+    "general": [
+      {
+        "scenario_id": "MT-GOLD-002",
+        "turn_index": 2,
+        "assertion_name": "assistant_message_required",
+        "message": "Assistant message is missing or empty"
+      },
+      {
+        "scenario_id": "RARE-ADV-006",
+        "turn_index": 1,
+        "assertion_name": "assistant_message_required",
+        "message": "Assistant message is missing or empty"
+      },
+      {
+        "scenario_id": "RARE-ADV-006",
+        "turn_index": 1,
+        "assertion_name": "response_contains_any",
+        "message": "Response contains at least one of ['kiểm tra lại', 'chưa đúng', 'xin lỗi']"
+      }
+    ]
+  }
+}

@@ -1,0 +1,283 @@
+[
+  {
+    "id": "MT-GOLD-001",
+    "name": "Clarification resume turn flow",
+    "description": "Start turn triggers clarification, student answers, then answer completes and generates check",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["multi_turn", "clarify", "gold"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "clarify",
+            "confidence": 0.99,
+            "reason": "Mơ hồ"
+          }
+        },
+        {
+          "schema": "ClarificationRequest",
+          "output": {
+            "clarification_question": "Bạn muốn tìm hiểu nội dung gì?",
+            "reason": "Mơ hồ"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Slide 1 giới thiệu về AI IN ACTION và AI & LLM Foundation.",
+            "claims": [
+              {
+                "claim": "Slide 1 giới thiệu về AI IN ACTION và AI & LLM Foundation.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              }
+            ]
+          }
+        },
+        {
+          "schema": "MicroCheck",
+          "output": {
+            "question": "Chủ đề của slide 1 là gì?",
+            "question_type": "multiple_choice",
+            "target_concept": "AI IN ACTION",
+            "expected_answer": "AI IN ACTION",
+            "correct_option_id": "opt_a",
+            "options": [
+              {"option_id": "opt_a", "text": "AI IN ACTION"},
+              {"option_id": "opt_b", "text": "Hardware"},
+              {"option_id": "opt_c", "text": "Networking"}
+            ],
+            "explanation": "Chủ đề chính là AI IN ACTION.",
+            "evidence": ["AI IN ACTION - Day 1 AI & LLM Foundation"]
+          }
+        }
+      ]
+    },
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Cái này là sao?",
+        "expected": {
+          "routes": ["clarify"],
+          "statuses": ["awaiting_clarification"],
+          "required_tools": ["router", "ask_clarification"]
+        }
+      },
+      {
+        "type": "action_response",
+        "input": "Tôi muốn hỏi về nội dung slide 1",
+        "expected": {
+          "statuses": ["awaiting_check"],
+          "required_tools": ["review_concept", "validate_understanding"],
+          "assistant_message_required": true,
+          "grounding_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "MT-GOLD-002",
+    "name": "Check question correct answer flow",
+    "description": "Start turn triggers check, student answers correctly, turn completes",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["multi_turn", "check", "gold"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "check",
+            "confidence": 0.95,
+            "reason": "So sánh và kiểm tra thấu hiểu"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Xem xét câu hỏi về AI IN ACTION dưới đây.",
+            "claims": [
+              {
+                "claim": "Xem xét câu hỏi về AI IN ACTION dưới đây.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              }
+            ]
+          }
+        },
+        {
+          "schema": "GiveExampleOutput",
+          "output": {
+            "example": "Ví dụ về AI IN ACTION",
+            "relevance_explanation": "Minh họa"
+          }
+        },
+        {
+          "schema": "MicroCheck",
+          "output": {
+            "question": "Chủ đề chính của slide 1 là gì?",
+            "question_type": "multiple_choice",
+            "target_concept": "AI IN ACTION",
+            "expected_answer": "AI IN ACTION",
+            "correct_option_id": "opt_a",
+            "options": [
+              {"option_id": "opt_a", "text": "AI IN ACTION"},
+              {"option_id": "opt_b", "text": "Hardware"},
+              {"option_id": "opt_c", "text": "Networking"}
+            ],
+            "explanation": "Chủ đề chính là AI IN ACTION.",
+            "evidence": ["AI IN ACTION - Day 1 AI & LLM Foundation"]
+          }
+        },
+        {
+          "schema": "CheckEvaluation",
+          "output": {
+            "is_correct": true,
+            "score": 1.0,
+            "misconception_code": "none",
+            "error_explanation": "Chính xác!",
+            "answer_evidence": "opt_a",
+            "recommended_repair_strategy": "none"
+          }
+        },
+        {
+          "schema": "FollowUpSuggestions",
+          "output": {
+            "followups": [
+              {
+                "label": "Tiếp tục",
+                "question": "Tìm hiểu slide tiếp theo?"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Hãy kiểm tra thấu hiểu của tôi về slide 1.",
+        "expected": {
+          "routes": ["check"],
+          "statuses": ["awaiting_check"],
+          "required_tools": ["router", "validate_understanding"]
+        }
+      },
+      {
+        "type": "action_response",
+        "input": "opt_a",
+        "expected": {
+          "statuses": ["completed"],
+          "required_tools": ["evaluate_check"],
+          "no_duplicate_action": true,
+          "assistant_message_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "MT-GOLD-003",
+    "name": "Pronoun reference to previous turn",
+    "description": "User asks follow-up with pronoun 'nó' referencing topic from turn 1",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["multi_turn", "simple", "gold"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "simple",
+            "confidence": 0.98,
+            "reason": "Hỏi định nghĩa"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Slide 1 nói về AI IN ACTION và AI & LLM Foundation.",
+            "claims": [
+              {
+                "claim": "Slide 1 nói về AI IN ACTION và AI & LLM Foundation.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              }
+            ]
+          }
+        },
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "simple",
+            "confidence": 0.96,
+            "reason": "Hỏi tiếp về chủ đề vừa thảo luận"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "AI IN ACTION quan trọng vì nó giới thiệu nền tảng khóa học.",
+            "claims": [
+              {
+                "claim": "AI IN ACTION quan trọng vì nó giới thiệu nền tảng khóa học.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Slide 1 nói về gì?",
+        "expected": {
+          "statuses": ["completed"],
+          "min_citations": 1,
+          "assistant_message_required": true
+        }
+      },
+      {
+        "type": "user_turn",
+        "input": "Tại sao nó lại quan trọng?",
+        "expected": {
+          "statuses": ["completed"],
+          "no_stale_citations": true,
+          "assistant_message_required": true
+        }
+      }
+    ]
+  }
+]

@@ -1,27 +1,43 @@
-# Secrets and local environment files
+# Environment files
 .env
+.env.*
 *.env
 !.env.example
+!**/.env.example
 
-# Python caches and local environments
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.ruff_cache/
-.venv/
-venv/
-ai_core/.venv/
-
-# JavaScript dependencies
+# Temporary and build artifacts
+.backup_tmp/
+.DS_Store
 node_modules/
 
-# IDE and OS files
-.DS_Store
+# Python byte-code and caches
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+logs/*.jsonl
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+ai_core/.venv/
+
+# IDE settings
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Local task artifacts
-.backup_tmp/
-logs/
+# Eval generated run directories and JSONL logs
+eval/results/*-offline/
+eval/results/*-live/
+eval/results/**/events.jsonl
+eval/results/**/turns.jsonl

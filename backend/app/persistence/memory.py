@@ -66,6 +66,7 @@ class MemoryRepository:
         conversation: ConversationRecord,
         user_query: str,
         page_number: int,
+        deck_id: str = "d1",
     ) -> TurnRecord:
         turn = TurnRecord(
             id=_new_id("turn"),
@@ -73,6 +74,7 @@ class MemoryRepository:
             ai_thread_id=_new_id("ai"),
             user_query=user_query,
             page_number=page_number,
+            deck_id=deck_id,
         )
         async with self._guard:
             self.turns[turn.id] = turn
@@ -88,7 +90,11 @@ class MemoryRepository:
         return turn
 
     async def save_message(
-        self, conversation: ConversationRecord, turn: TurnRecord, role: str, content: str
+        self,
+        conversation: ConversationRecord,
+        turn: TurnRecord,
+        role: str,
+        content: str,
     ) -> MessageRecord:
         message = MessageRecord(
             id=_new_id("msg"),
@@ -132,9 +138,7 @@ class MemoryRepository:
             self.actions[action.id] = action
         return action
 
-    async def get_action(
-        self, action_id: str, owner_id: str
-    ) -> PendingActionRecord:
+    async def get_action(self, action_id: str, owner_id: str) -> PendingActionRecord:
         action = self.actions.get(action_id)
         if action is None:
             raise ResourceNotFoundError()
@@ -204,13 +208,9 @@ class MemoryRepository:
                 outcome,
             )
 
-    async def snapshot(
-        self, conversation_id: str, owner_id: str
-    ) -> dict[str, Any]:
+    async def snapshot(self, conversation_id: str, owner_id: str) -> dict[str, Any]:
         conversation = await self.get_conversation(conversation_id, owner_id)
-        pending = await self.pending_action_for_conversation(
-            conversation_id, owner_id
-        )
+        pending = await self.pending_action_for_conversation(conversation_id, owner_id)
         messages = [
             self.messages[message_id] for message_id in conversation.message_ids
         ]

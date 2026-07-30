@@ -3,9 +3,9 @@ Google Gemini AI Integration Helper for VLearn Tutor Tools
 Target Models: gemini-3.1-flash-lite | gemini-3-flash | gemini-2.5-flash
 Supports Automatic .env File Loading
 """
-import os
 import json
-from typing import Optional, Any
+import os
+
 
 # Auto load .env file if present
 def load_env_file():
@@ -33,10 +33,10 @@ GEMINI_MODELS = [
 
 def call_gemini(
     prompt: str,
-    system_instruction: Optional[str] = None,
+    system_instruction: str | None = None,
     json_mode: bool = False,
-    api_key: Optional[str] = None
-) -> Optional[str]:
+    api_key: str | None = None
+) -> str | None:
     """
     Calls Google Gemini Flash model with automatic model fallback and error handling.
     """
@@ -64,7 +64,7 @@ def call_gemini(
                 response = model.generate_content(prompt)
                 if response and response.text:
                     return response.text.strip()
-            except Exception as e:
+            except Exception:
                 # Try next fallback model if specific model fails
                 continue
     except Exception as err:
@@ -74,9 +74,9 @@ def call_gemini(
 
 def call_gemini_json(
     prompt: str,
-    system_instruction: Optional[str] = None,
-    api_key: Optional[str] = None
-) -> Optional[dict]:
+    system_instruction: str | None = None,
+    api_key: str | None = None
+) -> dict | None:
     """
     Calls Gemini and parses JSON output safely.
     """
@@ -86,12 +86,9 @@ def call_gemini_json(
 
     try:
         clean = raw_text.strip()
-        if clean.startswith("```json"):
-            clean = clean[7:]
-        if clean.startswith("```"):
-            clean = clean[3:]
-        if clean.endswith("```"):
-            clean = clean[:-3]
+        clean = clean.removeprefix("```json")
+        clean = clean.removeprefix("```")
+        clean = clean.removesuffix("```")
         return json.loads(clean.strip())
     except Exception as e:
         print(f"[Gemini Client] JSON parse error: {e}")

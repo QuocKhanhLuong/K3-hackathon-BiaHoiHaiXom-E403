@@ -1,0 +1,121 @@
+{
+  "total_responses": 86,
+  "primary_pain_point": {
+    "dimension": "Q5: Follow-up Suggestions (Gợi mở cuộc nói chuyện)",
+    "mean_score": 2.05,
+    "negative_pct": 70.9,
+    "finding_summary": "70.9% học viên đánh giá AI Tutor thụ động, thiếu gợi mở cuộc nói chuyện hoặc gợi ý câu hỏi đào sâu."
+  },
+  "metrics": {
+    "q1_tutor_comprehension": {
+      "mean": 4.12,
+      "count": 86,
+      "dist": {
+        "5_star": 25,
+        "4_star": 51,
+        "3_star": 5,
+        "2_star": 5,
+        "1_star": 0
+      },
+      "positive_pct": 88.4,
+      "neutral_pct": 5.8,
+      "negative_pct": 5.8
+    },
+    "q2_quick_quiz_check": {
+      "mean": 2.24,
+      "count": 86,
+      "dist": {
+        "5_star": 3,
+        "4_star": 10,
+        "3_star": 15,
+        "2_star": 35,
+        "1_star": 23
+      },
+      "positive_pct": 15.1,
+      "neutral_pct": 17.4,
+      "negative_pct": 67.4
+    },
+    "q3_clarification_questions": {
+      "mean": 2.74,
+      "count": 86,
+      "dist": {
+        "5_star": 1,
+        "4_star": 15,
+        "3_star": 40,
+        "2_star": 21,
+        "1_star": 9
+      },
+      "positive_pct": 18.6,
+      "neutral_pct": 46.5,
+      "negative_pct": 34.9
+    },
+    "q4_misconception_reexplanation": {
+      "mean": 2.4,
+      "count": 86,
+      "dist": {
+        "5_star": 3,
+        "4_star": 6,
+        "3_star": 28,
+        "2_star": 34,
+        "1_star": 15
+      },
+      "positive_pct": 10.5,
+      "neutral_pct": 32.6,
+      "negative_pct": 57.0
+    },
+    "q5_followup_suggestions": {
+      "mean": 2.05,
+      "count": 86,
+      "dist": {
+        "5_star": 4,
+        "4_star": 12,
+        "3_star": 9,
+        "2_star": 20,
+        "1_star": 41
+      },
+      "positive_pct": 18.6,
+      "neutral_pct": 10.5,
+      "negative_pct": 70.9
+    }
+  },
+  "open_feedback_comments": [
+    "Khi tôi lúng túng chưa biết học tiếp phần nào, AI không gợi ý bước học tiếp theo.",
+    "AI không tự động phát hiện được nhầm lẫn tư duy cốt lõi của học viên khi chọn sai đáp án.",
+    "AI không tự động phát hiện được nhầm lẫn tư duy cốt lõi của học viên khi chọn sai đáp án.",
+    "Cần tính năng kiểm tra hiểu bài (Understanding Check) tự động giao bài Quiz trắc nghiệm hoặc tự luận.",
+    "Cần tính năng kiểm tra hiểu bài (Understanding Check) tự động giao bài Quiz trắc nghiệm hoặc tự luận.",
+    "Cần tính năng kiểm tra hiểu bài (Understanding Check) tự động giao bài Quiz trắc nghiệm hoặc tự luận.",
+    "AI Tutor chưa chủ động gợi mở cuộc trò chuyện sau khi trả lời xong, làm gián đoạn mạch học tập.",
+    "Hệ thống hoàn toàn chưa có tính năng Quiz kiểm tra nhanh sau phần giải thích để học viên tự đánh giá.",
+    "Cần tính năng kiểm tra hiểu bài (Understanding Check) tự động giao bài Quiz trắc nghiệm hoặc tự luận.",
+    "AI không tự động phát hiện được nhầm lẫn tư duy cốt lõi của học viên khi chọn sai đáp án.",
+    "Khi tôi lúng túng chưa biết học tiếp phần nào, AI không gợi ý bước học tiếp theo.",
+    "Hệ thống hoàn toàn chưa có tính năng Quiz kiểm tra nhanh sau phần giải thích để học viên tự đánh giá.",
+    "AI chỉ giải đáp xong là im lặng luôn, tôi phải tự nghĩ câu hỏi tiếp theo khá mất thời gian.",
+    "Khi tôi lúng túng chưa biết học tiếp phần nào, AI không gợi ý bước học tiếp theo.",
+    "AI chỉ giải đáp xong là im lặng luôn, tôi phải tự nghĩ câu hỏi tiếp theo khá mất thời gian.",
+    "Hệ thống hoàn toàn chưa có tính năng Quiz kiểm tra nhanh sau phần giải thích để học viên tự đánh giá.",
+    "Hệ thống hoàn toàn chưa có tính năng Quiz kiểm tra nhanh sau phần giải thích để học viên tự đánh giá.",
+    "Cần các thẻ câu hỏi gợi ý đào sâu (Follow-up chips) cuối mỗi câu để học viên chọn bấm tiếp.",
+    "Hệ thống hoàn toàn chưa có tính năng Quiz kiểm tra nhanh sau phần giải thích để học viên tự đánh giá.",
+    "AI không tự động phát hiện được nhầm lẫn tư duy cốt lõi của học viên khi chọn sai đáp án.",
+    "AI Tutor chưa chủ động gợi mở cuộc trò chuyện sau khi trả lời xong, làm gián đoạn mạch học tập.",
+    "Cần các thẻ câu hỏi gợi ý đào sâu (Follow-up chips) cuối mỗi câu để học viên chọn bấm tiếp.",
+    "Cần tính năng kiểm tra hiểu bài (Understanding Check) tự động giao bài Quiz trắc nghiệm hoặc tự luận.",
+    "Khi tôi lúng túng chưa biết học tiếp phần nào, AI không gợi ý bước học tiếp theo.",
+    "Khi tôi lúng túng chưa biết học tiếp phần nào, AI không gợi ý bước học tiếp theo.",
+    "Cần tính năng kiểm tra hiểu bài (Understanding Check) tự động giao bài Quiz trắc nghiệm hoặc tự luận.",
+    "Khi tôi lúng túng chưa biết học tiếp phần nào, AI không gợi ý bước học tiếp theo.",
+    "Cần các thẻ câu hỏi gợi ý đào sâu (Follow-up chips) cuối mỗi câu để học viên chọn bấm tiếp.",
+    "Hệ thống hoàn toàn chưa có tính năng Quiz kiểm tra nhanh sau phần giải thích để học viên tự đánh giá.",
+    "Cần các thẻ câu hỏi gợi ý đào sâu (Follow-up chips) cuối mỗi câu để học viên chọn bấm tiếp.",
+    "AI chỉ giải đáp xong là im lặng luôn, tôi phải tự nghĩ câu hỏi tiếp theo khá mất thời gian.",
+    "Khi tôi lúng túng chưa biết học tiếp phần nào, AI không gợi ý bước học tiếp theo.",
+    "Khi tôi lúng túng chưa biết học tiếp phần nào, AI không gợi ý bước học tiếp theo.",
+    "Cần tính năng kiểm tra hiểu bài (Understanding Check) tự động giao bài Quiz trắc nghiệm hoặc tự luận.",
+    "Cần các thẻ câu hỏi gợi ý đào sâu (Follow-up chips) cuối mỗi câu để học viên chọn bấm tiếp.",
+    "Hệ thống hoàn toàn chưa có tính năng Quiz kiểm tra nhanh sau phần giải thích để học viên tự đánh giá.",
+    "Khi tôi lúng túng chưa biết học tiếp phần nào, AI không gợi ý bước học tiếp theo."
+  ],
+  "feedback_count": 37
+}

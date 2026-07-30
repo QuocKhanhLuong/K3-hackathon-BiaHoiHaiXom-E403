@@ -92,9 +92,7 @@ def public_action(action: PendingActionRecord | None) -> PublicAction | None:
             PublicOption(id=str(option["id"]), text=str(option["text"]))
             for option in payload.get("options", [])
         ],
-        suggested_inputs=[
-            str(item) for item in payload.get("suggested_inputs", [])
-        ],
+        suggested_inputs=[str(item) for item in payload.get("suggested_inputs", [])],
         target_concept=payload.get("target_concept"),
     )
 
@@ -102,14 +100,28 @@ def public_action(action: PendingActionRecord | None) -> PublicAction | None:
 def _page_from_citation(citation: dict[str, Any]) -> int | None:
     haystack = " ".join(
         str(citation.get(key, ""))
-        for key in ("citation_id", "source_location", "snippet")
+        for key in ("citation_id", "source_id", "source_location", "snippet")
     )
+    match = re.search(
+        r"(?:page[=\s]|page_in_deck[=\s]|p|-p)(\d{1,4})", haystack, re.IGNORECASE
+    )
+    if match:
+        return int(match.group(1))
     match = re.search(r"(?:trang|page|p)\D*(\d{1,4})", haystack, re.IGNORECASE)
     return int(match.group(1)) if match else None
 
 
+def _deck_from_citation(citation: dict[str, Any]) -> str | None:
+    """Extract the deck prefix from canonical source IDs such as d2-p1."""
+    source_id = str(citation.get("citation_id") or citation.get("source_id") or "")
+    match = re.match(r"([A-Za-z0-9_-]+)-p\d+$", source_id)
+    return match.group(1) if match else None
+
+
 def public_citations(
-    citations: list[dict[str, Any]], fallback_page: int | None = None
+    citations: list[dict[str, Any]],
+    fallback_page: int | None = None,
+    fallback_deck_id: str | None = None,
 ) -> list[PublicCitation]:
     output: list[PublicCitation] = []
     for index, item in enumerate(citations):
@@ -125,6 +137,11 @@ def public_citations(
                     else None
                 ),
                 page_number=_page_from_citation(item) or fallback_page,
+                deck_id=(
+                    str(item.get("deck_id"))
+                    if item.get("deck_id")
+                    else _deck_from_citation(item) or fallback_deck_id
+                ),
             )
         )
     return output
@@ -173,8 +190,6 @@ def to_turn_response(
         message=PublicMessage(role="assistant", content=str(message)),
         route=route,
         action=public_action(outcome.action),
-        citations=public_citations(
-            result.get("citations") or [], outcome.page_number
-        ),
+        citations=public_citations(result.get("citations") or [], outcome.page_number, outcome.deck_id),
         suggestions=suggestions(result),
     )

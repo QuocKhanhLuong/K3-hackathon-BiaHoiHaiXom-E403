@@ -162,3 +162,84 @@ def test_micro_check_validation_rules():
             explanation="Giải thích",
             evidence=["Bằng chứng"],
         )
+
+
+def test_grounding_unsupported_extra_sentence_fails():
+    from vlearn_ai.guardrails.grounding_guard import verify_grounding
+    from vlearn_ai.schemas import Citation, GroundedClaim
+
+    ctx = '[source source_id="c1"]\nKey dùng để so khớp với Query trong Transformer.'
+    cits = [
+        Citation(
+            citation_id="c1", snippet="Key dùng để so khớp với Query trong Transformer."
+        )
+    ]
+    claims = [
+        GroundedClaim(claim="Key dùng để so khớp với Query.", citation_ids=["c1"])
+    ]
+    ans = "Key dùng để so khớp với Query. Thích dùng GPU vì nó tính toán nhanh vèo vèo không có trong tài liệu."
+    valid, err = verify_grounding(ans, cits, ctx, claims)
+    assert valid is False
+    assert "not covered" in err.lower() or "unsupported" in err.lower()
+
+
+def test_grounding_unknown_citation_id_fails():
+    from vlearn_ai.guardrails.grounding_guard import verify_grounding
+    from vlearn_ai.schemas import Citation, GroundedClaim
+
+    ctx = '[source source_id="c1"]\nKey dùng để so khớp với Query.'
+    cits = [Citation(citation_id="c1", snippet="Key dùng để so khớp với Query.")]
+    claims = [
+        GroundedClaim(claim="Key dùng để so khớp với Query.", citation_ids=["c99"])
+    ]
+    valid, err = verify_grounding("Key dùng để so khớp với Query.", cits, ctx, claims)
+    assert valid is False
+    assert "unknown citation id" in err.lower()
+
+
+def test_grounding_claim_not_supported_fails():
+    from vlearn_ai.guardrails.grounding_guard import verify_grounding
+    from vlearn_ai.schemas import Citation, GroundedClaim
+
+    ctx = '[source source_id="c1"]\nKey dùng để so khớp với Query.'
+    cits = [Citation(citation_id="c1", snippet="Key dùng để so khớp với Query.")]
+    claims = [
+        GroundedClaim(claim="Value lưu giữ thông tin kết quả.", citation_ids=["c1"])
+    ]
+    valid, err = verify_grounding("Value lưu giữ thông tin kết quả.", cits, ctx, claims)
+    assert valid is False
+    assert "not supported" in err.lower()
+
+
+def test_grounding_stale_citations_after_repair_fails():
+    from vlearn_ai.guardrails.grounding_guard import verify_grounding
+    from vlearn_ai.schemas import Citation, GroundedClaim
+
+    ctx = '[source source_id="c1"]\nKey dùng để so khớp với Query.'
+    # Stale citations from previous turn don't match the new claims
+    cits = [Citation(citation_id="c1", snippet="Key dùng để so khớp với Query.")]
+    claims = [
+        GroundedClaim(claim="Khái niệm mới được giảng giải.", citation_ids=["c1"])
+    ]
+    valid, _err = verify_grounding("Khái niệm mới được giảng giải.", cits, ctx, claims)
+    assert valid is False
+
+
+def test_grounding_fully_grounded_multi_claim_passes():
+    from vlearn_ai.guardrails.grounding_guard import verify_grounding
+    from vlearn_ai.schemas import Citation, GroundedClaim
+
+    ctx = ('[source source_id="c1"]\nKey dùng để so khớp với Query.\n'
+           '[source source_id="c2"]\nValue chứa thông tin nội dung.')
+    cits = [
+        Citation(citation_id="c1", snippet="Key dùng để so khớp với Query."),
+        Citation(citation_id="c2", snippet="Value chứa thông tin nội dung."),
+    ]
+    claims = [
+        GroundedClaim(claim="Key dùng để so khớp với Query.", citation_ids=["c1"]),
+        GroundedClaim(claim="Value chứa thông tin nội dung.", citation_ids=["c2"]),
+    ]
+    ans = "Key dùng để so khớp với Query. Value chứa thông tin nội dung."
+    valid, err = verify_grounding(ans, cits, ctx, claims)
+    assert valid is True
+    assert err is None

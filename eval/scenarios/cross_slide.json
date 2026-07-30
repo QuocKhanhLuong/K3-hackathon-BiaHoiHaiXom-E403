@@ -1,0 +1,61 @@
+[
+  {
+    "id": "CROSS-GOLD-001",
+    "name": "Neighboring slides context retrieval",
+    "description": "Question references concept from neighboring slide (±2 pages) in deck d1",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["cross_slide", "retrieval", "gold"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 2,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "simple",
+            "confidence": 0.95,
+            "reason": "Hỏi thông tin giữa các slide"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Slide 1 và slide 2 cùng nằm trong chương trình Day 1 với phần Agenda giới thiệu nội dung.",
+            "claims": [
+              {
+                "claim": "Slide 1 và slide 2 cùng nằm trong chương trình Day 1 với phần Agenda giới thiệu nội dung.",
+                "citation_ids": ["d1-p1", "d1-p2"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              },
+              {
+                "citation_id": "d1-p2",
+                "snippet": "AI IN ACTION - Day 1 Agenda"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Liên hệ giữa thông tin ở slide 2 và slide 1 là gì?",
+        "expected": {
+          "routes": ["simple"],
+          "statuses": ["completed"],
+          "required_source_ids": ["d1-p1", "d1-p2"],
+          "required_deck_ids": ["d1"],
+          "grounding_required": true,
+          "min_citations": 2
+        }
+      }
+    ]
+  }
+]

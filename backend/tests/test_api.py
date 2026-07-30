@@ -216,9 +216,7 @@ def app():
         serve_frontend=False,
         anonymous_session_secret="test-session-secret",
     )
-    return create_app(
-        settings=settings, turn_service=service, slide_repository=slides
-    )
+    return create_app(settings=settings, turn_service=service, slide_repository=slides)
 
 
 @pytest.fixture

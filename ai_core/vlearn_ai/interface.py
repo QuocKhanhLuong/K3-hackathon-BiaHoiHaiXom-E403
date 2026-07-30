@@ -1,12 +1,15 @@
 """VLearnAICore facade providing the public Python package API."""
 
+import asyncio
 import json
 import logging
 import time
+from functools import partial
 from pathlib import Path
 from typing import Any
 
 from langchain_core.language_models import BaseChatModel
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.types import Command
 
 from vlearn_ai.config import get_settings
@@ -43,10 +46,12 @@ def _normalize_conversation_history(
         content = str(item.get("content", "")).strip()
         if role not in _ALLOWED_ROLES or not content:
             continue
-        safe.append({
-            "role": role,
-            "content": content[:_MAX_MESSAGE_CHARS],
-        })
+        safe.append(
+            {
+                "role": role,
+                "content": content[:_MAX_MESSAGE_CHARS],
+            }
+        )
     return safe
 
 
@@ -57,18 +62,26 @@ _TRANSIENT_FIELDS: dict[str, Any] = {
     "route": None,
     "route_confidence": 0.0,
     "route_reason": "",
+    "route_source": None,
     "clarification_question": None,
     "clarification_answer": None,
     "grounded_answer": None,
     "grounded_claims": [],
     "citations": [],
+    "candidate_answer": None,
+    "candidate_claims": [],
+    "candidate_citations": [],
     "grounding_valid": None,
     "grounding_error": None,
+    "grounding_retry_count": 0,
     "grounding_failure_type": None,
+    "grounding_uncovered_sentences": [],
+    "grounding_invalid_citation_ids": [],
     "abstention_message": None,
     "check_question": None,
     "student_check_answer": None,
     "check_result": None,
+    "last_check_result": None,
     "misconception": None,
     "repair_plan": None,
     "retry_count": 0,
@@ -89,22 +102,23 @@ _TRANSIENT_FIELDS: dict[str, Any] = {
 # JSONL Logging
 # ---------------------------------------------------------------------------
 def _log_interaction(entry: dict[str, Any]) -> None:
-    """Append one JSON line to the persistent AI log file."""
+    """Append one JSON line to the persistent AI log file without logging secrets."""
     try:
         settings = get_settings()
         log_dir = Path(getattr(settings, "AI_LOG_DIR", "logs"))
         log_dir.mkdir(parents=True, exist_ok=True)
         log_path = log_dir / "ai_interactions.jsonl"
+        forbidden_keys = {
+            "api_key",
+            "OPENAI_API_KEY",
+            "system_prompt",
+            "raw_prompt",
+            "conversation_history",
+            "selected_context",
+        }
         safe_entry = {
-            k: v
-            for k, v in entry.items()
-            if k
-            not in (
-                "raw_prompt",
-                "api_key",
-                "OPENAI_API_KEY",
-                "system_prompt",
-            )
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            **{k: v for k, v in entry.items() if k not in forbidden_keys},
         }
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(safe_entry, ensure_ascii=False, default=str) + "\n")
@@ -115,10 +129,17 @@ def _log_interaction(entry: dict[str, Any]) -> None:
 class VLearnAICore:
     """Public facade for VLearn Learning Loop AI Core package."""
 
-    def __init__(self, model: BaseChatModel | None = None) -> None:
-        """Initialize VLearnAICore with optional chat model override for testing."""
+    def __init__(
+        self,
+        model: BaseChatModel | None = None,
+        checkpointer: BaseCheckpointSaver | None = None,
+    ) -> None:
+        """Initialize VLearnAICore with optional chat model and checkpointer overrides."""
         self.custom_model = model
-        self.app = build_learning_loop_graph(model=self.custom_model)
+        self.app = build_learning_loop_graph(
+            model=self.custom_model,
+            checkpointer=checkpointer,
+        )
 
     async def start_turn(
         self,
@@ -126,7 +147,7 @@ class VLearnAICore:
         thread_id: str,
         question: str,
         selected_context: str,
-        conversation_history: list[dict[str, Any]] = None,
+        conversation_history: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Start a new turn in the learning loop for a given thread_id."""
         if not thread_id or not thread_id.strip():
@@ -146,39 +167,48 @@ class VLearnAICore:
             "thread_id": thread_id,
             "user_query": question.strip(),
             "selected_context": selected_context.strip(),
-            "conversation_history": conversation_history or [],
+            "conversation_history": safe_history,
             "status": "running",
         }
 
         t0 = time.time()
         try:
-            final_state = await self.app.ainvoke(
-                initial_state,
-                config=config,
-                recursion_limit=settings.AI_RECURSION_LIMIT,
+            final_state = await asyncio.to_thread(
+                partial(
+                    self.app.invoke,
+                    initial_state,
+                    config=config,
+                    recursion_limit=settings.AI_RECURSION_LIMIT,
+                )
             )
         except AICoreBaseError:
             raise
         except Exception as exc:
-            _log_interaction({
-                "event": "start_turn_error",
-                "thread_id": thread_id,
-                "error_type": type(exc).__name__,
-                "latency_ms": int((time.time() - t0) * 1000),
-            })
+            _log_interaction(
+                {
+                    "event": "start_turn_error",
+                    "thread_id": thread_id,
+                    "error_type": type(exc).__name__,
+                    "latency_ms": int((time.time() - t0) * 1000),
+                }
+            )
             return self._format_error_result(
                 thread_id, "start_turn", type(exc).__name__
             )
 
         result = self._format_result(config, final_state)
-        _log_interaction({
-            "event": "start_turn",
-            "thread_id": thread_id,
-            "status": result.get("status"),
-            "route": result.get("route", {}).get("name") if result.get("route") else None,
-            "tool_count": len(result.get("tool_trace", [])),
-            "latency_ms": int((time.time() - t0) * 1000),
-        })
+        _log_interaction(
+            {
+                "event": "start_turn",
+                "thread_id": thread_id,
+                "status": result.get("status"),
+                "route": result.get("route", {}).get("name")
+                if result.get("route")
+                else None,
+                "tool_count": len(result.get("tool_trace", [])),
+                "latency_ms": int((time.time() - t0) * 1000),
+            }
+        )
         return result
 
     async def resume_turn(
@@ -205,8 +235,7 @@ class VLearnAICore:
         curr_status = curr_values.get("status")
 
         has_native_interrupt = bool(
-            current_snapshot.tasks
-            and any(t.interrupts for t in current_snapshot.tasks)
+            current_snapshot.tasks and any(t.interrupts for t in current_snapshot.tasks)
         )
         has_state_pause = curr_status in ("awaiting_clarification", "awaiting_check")
 
@@ -222,10 +251,13 @@ class VLearnAICore:
         # Attempt 1: native Command(resume=...)
         if has_native_interrupt:
             try:
-                final_state = await self.app.ainvoke(
-                    Command(resume=student_input.strip()),
-                    config=config,
-                    recursion_limit=settings.AI_RECURSION_LIMIT,
+                final_state = await asyncio.to_thread(
+                    partial(
+                        self.app.invoke,
+                        Command(resume=student_input.strip()),
+                        config=config,
+                        recursion_limit=settings.AI_RECURSION_LIMIT,
+                    )
                 )
             except (RuntimeError, ValueError, TypeError, AttributeError, KeyError):
                 final_state = None
@@ -246,20 +278,25 @@ class VLearnAICore:
 
             try:
                 self.app.update_state(config, update_values, as_node=as_node)
-                final_state = await self.app.ainvoke(
-                    None,
-                    config=config,
-                    recursion_limit=settings.AI_RECURSION_LIMIT,
+                final_state = await asyncio.to_thread(
+                    partial(
+                        self.app.invoke,
+                        None,
+                        config=config,
+                        recursion_limit=settings.AI_RECURSION_LIMIT,
+                    )
                 )
             except InvalidResumeStateError:
                 raise
             except Exception as exc:
-                _log_interaction({
-                    "event": "resume_turn_error",
-                    "thread_id": thread_id,
-                    "error_type": type(exc).__name__,
-                    "latency_ms": int((time.time() - t0) * 1000),
-                })
+                _log_interaction(
+                    {
+                        "event": "resume_turn_error",
+                        "thread_id": thread_id,
+                        "error_type": type(exc).__name__,
+                        "latency_ms": int((time.time() - t0) * 1000),
+                    }
+                )
                 raise InvalidResumeStateError(
                     f"Failed to resume thread '{thread_id}': {type(exc).__name__}"
                 ) from exc
@@ -270,12 +307,14 @@ class VLearnAICore:
             )
 
         result = self._format_result(config, final_state)
-        _log_interaction({
-            "event": "resume_turn",
-            "thread_id": thread_id,
-            "status": result.get("status"),
-            "latency_ms": int((time.time() - t0) * 1000),
-        })
+        _log_interaction(
+            {
+                "event": "resume_turn",
+                "thread_id": thread_id,
+                "status": result.get("status"),
+                "latency_ms": int((time.time() - t0) * 1000),
+            }
+        )
         return result
 
     def _format_result(self, config: dict, state: Any) -> dict[str, Any]:
@@ -316,10 +355,12 @@ class VLearnAICore:
             for opt in check_q.get("options") or []:
                 if isinstance(opt, dict):
                     opt_text, _ = sanitize_output(str(opt.get("text", "")))
-                    clean_opts.append({
-                        "option_id": opt.get("option_id"),
-                        "text": opt_text,
-                    })
+                    clean_opts.append(
+                        {
+                            "option_id": opt.get("option_id"),
+                            "text": opt_text,
+                        }
+                    )
             ui_payload = {
                 "type": check_q.get("question_type", "multiple_choice"),
                 "question": clean_check_q,

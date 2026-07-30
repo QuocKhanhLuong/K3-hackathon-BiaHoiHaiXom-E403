@@ -19,6 +19,7 @@ class TurnCreateRequest(StrictAPIModel):
     question: str = Field(..., min_length=1, max_length=4000)
     selected_text: str = Field(default="", max_length=12000)
     page_number: int = Field(default=1, ge=1, le=9999)
+    deck_id: str = Field(default="d1", min_length=1, max_length=100)
     conversation_history: list[dict[str, Any]] = Field(
         default_factory=list, max_length=50
     )
@@ -60,15 +61,14 @@ class PublicCitation(StrictAPIModel):
     snippet: str
     source_location: str | None = None
     page_number: int | None = None
+    deck_id: str | None = None
 
 
 class TurnResponse(StrictAPIModel):
     request_id: str
     conversation_id: str
     turn_id: str
-    status: Literal[
-        "processing", "awaiting_response", "completed", "blocked", "failed"
-    ]
+    status: Literal["processing", "awaiting_response", "completed", "blocked", "failed"]
     message: PublicMessage
     route: PublicRoute | None = None
     action: PublicAction | None = None
@@ -92,6 +92,7 @@ class LegacyAskRequest(StrictAPIModel):
     question: str = Field(..., min_length=1, max_length=4000)
     selected_text: str = Field(default="", max_length=12000)
     page_number: int = Field(default=1, ge=1, le=9999)
+    deck_id: str = Field(default="d1", min_length=1, max_length=100)
     chat_history: list[dict[str, Any]] = Field(default_factory=list, max_length=50)
     thread_id: str | None = Field(default=None, max_length=100)
 

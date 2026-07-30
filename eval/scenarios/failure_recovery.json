@@ -1,0 +1,62 @@
+[
+  {
+    "id": "FAIL-GOLD-001",
+    "name": "Optional followup tool fault recovery",
+    "description": "If suggest_followups fails, turn completes safely with empty followups",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["failure_recovery", "followups", "failure", "gold"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "deep",
+            "confidence": 0.95,
+            "reason": "Chi tiết"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Nội dung slide 1 giải thích về AI IN ACTION.",
+            "claims": [
+              {
+                "claim": "Nội dung slide 1 giải thích về AI IN ACTION.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION"
+              }
+            ]
+          }
+        }
+      ],
+      "faults": [
+        {
+          "target": "suggest_followups",
+          "type": "raise",
+          "exception": "TimeoutError"
+        }
+      ]
+    },
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Giải thích chi tiết về AI IN ACTION.",
+        "expected": {
+          "statuses": ["completed"],
+          "assistant_message_required": true,
+          "max_followups": 0,
+          "forbidden_tools": ["failure_node"]
+        }
+      }
+    ]
+  }
+]
