@@ -24,6 +24,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const totalPagesNum = document.getElementById('totalPagesNum');
   const tutorSlideBadge = document.getElementById('tutorSlideBadge');
   const selectionTooltip = document.getElementById('selectionTooltip');
+  const slideCard = document.getElementById('slideCard');
+  const bookStage = document.querySelector('.book-stage');
+  const originalSlideImage = document.getElementById('originalSlideImage');
+  const slideImageLoading = document.getElementById('slideImageLoading');
+  const zoomOutBtn = document.getElementById('zoomOutBtn');
+  const zoomInBtn = document.getElementById('zoomInBtn');
+  const zoomVal = document.getElementById('zoomVal');
+  const annotationCanvas = document.getElementById('annotationCanvas');
+  const annotationCtx = annotationCanvas.getContext('2d');
+  const readToolBtn = document.getElementById('readToolBtn');
+  const penToolBtn = document.getElementById('penToolBtn');
+  const highlightToolBtn = document.getElementById('highlightToolBtn');
+  const eraserToolBtn = document.getElementById('eraserToolBtn');
+  const penColorPopover = document.getElementById('penColorPopover');
+  const highlightColorPopover = document.getElementById('highlightColorPopover');
+  const penColorDot = document.getElementById('penColorDot');
+  const highlightColorDot = document.getElementById('highlightColorDot');
+
+  let activeTool = 'read';
+  let penColor = '#0878d1';
+  let highlightColor = '#ffe066';
+  let isDrawing = false;
+  let lastPoint = null;
+  let annotationResizeTimer = null;
+  let currentZoom = 90;
+  const minZoom = 50;
+  const maxZoom = 180;
+  const zoomStep = 10;
+  const slideBaseWidth = 640;
 
   const notePageNum = document.getElementById('notePageNum');
   const pageNoteBadge = document.getElementById('pageNoteBadge');
@@ -105,6 +134,19 @@ document.addEventListener('DOMContentLoaded', () => {
     slideSubtitle.textContent = slide.subtitle || "";
     slideBody.innerHTML = slide.content;
     slideFileRef.textContent = slide.code || "day05-ai-product-thinking-requirements.pdf";
+    slideCard.classList.add('pdf-render-mode', 'slide-image-is-loading');
+    originalSlideImage.alt = `Slide trang ${pageNum}: ${slide.title || ''}`;
+    originalSlideImage.onload = () => {
+      slideCard.classList.remove('slide-image-is-loading', 'slide-image-error');
+      window.requestAnimationFrame(() => resizeAnnotationCanvas(true));
+    };
+    originalSlideImage.onerror = () => {
+      slideCard.classList.remove('slide-image-is-loading', 'pdf-render-mode');
+      slideCard.classList.add('slide-image-error');
+      slideImageLoading.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><span>Không thể tải ảnh slide gốc. Đang hiển thị bản nội dung dự phòng.</span>';
+      window.requestAnimationFrame(() => resizeAnnotationCanvas(true));
+    };
+    originalSlideImage.src = `/api/slides/${pageNum}/render`;
 
     currentPageNum.textContent = pageNum;
     tutorSlideBadge.textContent = pageNum;
@@ -113,6 +155,206 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const savedNote = localStorage.getItem(`vlearn_note_page_${pageNum}`) || "";
     noteTextarea.value = savedNote;
+    if (originalSlideImage.complete) window.requestAnimationFrame(() => resizeAnnotationCanvas(true));
+  }
+
+  function applyZoom(nextZoom) {
+    currentZoom = Math.min(maxZoom, Math.max(minZoom, nextZoom));
+    zoomVal.textContent = `${currentZoom}%`;
+    bookStage.style.width = `${Math.round(slideBaseWidth * currentZoom / 100)}px`;
+    zoomOutBtn.disabled = currentZoom <= minZoom;
+    zoomInBtn.disabled = currentZoom >= maxZoom;
+    zoomOutBtn.setAttribute('aria-label', `Thu nhỏ slide, hiện tại ${currentZoom}%`);
+    zoomInBtn.setAttribute('aria-label', `Phóng lớn slide, hiện tại ${currentZoom}%`);
+
+    clearTimeout(annotationResizeTimer);
+    annotationResizeTimer = setTimeout(() => resizeAnnotationCanvas(false), 180);
+  }
+
+  zoomOutBtn.addEventListener('click', () => applyZoom(currentZoom - zoomStep));
+  zoomInBtn.addEventListener('click', () => applyZoom(currentZoom + zoomStep));
+
+  // Slide annotation tools: pen and translucent highlighter
+  const penColors = ['#0878d1', '#102b46', '#ef4444', '#16a34a', '#8b5cf6'];
+  const highlightColors = ['#ffe066', '#78e6b0', '#75d5ff', '#ff9fc5', '#c4b5fd'];
+
+  function buildColorPopover(popover, colors, tool) {
+    colors.forEach(color => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'color-swatch';
+      button.style.backgroundColor = color;
+      button.setAttribute('aria-label', `Chọn màu ${color}`);
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (tool === 'pen') {
+          penColor = color;
+          penColorDot.style.background = color;
+        } else {
+          highlightColor = color;
+          highlightColorDot.style.background = color;
+        }
+        setActiveTool(tool);
+        closeColorPopovers();
+      });
+      popover.appendChild(button);
+    });
+  }
+
+  function closeColorPopovers() {
+    penColorPopover.classList.remove('visible');
+    highlightColorPopover.classList.remove('visible');
+  }
+
+  function setActiveTool(tool) {
+    activeTool = tool;
+    [readToolBtn, penToolBtn, highlightToolBtn, eraserToolBtn].forEach(btn => btn.classList.remove('active'));
+    const activeButton = tool === 'pen'
+      ? penToolBtn
+      : tool === 'highlight'
+        ? highlightToolBtn
+        : tool === 'eraser'
+          ? eraserToolBtn
+          : readToolBtn;
+    activeButton.classList.add('active');
+    annotationCanvas.classList.toggle('drawing-enabled', tool !== 'read');
+    slideCard.classList.toggle('annotation-mode', tool !== 'read');
+    selectionTooltip.style.display = 'none';
+    window.getSelection()?.removeAllRanges();
+  }
+
+  function resizeAnnotationCanvas(restore = false) {
+    const rect = slideCard.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const savedImage = annotationCanvas.width && annotationCanvas.height
+      ? annotationCanvas.toDataURL()
+      : null;
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    annotationCanvas.width = Math.round(rect.width * ratio);
+    annotationCanvas.height = Math.round(rect.height * ratio);
+    annotationCanvas.style.width = `${rect.width}px`;
+    annotationCanvas.style.height = `${rect.height}px`;
+    annotationCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    annotationCtx.lineCap = 'round';
+    annotationCtx.lineJoin = 'round';
+
+    if (restore) {
+      loadAnnotation(currentPage);
+    } else if (savedImage) {
+      const image = new Image();
+      image.onload = () => annotationCtx.drawImage(image, 0, 0, rect.width, rect.height);
+      image.src = savedImage;
+    }
+  }
+
+  function loadAnnotation(page) {
+    annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
+    const saved = localStorage.getItem(`vlearn_annotation_page_${page}`);
+    if (!saved) return;
+    const image = new Image();
+    image.onload = () => {
+      const rect = slideCard.getBoundingClientRect();
+      annotationCtx.drawImage(image, 0, 0, rect.width, rect.height);
+    };
+    image.src = saved;
+  }
+
+  function saveAnnotation() {
+    localStorage.setItem(`vlearn_annotation_page_${currentPage}`, annotationCanvas.toDataURL('image/png'));
+  }
+
+  function canvasPoint(event) {
+    const rect = annotationCanvas.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+
+  function startDrawing(event) {
+    if (activeTool === 'read') return;
+    event.preventDefault();
+    isDrawing = true;
+    lastPoint = canvasPoint(event);
+    annotationCanvas.setPointerCapture(event.pointerId);
+  }
+
+  function draw(event) {
+    if (!isDrawing || activeTool === 'read') return;
+    event.preventDefault();
+    const point = canvasPoint(event);
+    annotationCtx.beginPath();
+    annotationCtx.moveTo(lastPoint.x, lastPoint.y);
+    annotationCtx.lineTo(point.x, point.y);
+    const isEraser = activeTool === 'eraser';
+    annotationCtx.strokeStyle = isEraser ? '#000000' : activeTool === 'pen' ? penColor : highlightColor;
+    annotationCtx.globalAlpha = activeTool === 'highlight' ? 0.32 : 1;
+    annotationCtx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over';
+    annotationCtx.lineWidth = isEraser ? 28 : activeTool === 'pen' ? 3 : 18;
+    annotationCtx.stroke();
+    annotationCtx.globalAlpha = 1;
+    annotationCtx.globalCompositeOperation = 'source-over';
+    lastPoint = point;
+  }
+
+  function stopDrawing(event) {
+    if (!isDrawing) return;
+    isDrawing = false;
+    lastPoint = null;
+    if (annotationCanvas.hasPointerCapture(event.pointerId)) annotationCanvas.releasePointerCapture(event.pointerId);
+    saveAnnotation();
+  }
+
+  buildColorPopover(penColorPopover, penColors, 'pen');
+  buildColorPopover(highlightColorPopover, highlightColors, 'highlight');
+  penColorDot.style.background = penColor;
+  highlightColorDot.style.background = highlightColor;
+
+  readToolBtn.addEventListener('click', () => { setActiveTool('read'); closeColorPopovers(); });
+  penToolBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    setActiveTool('pen');
+    highlightColorPopover.classList.remove('visible');
+    penColorPopover.classList.toggle('visible');
+  });
+  highlightToolBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    setActiveTool('highlight');
+    penColorPopover.classList.remove('visible');
+    highlightColorPopover.classList.toggle('visible');
+  });
+  eraserToolBtn.addEventListener('click', () => {
+    setActiveTool('eraser');
+    closeColorPopovers();
+  });
+  document.addEventListener('click', closeColorPopovers);
+  annotationCanvas.addEventListener('pointerdown', startDrawing);
+  annotationCanvas.addEventListener('pointermove', draw);
+  annotationCanvas.addEventListener('pointerup', stopDrawing);
+  annotationCanvas.addEventListener('pointercancel', stopDrawing);
+  window.addEventListener('resize', () => {
+    clearTimeout(annotationResizeTimer);
+    annotationResizeTimer = setTimeout(() => resizeAnnotationCanvas(false), 120);
+  });
+
+  function turnPage(targetPage, direction) {
+    const slideCard = document.getElementById('slideCard');
+    if (slideCard.classList.contains('is-turning')) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      currentPage = targetPage;
+      renderSlide(currentPage);
+      return;
+    }
+
+    slideCard.classList.add('is-turning', `turn-${direction}`);
+    window.setTimeout(() => {
+      currentPage = targetPage;
+      renderSlide(currentPage);
+      slideCard.classList.add('page-swapped');
+    }, 260);
+
+    window.setTimeout(() => {
+      slideCard.classList.remove('is-turning', `turn-${direction}`, 'page-swapped');
+    }, 620);
   }
 
   // 2. Note Auto-Save
@@ -131,20 +373,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // 3. Page Navigation
   prevPageBtn.addEventListener('click', () => {
     if (currentPage > 1) {
-      currentPage--;
-      renderSlide(currentPage);
+      turnPage(currentPage - 1, 'backward');
     }
   });
 
   nextPageBtn.addEventListener('click', () => {
     if (currentPage < totalPages) {
-      currentPage++;
-      renderSlide(currentPage);
+      turnPage(currentPage + 1, 'forward');
     }
   });
 
   // 4. Slide Text Selection Tooltip
-  document.getElementById('slideCard').addEventListener('mouseup', (e) => {
+  slideCard.addEventListener('mouseup', (e) => {
+    if (activeTool !== 'read') return;
     const sel = window.getSelection();
     const text = sel.toString().trim();
     if (text.length > 3) {
@@ -173,26 +414,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     activeNodeBadge.textContent = "⚙️ Đang suy nghĩ...";
     activeNodeBadge.style.background = "#fef08a";
+    const thinkingTrace = createThinkingTrace();
 
     try {
-      const res = await fetch('/api/tutor/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: text,
-          selected_text: selectedTextOnSlide,
-          page_number: currentPage,
-          chat_history: chatHistory
-        })
-      });
-
-      const data = await res.json();
+      const data = await requestTutorStream({
+        question: text,
+        selected_text: selectedTextOnSlide,
+        page_number: currentPage,
+        chat_history: chatHistory
+      }, thinkingTrace);
       
       activeNodeBadge.textContent = `📍 ${data.orchestrator.title}`;
       activeNodeBadge.style.background = "#dcfce7";
+      completeThinkingTrace(thinkingTrace);
 
       // Render Grounded Answer (contains Deep-dive Expansion if branch == 'followup')
-      appendTutorAnswer(data.answer, data.citations, data.orchestrator);
+      const answerMessage = appendTutorAnswer(data.answer, data.citations, data.orchestrator);
+      attachTraceControl(answerMessage, thinkingTrace);
 
       // Render Tool Card based on Orchestrator decision
       if (data.tool_data) {
@@ -204,16 +442,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // Render 3 Default Follow-up Suggestions Chips in ALL cases before ending turn
-      if (data.default_suggestions) {
+      // Only end a non-interactive answer with suggestions. Quiz/clarification
+      // branches must wait for the learner's response before deciding next step.
+      if (data.default_suggestions && !data.tool_data) {
         renderFollowupChips(data.default_suggestions);
       }
 
       selectedTextOnSlide = "";
     } catch (err) {
       console.error('API Error:', err);
+      failThinkingTrace(thinkingTrace);
       activeNodeBadge.textContent = "📍 Cần kiểm tra hiểu";
-      appendTutorAnswer(`Dựa trên slide trang ${currentPage}, mình đã cập nhật câu trả lời có căn cứ cho bạn [trang ${currentPage}].`, [currentPage], { title: "Cần kiểm tra hiểu" });
+      const fallbackAnswer = appendTutorAnswer(`Dựa trên slide trang ${currentPage}, mình đã cập nhật câu trả lời có căn cứ cho bạn [trang ${currentPage}].`, [currentPage], { title: "Cần kiểm tra hiểu" });
+      attachTraceControl(fallbackAnswer, thinkingTrace);
       renderQuizCard({
         quiz_id: "q_demo",
         quiz_type: "short_answer",
@@ -221,12 +462,138 @@ document.addEventListener('DOMContentLoaded', () => {
         question: "Theo bạn, tại sao Function Calling lại được gọi là 'Hợp đồng' giữa Agent và hệ thống? (Gõ 1-2 câu trả lời vào ô dưới):",
         expected_keywords: ["schema", "hợp đồng", "cấu trúc", "json"]
       });
-      renderFollowupChips([
-        "Làm sao áp dụng khái niệm này vào bài thi Hackathon nhóm mình?",
-        "Các lỗi phổ biến học viên hay gặp khi triển khai phần này là gì?",
-        "Ví dụ 1 kịch bản fail tiêu biểu và cách khắc phục?"
-      ]);
     }
+  }
+
+  async function requestTutorStream(payload, traceElement) {
+    const response = await fetch('/api/tutor/ask/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok || !response.body) throw new Error(`Streaming API error: ${response.status}`);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let finalData = null;
+
+    while (true) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() || '';
+
+      events.forEach(block => {
+        const dataLine = block.split('\n').find(line => line.startsWith('data: '));
+        if (!dataLine) return;
+        const event = JSON.parse(dataLine.slice(6));
+        if (event.type === 'trace') updateThinkingTrace(traceElement, event);
+        if (event.type === 'result') finalData = event.data;
+        if (event.type === 'error') throw new Error(event.message || 'Tutor stream failed');
+      });
+      if (done) break;
+    }
+
+    if (!finalData) throw new Error('Tutor stream ended without a result');
+    return finalData;
+  }
+
+  function createThinkingTrace() {
+    const trace = document.createElement('div');
+    trace.className = 'thinking-trace';
+    trace.innerHTML = `
+      <button type="button" class="thinking-trace-toggle" aria-expanded="true">
+        <span class="thinking-trace-title"><span class="thinking-pulse"></span> VLearn đang xử lý</span>
+        <span class="thinking-trace-meta">0 bước <i class="fa-solid fa-chevron-up"></i></span>
+      </button>
+      <div class="thinking-trace-body">
+        <div class="thinking-trace-intro">Tiến trình công cụ theo thời gian thực</div>
+        <div class="thinking-trace-steps"></div>
+      </div>
+    `;
+    chatMessages.appendChild(trace);
+    trace.dataset.traceId = `trace-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    trace.querySelector('.thinking-trace-toggle').addEventListener('click', () => toggleThinkingTrace(trace));
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return trace;
+  }
+
+  function updateThinkingTrace(trace, event) {
+    const steps = trace.querySelector('.thinking-trace-steps');
+    let step = steps.querySelector(`[data-tool="${event.tool}"]`);
+    if (!step) {
+      step = document.createElement('div');
+      step.className = 'thinking-step';
+      step.dataset.tool = event.tool;
+      step.innerHTML = `
+        <span class="thinking-step-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+        <span class="thinking-step-copy"><strong></strong><small></small></span>
+        <span class="thinking-step-status">Đang chạy</span>
+      `;
+      steps.appendChild(step);
+    }
+    step.querySelector('strong').textContent = event.title;
+    step.querySelector('small').textContent = event.detail || '';
+    step.classList.toggle('completed', event.status === 'completed');
+    if (event.status === 'completed') {
+      step.querySelector('.thinking-step-icon').innerHTML = '<i class="fa-solid fa-check"></i>';
+      step.querySelector('.thinking-step-status').textContent = 'Xong';
+    }
+    const count = steps.children.length;
+    trace.querySelector('.thinking-trace-meta').childNodes[0].textContent = `${count} bước `;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function completeThinkingTrace(trace) {
+    trace.classList.add('completed');
+    trace.querySelector('.thinking-trace-title').innerHTML = '<i class="fa-solid fa-circle-check"></i> Đã hoàn tất tiến trình';
+    window.setTimeout(() => {
+      trace.classList.add('collapsed');
+      trace.querySelector('.thinking-trace-toggle').setAttribute('aria-expanded', 'false');
+      syncTraceControls(trace);
+    }, 900);
+  }
+
+  function failThinkingTrace(trace) {
+    trace.classList.add('failed');
+    trace.querySelector('.thinking-trace-title').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Không thể tải tiến trình';
+  }
+
+  function toggleThinkingTrace(trace, forceExpanded = null) {
+    const shouldExpand = forceExpanded === null ? trace.classList.contains('collapsed') : forceExpanded;
+    trace.classList.toggle('collapsed', !shouldExpand);
+    trace.querySelector('.thinking-trace-toggle').setAttribute('aria-expanded', String(shouldExpand));
+    syncTraceControls(trace);
+    if (shouldExpand) {
+      window.setTimeout(() => trace.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+    }
+  }
+
+  function syncTraceControls(trace) {
+    const expanded = !trace.classList.contains('collapsed');
+    const stepCount = trace.querySelectorAll('.thinking-step').length;
+    document.querySelectorAll(`[data-controls-trace="${trace.dataset.traceId}"]`).forEach(button => {
+      button.innerHTML = expanded
+        ? '<i class="fa-regular fa-eye-slash"></i> Ẩn tiến trình'
+        : `<i class="fa-regular fa-eye"></i> Xem tiến trình (${stepCount} bước)`;
+      button.setAttribute('aria-expanded', String(expanded));
+    });
+  }
+
+  function attachTraceControl(messageElement, trace) {
+    const controlRow = document.createElement('div');
+    controlRow.className = 'answer-trace-control-row';
+    const control = document.createElement('button');
+    control.type = 'button';
+    control.className = 'answer-trace-toggle';
+    control.dataset.controlsTrace = trace.dataset.traceId;
+    control.setAttribute('aria-expanded', 'true');
+    control.innerHTML = '<i class="fa-regular fa-eye-slash"></i> Ẩn tiến trình';
+    control.addEventListener('click', () => toggleThinkingTrace(trace));
+    controlRow.appendChild(control);
+    messageElement.insertAdjacentElement('beforebegin', controlRow);
+    syncTraceControls(trace);
   }
 
   function appendMessage(role, text) {
@@ -243,7 +610,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let citationHTML = "";
     if (citations && citations.length > 0) {
-      citationHTML = citations.map(c => `<span class="citation-tag">[trang ${c}]</span>`).join('');
+      citationHTML = citations.map(c => {
+        const page = parseInt(String(c).match(/\d+/)?.[0], 10);
+        if (!Number.isFinite(page)) return '';
+        return `<button type="button" class="citation-tag" data-page="${page}" title="Mở slide trang ${page}"><i class="fa-solid fa-link"></i> Trang ${page}</button>`;
+      }).join('');
     }
 
     msgDiv.innerHTML = `
@@ -253,7 +624,87 @@ document.addEventListener('DOMContentLoaded', () => {
       <div>${text} ${citationHTML}</div>
     `;
     chatMessages.appendChild(msgDiv);
+    msgDiv.querySelectorAll('.citation-tag').forEach(citation => {
+      citation.addEventListener('click', () => {
+        const page = parseInt(citation.dataset.page, 10);
+        openCitation(page, msgDiv);
+      });
+    });
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    return msgDiv;
+  }
+
+  function openCitation(page, messageElement) {
+    if (!Number.isFinite(page) || page < 1 || page > totalPages) return;
+
+    if (page !== currentPage) {
+      turnPage(page, page > currentPage ? 'forward' : 'backward');
+    } else {
+      slideCard.classList.remove('citation-focus');
+      void slideCard.offsetWidth;
+      slideCard.classList.add('citation-focus');
+      window.setTimeout(() => slideCard.classList.remove('citation-focus'), 900);
+    }
+
+    window.setTimeout(() => slideCard.scrollIntoView({ behavior: 'smooth', block: 'center' }), page === currentPage ? 0 : 320);
+    renderCitationPreview(page, messageElement);
+  }
+
+  function renderCitationPreview(activePage, messageElement) {
+    document.querySelectorAll('.citation-preview').forEach(preview => preview.remove());
+
+    const preview = document.createElement('div');
+    preview.className = 'citation-preview';
+    preview.innerHTML = `
+      <div class="citation-preview-header">
+        <div><i class="fa-regular fa-file-lines"></i> <strong>Nguồn slide</strong> · ${slidesData.length} trang</div>
+        <button type="button" class="citation-preview-close" aria-label="Đóng xem nhanh">&times;</button>
+      </div>
+      <div class="citation-preview-scroll">
+        ${slidesData.map(slide => `
+          <button type="button" class="citation-mini-slide ${slide.page === activePage ? 'active' : ''}" data-page="${slide.page}">
+            <span class="citation-mini-page">${slide.page}</span>
+            <span class="citation-mini-content">
+              <strong>${escapePreviewText(slide.title || `Trang ${slide.page}`)}</strong>
+              <span>${escapePreviewText(stripPreviewHtml(slide.content || '')).slice(0, 150)}</span>
+            </span>
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    messageElement.insertAdjacentElement('afterend', preview);
+    preview.querySelector('.citation-preview-close').addEventListener('click', () => preview.remove());
+    preview.querySelectorAll('.citation-mini-slide').forEach(item => {
+      item.addEventListener('click', () => {
+        const targetPage = parseInt(item.dataset.page, 10);
+        if (targetPage !== currentPage) turnPage(targetPage, targetPage > currentPage ? 'forward' : 'backward');
+        preview.querySelectorAll('.citation-mini-slide').forEach(slide => slide.classList.remove('active'));
+        item.classList.add('active');
+        window.setTimeout(() => slideCard.scrollIntoView({ behavior: 'smooth', block: 'center' }), 320);
+      });
+    });
+
+    window.requestAnimationFrame(() => {
+      preview.querySelector('.citation-mini-slide.active')?.scrollIntoView({ block: 'nearest' });
+    });
+    chatMessages.scrollTop = preview.offsetTop - 12;
+  }
+
+  function stripPreviewHtml(html) {
+    const temporary = document.createElement('div');
+    temporary.innerHTML = html;
+    return temporary.textContent || temporary.innerText || '';
+  }
+
+  function escapePreviewText(text) {
+    return String(text)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 
   // Tool Render 1: Clarification Options
@@ -364,8 +815,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ${data.feedback}
           </div>
         `;
-        // Render 3 Default Follow-up Chips -> Ends turn immediately
-        if (data.default_suggestions) renderFollowupChips(data.default_suggestions);
+        activeNodeBadge.textContent = "✓ Kết thúc lượt";
+        activeNodeBadge.style.background = "#dcfce7";
+        if (data.default_suggestions && data.default_suggestions.length > 0) {
+          renderFollowupChips(data.default_suggestions);
+        }
       } else {
         cardElement.style.borderColor = "#f43f5e";
         renderMisconceptionCard(data.misconception);
@@ -461,5 +915,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Initialize
+  applyZoom(currentZoom);
   loadSlides();
 });
