@@ -31,8 +31,8 @@ def test_compute_aggregate_metrics():
 
     metrics = compute_aggregate_metrics([scen1], mode="offline", total_latency_ms=100)
     assert metrics["total_scenarios"] == 1
-    assert metrics["passed_scenarios"] == 1
-    assert metrics["scenario_pass_rate"] == 100.0
+    assert metrics["scenario_pass_rate"]["passed_count"] == 1
+    assert metrics["scenario_pass_rate"]["value"] == 100.0
 
 
 def test_write_run_reports_generates_files():

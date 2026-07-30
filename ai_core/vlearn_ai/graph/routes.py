@@ -36,10 +36,8 @@ def route_after_router(
 
 def route_after_await_clarification(
     state: LearningLoopState,
-) -> Literal["guard_clarification_input", "output_guard"]:
-    """Route after await clarification node."""
-    if state.get("status") == "awaiting_clarification":
-        return "output_guard"
+) -> Literal["guard_clarification_input"]:
+    """Route after await clarification node resumes."""
     return "guard_clarification_input"
 
 
@@ -57,13 +55,7 @@ def route_after_grounding_guard(
 ) -> Literal[
     "output_guard", "suggest_followups", "generate_check", "grounding_failure"
 ]:
-    """Route after grounding guard.
-
-    - simple  → output_guard (no follow-ups automatically)
-    - clarify → generate_check (micro-check after clarification)
-    - check   → generate_check
-    - deep    → suggest_followups → output_guard
-    """
+    """Route after grounding guard."""
     valid = state.get("grounding_valid")
     if valid is False:
         return "grounding_failure"
@@ -79,10 +71,8 @@ def route_after_grounding_guard(
 
 def route_after_await_check(
     state: LearningLoopState,
-) -> Literal["guard_check_input", "output_guard"]:
-    """Route after await check node."""
-    if state.get("status") == "awaiting_check":
-        return "output_guard"
+) -> Literal["guard_check_input"]:
+    """Route after await check node resumes."""
     return "guard_check_input"
 
 

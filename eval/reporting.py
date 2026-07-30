@@ -1,4 +1,4 @@
-"""Reporting engine computing metrics, formatting debug trace outputs, and generating JSON/Markdown reports."""
+"""Reporting engine computing explicit metrics, logging event streams, and formatting public response traces."""
 
 from __future__ import annotations
 
@@ -7,7 +7,27 @@ from pathlib import Path
 from typing import Any
 
 from eval.config import RESULTS_DIR
-from eval.schemas import ScenarioExecutionResult, TurnExecutionResult
+from eval.schemas import MetricValue, ScenarioExecutionResult, TurnExecutionResult
+
+
+def _make_metric(evaluated_count: int, passed_count: int) -> MetricValue:
+    """Build MetricValue model returning null value and status='not_evaluated' if evaluated_count is 0."""
+    if evaluated_count == 0:
+        return MetricValue(
+            value=None,
+            evaluated_count=0,
+            passed_count=0,
+            failed_count=0,
+            status="not_evaluated",
+        )
+    val = round(passed_count / evaluated_count * 100.0, 2)
+    return MetricValue(
+        value=val,
+        evaluated_count=evaluated_count,
+        passed_count=passed_count,
+        failed_count=evaluated_count - passed_count,
+        status="evaluated",
+    )
 
 
 def compute_aggregate_metrics(
@@ -15,20 +35,24 @@ def compute_aggregate_metrics(
     mode: str,
     total_latency_ms: int,
 ) -> dict[str, Any]:
-    """Compute comprehensive evaluation metrics across all scenario runs."""
+    """Compute explicit evaluation metrics with zero-denominator handling across scenarios."""
+    # Separate scenario tiers
+    gold_results = [s for s in results if s.tier == "gold" and s.evaluation_type == "hard"]
+    coverage_results = [s for s in results if s.tier == "coverage" and s.evaluation_type == "hard"]
+    exploratory_results = [s for s in results if s.evaluation_type == "exploratory"]
+
     total_scenarios = len(results)
-    passed_scenarios = sum(1 for s in results if s.passed)
-    failed_scenarios = total_scenarios - passed_scenarios
+    eval_scenarios = gold_results + coverage_results
 
-    all_turns: list[TurnExecutionResult] = []
-    for s in results:
-        all_turns.extend(s.turn_results)
+    scen_metric = _make_metric(len(eval_scenarios), sum(1 for s in eval_scenarios if s.passed))
+    gold_scen_metric = _make_metric(len(gold_results), sum(1 for s in gold_results if s.passed))
+    cov_scen_metric = _make_metric(len(coverage_results), sum(1 for s in coverage_results if s.passed))
 
-    total_turns = len(all_turns)
-    passed_turns = sum(1 for t in all_turns if t.passed)
+    all_eval_turns: list[TurnExecutionResult] = [
+        t for s in eval_scenarios for t in s.turn_results
+    ]
 
-    scen_pass_rate = (passed_scenarios / total_scenarios * 100) if total_scenarios > 0 else 0.0
-    turn_pass_rate = (passed_turns / total_turns * 100) if total_turns > 0 else 0.0
+    turn_metric = _make_metric(len(all_eval_turns), sum(1 for t in all_eval_turns if t.passed))
 
     # Categorized assertion failures
     cat_failures: dict[str, list[dict[str, Any]]] = {}
@@ -45,62 +69,33 @@ def compute_aggregate_metrics(
                         "message": a.message,
                     })
 
-    # Routing metrics
-    route_assertions = [
-        a for t in all_turns for a in t.assertions if a.category == "routing"
-    ]
-    route_accuracy = (
-        (sum(1 for a in route_assertions if a.passed) / len(route_assertions) * 100)
-        if route_assertions
-        else 100.0
-    )
+    # Metric Evaluators
+    route_assertions = [a for t in all_eval_turns for a in t.assertions if a.category == "routing"]
+    route_metric = _make_metric(len(route_assertions), sum(1 for a in route_assertions if a.passed))
 
-    fallback_count = sum(1 for t in all_turns if t.route_source == "deterministic_fallback")
-    fallback_rate = (fallback_count / total_turns * 100) if total_turns > 0 else 0.0
+    tool_req_assertions = [a for t in all_eval_turns for a in t.assertions if a.name == "required_tools"]
+    tool_req_metric = _make_metric(len(tool_req_assertions), sum(1 for a in tool_req_assertions if a.passed))
 
-    # Tool selection metrics
-    tool_req_assertions = [
-        a for t in all_turns for a in t.assertions if a.name == "required_tools"
-    ]
-    required_tool_recall = (
-        (sum(1 for a in tool_req_assertions if a.passed) / len(tool_req_assertions) * 100)
-        if tool_req_assertions
-        else 100.0
-    )
+    tool_forbid_assertions = [a for t in all_eval_turns for a in t.assertions if a.name == "forbidden_tools"]
+    tool_forbid_metric = _make_metric(len(tool_forbid_assertions), sum(1 for a in tool_forbid_assertions if a.passed))
 
-    tool_forbid_assertions = [
-        a for t in all_turns for a in t.assertions if a.name == "forbidden_tools"
-    ]
-    forbidden_tool_violation_rate = (
-        (sum(1 for a in tool_forbid_assertions if not a.passed) / len(tool_forbid_assertions) * 100)
-        if tool_forbid_assertions
-        else 0.0
-    )
+    multi_turn_scenarios = [s for s in eval_scenarios if len(s.turn_results) > 1]
+    mt_metric = _make_metric(len(multi_turn_scenarios), sum(1 for s in multi_turn_scenarios if s.passed))
 
-    # Multi-turn & state leak metrics
-    multi_turn_scenarios = [s for s in results if len(s.turn_results) > 1]
-    multi_turn_passed = sum(1 for s in multi_turn_scenarios if s.passed)
-    multi_turn_completion_rate = (
-        (multi_turn_passed / len(multi_turn_scenarios) * 100)
-        if multi_turn_scenarios
-        else 100.0
-    )
+    stale_assertions = [a for t in all_eval_turns for a in t.assertions if a.name == "no_stale_citations"]
+    stale_metric = _make_metric(len(stale_assertions), sum(1 for a in stale_assertions if a.passed))
 
-    stale_assertions = [
-        a for t in all_turns for a in t.assertions if a.name == "no_stale_citations"
-    ]
-    stale_citation_rate = (
-        (sum(1 for a in stale_assertions if not a.passed) / len(stale_assertions) * 100)
-        if stale_assertions
-        else 0.0
-    )
+    followup_assertions = [a for t in all_eval_turns for a in t.assertions if a.category == "followup"]
+    followup_metric = _make_metric(len(followup_assertions), sum(1 for a in followup_assertions if a.passed))
 
-    # Follow-ups metrics
-    turns_with_followups = sum(1 for t in all_turns if len(t.followups) > 0)
-    followup_presence_rate = (turns_with_followups / total_turns * 100) if total_turns > 0 else 0.0
+    grounding_assertions = [a for t in all_eval_turns for a in t.assertions if a.category == "grounding"]
+    grounding_metric = _make_metric(len(grounding_assertions), sum(1 for a in grounding_assertions if a.passed))
+
+    repair_assertions = [a for t in all_eval_turns for a in t.assertions if a.category == "repair"]
+    repair_metric = _make_metric(len(repair_assertions), sum(1 for a in repair_assertions if a.passed))
 
     # Latency percentiles
-    latencies = sorted([t.latency_ms for t in all_turns])
+    latencies = sorted([t.latency_ms for t in all_eval_turns])
     mean_lat = sum(latencies) / len(latencies) if latencies else 0.0
     p50_lat = latencies[int(len(latencies) * 0.5)] if latencies else 0
     p95_lat = latencies[int(len(latencies) * 0.95)] if latencies else 0
@@ -108,28 +103,31 @@ def compute_aggregate_metrics(
     return {
         "mode": mode,
         "total_scenarios": total_scenarios,
-        "passed_scenarios": passed_scenarios,
-        "failed_scenarios": failed_scenarios,
-        "errored_scenarios": sum(1 for s in results if any(t.error_message for t in s.turn_results)),
-        "total_turns": total_turns,
-        "passed_turns": passed_turns,
-        "scenario_pass_rate": round(scen_pass_rate, 2),
-        "turn_pass_rate": round(turn_pass_rate, 2),
+        "evaluated_scenarios_count": len(eval_scenarios),
+        "exploratory_scenario_count": len(exploratory_results),
+        "scenario_pass_rate": scen_metric.model_dump(),
+        "gold_scenario_pass_rate": gold_scen_metric.model_dump(),
+        "coverage_scenario_pass_rate": cov_scen_metric.model_dump(),
+        "turn_pass_rate": turn_metric.model_dump(),
         "routing": {
-            "route_accuracy": round(route_accuracy, 2),
-            "fallback_route_rate": round(fallback_rate, 2),
+            "route_accuracy": route_metric.model_dump(),
         },
         "tool_orchestration": {
-            "required_tool_recall": round(required_tool_recall, 2),
-            "forbidden_tool_violation_rate": round(forbidden_tool_violation_rate, 2),
+            "required_tool_recall": tool_req_metric.model_dump(),
+            "forbidden_tool_violation_rate": tool_forbid_metric.model_dump(),
         },
         "multi_turn": {
-            "multi_turn_scenarios_count": len(multi_turn_scenarios),
-            "multi_turn_completion_rate": round(multi_turn_completion_rate, 2),
-            "stale_citation_rate": round(stale_citation_rate, 2),
+            "multi_turn_completion_rate": mt_metric.model_dump(),
+            "stale_citation_rate": stale_metric.model_dump(),
         },
         "followups": {
-            "followup_presence_rate": round(followup_presence_rate, 2),
+            "followup_quality_pass_rate": followup_metric.model_dump(),
+        },
+        "grounding": {
+            "grounding_pass_rate": grounding_metric.model_dump(),
+        },
+        "repair": {
+            "misconception_repair_pass_rate": repair_metric.model_dump(),
         },
         "performance": {
             "mean_latency_ms": round(mean_lat, 2),
@@ -150,19 +148,15 @@ def write_run_reports(
     """Write structured JSON, JSONL logs, and Markdown reports to run directory."""
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. metadata.json
     with open(run_dir / "metadata.json", "w", encoding="utf-8") as f:
         json.dump(metadata, f, ensure_ascii=False, indent=2)
 
-    # 2. summary.json
     with open(run_dir / "summary.json", "w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
 
-    # 3. failures.json
     with open(run_dir / "failures.json", "w", encoding="utf-8") as f:
         json.dump(metrics.get("failures_by_category", {}), f, ensure_ascii=False, indent=2)
 
-    # 4. events.jsonl
     with open(run_dir / "events.jsonl", "w", encoding="utf-8") as f:
         seq = 1
         for s in results:
@@ -182,7 +176,6 @@ def write_run_reports(
                     f.write(json.dumps(event, ensure_ascii=False) + "\n")
                     seq += 1
 
-    # 5. turns.jsonl
     with open(run_dir / "turns.jsonl", "w", encoding="utf-8") as f:
         for s in results:
             for t in s.turn_results:
@@ -194,7 +187,10 @@ def write_run_reports(
                     "route": t.route,
                     "route_source": t.route_source,
                     "status": t.status,
-                    "assistant_message": t.assistant_message,
+                    "response_origin": t.response_origin,
+                    "public_response": t.public_response,
+                    "safe_state_snapshot": t.safe_state_snapshot,
+                    "faults_triggered": t.faults_triggered,
                     "citation_ids": t.citation_ids,
                     "citation_pages": t.citation_pages,
                     "followups": t.followups,
@@ -205,12 +201,11 @@ def write_run_reports(
                 }
                 f.write(json.dumps(turn_dict, ensure_ascii=False) + "\n")
 
-    # 6. report.md
     report_md = _generate_markdown_report(run_id, metadata, results, metrics)
     with open(run_dir / "report.md", "w", encoding="utf-8") as f:
         f.write(report_md)
 
-    # Also update root eval/results/ report and results.json
+    # Update root deliverables
     root_results_dir = RESULTS_DIR
     root_results_dir.mkdir(parents=True, exist_ok=True)
     with open(root_results_dir / "report.md", "w", encoding="utf-8") as f:
@@ -226,62 +221,50 @@ def _generate_markdown_report(
     metrics: dict[str, Any],
 ) -> str:
     """Generate Markdown report for evaluation evidence deliverable."""
-    scen_pass = metrics.get("passed_scenarios", 0)
-    scen_total = metrics.get("total_scenarios", 0)
-    scen_rate = metrics.get("scenario_pass_rate", 0.0)
-
+    scen_m = metrics.get("scenario_pass_rate", {})
+    gold_m = metrics.get("gold_scenario_pass_rate", {})
     perf = metrics.get("performance", {})
-    route_m = metrics.get("routing", {})
-    tool_m = metrics.get("tool_orchestration", {})
-    mt_m = metrics.get("multi_turn", {})
+
+    scen_val = scen_m.get("value")
+    scen_str = f"{scen_val:.1f}%" if scen_val is not None else "NOT EVALUATED"
+
+    gold_val = gold_m.get("value")
+    gold_str = f"{gold_val:.1f}%" if gold_val is not None else "NOT EVALUATED"
 
     md = f"""# Bảng Kết Quả Đánh Giá VLearn Evaluation Evidence
 
 **Run ID**: `{run_id}`
 **Git SHA**: `{metadata.get("git_sha", "unknown")}` (`{metadata.get("git_branch", "main")}`)
-**Mode**: `{metadata.get("mode", "offline")}` ({metadata.get("model", "fake")})
-**Scenario Pass Rate**: {scen_pass} / {scen_total} (**{scen_rate:.1f}%**)
-**Turn Pass Rate**: {metrics.get("passed_turns", 0)} / {metrics.get("total_turns", 0)} (**{metrics.get("turn_pass_rate", 0.0):.1f}%**)
+**Mode**: `{metadata.get("mode", "offline")}` ({metadata.get("model", "scripted")})
+**Gold Scenario Pass Rate**: {gold_m.get("passed_count", 0)} / {gold_m.get("evaluated_count", 0)} (**{gold_str}**)
+**Overall Scenario Pass Rate**: {scen_m.get("passed_count", 0)} / {scen_m.get("evaluated_count", 0)} (**{scen_str}**)
 **Average Latency**: {perf.get("mean_latency_ms", 0)} ms (P50: {perf.get("p50_latency_ms", 0)} ms, P95: {perf.get("p95_latency_ms", 0)} ms)
 
 ---
 
-## 1. Metric Summaries
+## 1. Detailed Metric Breakdown
 
-### Routing & Classification
-* **Route Accuracy**: {route_m.get("route_accuracy", 0.0)}%
-* **Deterministic Fallback Rate**: {route_m.get("fallback_route_rate", 0.0)}%
-
-### Tool Orchestration
-* **Required Tool Recall**: {tool_m.get("required_tool_recall", 0.0)}%
-* **Forbidden Tool Violation Rate**: {tool_m.get("forbidden_tool_violation_rate", 0.0)}%
-
-### Multi-Turn & Interrupt/Resume
-* **Multi-Turn Scenarios Tested**: {mt_m.get("multi_turn_scenarios_count", 0)}
-* **Multi-Turn Completion Rate**: {mt_m.get("multi_turn_completion_rate", 0.0)}%
-* **Stale Citation Rate**: {mt_m.get("stale_citation_rate", 0.0)}%
+| Metric Group | Metric Name | Value | Evaluated Count | Status |
+|---|---|---|---|---|
+| Routing | Route Accuracy | {metrics.get('routing', {}).get('route_accuracy', {}).get('value')}% | {metrics.get('routing', {}).get('route_accuracy', {}).get('evaluated_count')} | {metrics.get('routing', {}).get('route_accuracy', {}).get('status')} |
+| Orchestration | Required Tool Recall | {metrics.get('tool_orchestration', {}).get('required_tool_recall', {}).get('value')}% | {metrics.get('tool_orchestration', {}).get('required_tool_recall', {}).get('evaluated_count')} | {metrics.get('tool_orchestration', {}).get('required_tool_recall', {}).get('status')} |
+| Orchestration | Forbidden Tool Violations | {metrics.get('tool_orchestration', {}).get('forbidden_tool_violation_rate', {}).get('value')}% | {metrics.get('tool_orchestration', {}).get('forbidden_tool_violation_rate', {}).get('evaluated_count')} | {metrics.get('tool_orchestration', {}).get('forbidden_tool_violation_rate', {}).get('status')} |
+| Multi-Turn | Completion Rate | {metrics.get('multi_turn', {}).get('multi_turn_completion_rate', {}).get('value')}% | {metrics.get('multi_turn', {}).get('multi_turn_completion_rate', {}).get('evaluated_count')} | {metrics.get('multi_turn', {}).get('multi_turn_completion_rate', {}).get('status')} |
+| Multi-Turn | Stale Citation Pass Rate | {metrics.get('multi_turn', {}).get('stale_citation_rate', {}).get('value')}% | {metrics.get('multi_turn', {}).get('stale_citation_rate', {}).get('evaluated_count')} | {metrics.get('multi_turn', {}).get('stale_citation_rate', {}).get('status')} |
+| Grounding | Grounding Pass Rate | {metrics.get('grounding', {}).get('grounding_pass_rate', {}).get('value')}% | {metrics.get('grounding', {}).get('grounding_pass_rate', {}).get('evaluated_count')} | {metrics.get('grounding', {}).get('grounding_pass_rate', {}).get('status')} |
+| Repair | Repair Pass Rate | {metrics.get('repair', {}).get('misconception_repair_pass_rate', {}).get('value')}% | {metrics.get('repair', {}).get('misconception_repair_pass_rate', {}).get('evaluated_count')} | {metrics.get('repair', {}).get('misconception_repair_pass_rate', {}).get('status')} |
 
 ---
 
 ## 2. Detailed Scenario Results
 
-| Scenario ID | Name | Tags | Turns | Pass/Fail | Failure Reasons |
+| Scenario ID | Name | Tier | Evaluation Type | Pass/Fail | Failure Reasons |
 |---|---|---|---|---|---|
 """
     for s in results:
         status_str = "✅ PASS" if s.passed else "❌ FAIL"
-        tags_str = ", ".join(s.tags)
         reasons_str = "; ".join(s.failure_reasons) if s.failure_reasons else "None"
-        md += f"| {s.scenario_id} | {s.name} | {tags_str} | {len(s.turn_results)} | {status_str} | {reasons_str} |\n"
-
-    # Failures by Category Breakdown
-    cat_failures = metrics.get("failures_by_category", {})
-    if cat_failures:
-        md += "\n--- \n\n## 3. Failure Breakdown by Category\n\n"
-        for cat, items in cat_failures.items():
-            md += f"### Category: `{cat}` ({len(items)} failures)\n"
-            for item in items:
-                md += f"- **[{item['scenario_id']} - Turn {item['turn_index']}]** {item['assertion_name']}: {item['message']}\n"
+        md += f"| {s.scenario_id} | {s.name} | {s.tier} | {s.evaluation_type} | {status_str} | {reasons_str} |\n"
 
     return md
 
@@ -290,22 +273,30 @@ def print_turn_debug_trace(
     turn_res: TurnExecutionResult,
     verbose: bool = False,
 ):
-    """Print formatted debug progression for console output."""
+    """Print formatted public response and safe state debug trace for console output."""
     pass_mark = "✅ PASS" if turn_res.passed else "❌ FAIL"
     print(f"\n   Turn {turn_res.turn_index} [{turn_res.input_type}]: '{turn_res.input_text[:50]}...' -> {pass_mark}")
+    print(f"   Response Origin: {turn_res.response_origin}")
     print(f"   Route: {turn_res.route} ({turn_res.route_source}) | Status: {turn_res.status} | Latency: {turn_res.latency_ms} ms")
 
+    if turn_res.faults_triggered:
+        print(f"   Faults Triggered: {turn_res.faults_triggered}")
+
     if turn_res.retrieved_sources:
-        print(f"   Retrieved Sources: {', '.join(turn_res.retrieved_sources[:3])}")
+        print(f"   Retrieved Sources: {', '.join(turn_res.retrieved_sources[:4])}")
 
     if turn_res.tool_sequence:
         print(f"   Tool Progression: {' -> '.join(turn_res.tool_sequence)}")
 
-    if turn_res.citation_ids:
-        print(f"   Citations: {turn_res.citation_ids}")
-
     if verbose:
-        print(f"\n   Assistant Response:\n   {turn_res.assistant_message or '(None)'}")
+        if turn_res.public_response:
+            print("\n   Public Response:")
+            print(json.dumps(turn_res.public_response, ensure_ascii=False, indent=4))
+
+        if turn_res.safe_state_snapshot:
+            print("\n   Safe State Snapshot:")
+            print(json.dumps(turn_res.safe_state_snapshot, ensure_ascii=False, indent=4))
+
         print("\n   Assertions:")
         for a in turn_res.assertions:
             mark = "✅ PASS" if a.passed else "❌ FAIL"

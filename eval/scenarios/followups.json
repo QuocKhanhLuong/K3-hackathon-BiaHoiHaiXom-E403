@@ -1,203 +1,72 @@
 [
   {
-    "id": "FOLLOWUP-001",
+    "id": "FOLLOWUP-GOLD-001",
     "name": "Deep dive generates specific followups",
     "description": "Deep route question generates at least 2 relevant follow-up suggestions",
-    "tags": ["followups", "deep"],
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["followups", "deep", "gold"],
     "mode": "both",
     "deck_id": "d1",
     "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "deep",
+            "confidence": 0.95,
+            "reason": "Giải thích chi tiết"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Nội dung Day 1 phân tích sâu về AI IN ACTION và AI & LLM Foundation.",
+            "claims": [
+              {
+                "claim": "Nội dung Day 1 phân tích sâu về AI IN ACTION và AI & LLM Foundation.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              }
+            ]
+          }
+        },
+        {
+          "schema": "FollowUpSuggestions",
+          "output": {
+            "followups": [
+              {
+                "label": "Chi tiết",
+                "question": "Ứng dụng thực tế của LLM Foundation là gì?"
+              },
+              {
+                "label": "Nâng cao",
+                "question": "Các bước phát triển mô hình LLM?"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "turns": [
       {
         "type": "user_turn",
-        "input": "Tại sao cơ chế Self-Attention lại quan trọng?",
+        "input": "Tại sao Day 1 lại phân tích kỹ về LLM Foundation?",
         "expected": {
           "routes": ["deep"],
           "statuses": ["completed"],
-          "required_tools": ["suggest_followups"],
-          "min_followups": 2
-        }
-      }
-    ]
-  },
-  {
-    "id": "FOLLOWUP-002",
-    "name": "No generic followups allowed",
-    "description": "Follow-ups must be topic-specific, not generic 'Bạn có muốn học thêm?'",
-    "tags": ["followups", "deep"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Tại sao Transformer thay thế RNN?",
-        "expected": {
-          "statuses": ["completed"],
-          "min_followups": 2
-        }
-      }
-    ]
-  },
-  {
-    "id": "FOLLOWUP-003",
-    "name": "Correct check answer produces followups",
-    "description": "When check is answered correctly, followups are offered to extend learning",
-    "tags": ["followups", "check"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "So sánh Key và Value.",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "opt_a",
-        "expected": {
-          "statuses": ["completed"],
-          "min_followups": 1
-        }
-      }
-    ]
-  },
-  {
-    "id": "FOLLOWUP-004",
-    "name": "Followup graceful degradation on failure",
-    "description": "If suggest_followups fails, turn completes safely with followups=[]",
-    "tags": ["followups", "reliability"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Transformer hoạt động ra sao?",
-        "expected": {
-          "statuses": ["completed"],
-          "assistant_message_required": true,
-          "forbidden_tools": ["failure_node"]
-        }
-      }
-    ]
-  },
-  {
-    "id": "FOLLOWUP-005",
-    "name": "Followups after review concept",
-    "description": "Review concept output generates followups",
-    "tags": ["followups", "deep"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Giải thích chi tiết về Transformer Key.",
-        "expected": {
-          "statuses": ["completed"],
-          "min_followups": 1
-        }
-      }
-    ]
-  },
-  {
-    "id": "FOLLOWUP-006",
-    "name": "Max followups upper bound",
-    "description": "Ensures no more than 3 followups are returned",
-    "tags": ["followups"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Tại sao Attention lại hiệu quả?",
-        "expected": {
-          "statuses": ["completed"],
-          "max_followups": 3
-        }
-      }
-    ]
-  },
-  {
-    "id": "FOLLOWUP-007",
-    "name": "Followup novelty check",
-    "description": "Followups should not duplicate the current user question",
-    "tags": ["followups"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Tại sao Transformer lại tốt hơn RNN?",
-        "expected": {
-          "statuses": ["completed"],
-          "response_not_contains": ["Tại sao Transformer lại tốt hơn RNN?"]
-        }
-      }
-    ]
-  },
-  {
-    "id": "FOLLOWUP-008",
-    "name": "Followups after multi-turn completion",
-    "description": "Multi-turn flow completes with relevant followups",
-    "tags": ["followups", "multi_turn"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Key là gì?",
-        "expected": {"statuses": ["completed"]}
-      },
-      {
-        "type": "user_turn",
-        "input": "Giải thích sâu hơn về cơ chế tính toán điểm",
-        "expected": {
-          "statuses": ["completed"],
-          "min_followups": 1
-        }
-      }
-    ]
-  },
-  {
-    "id": "FOLLOWUP-009",
-    "name": "Followup format structure validation",
-    "description": "Followups contain label and question fields",
-    "tags": ["followups"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Tại sao cơ chế Attention lại nhanh?",
-        "expected": {
-          "statuses": ["completed"],
-          "min_followups": 1
-        }
-      }
-    ]
-  },
-  {
-    "id": "FOLLOWUP-010",
-    "name": "No duplicate questions among followups",
-    "description": "Each generated followup in the list is unique",
-    "tags": ["followups"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Ưu điểm của Transformer so với RNN là gì?",
-        "expected": {
-          "statuses": ["completed"],
-          "min_followups": 1
+          "required_tools": ["router", "review_concept", "suggest_followups"],
+          "min_followups": 2,
+          "followup_schema_required": true,
+          "followups_unique": true,
+          "followups_not_duplicate_query": true,
+          "generic_followups_forbidden": true
         }
       }
     ]

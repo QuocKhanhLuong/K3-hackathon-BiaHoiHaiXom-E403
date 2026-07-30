@@ -1,4 +1,4 @@
-"""Scenario evaluation runner executing multi-turn workflows on VLearnAICore."""
+"""Scenario evaluation runner executing multi-turn workflows on VLearnAICore without circular evaluation."""
 
 from __future__ import annotations
 
@@ -38,8 +38,8 @@ class ScenarioRunner:
         self.context_provider = context_provider or EvalContextProvider()
         self.judge = LiveJudgeEvaluator(model_name=self.model_name, api_key=self.api_key) if use_judge else None
 
-    def _create_core_for_scenario(self, scenario: ScenarioDefinition) -> VLearnAICore:
-        """Create fresh VLearnAICore instance tailored to scenario requirements."""
+    def _create_core_for_scenario(self, scenario: ScenarioDefinition) -> tuple[VLearnAICore, DeterministicFakeChatModel | None]:
+        """Create fresh VLearnAICore instance tailored strictly to scenario offline_fixture."""
         if self.mode == "live":
             from langchain_openai import ChatOpenAI
 
@@ -48,41 +48,27 @@ class ScenarioRunner:
                 api_key=self.api_key,
                 temperature=0.0,
             )
-            return VLearnAICore(model=live_model)
+            return VLearnAICore(model=live_model), None
 
-        # Offline mode: configure DeterministicFakeChatModel based on scenario tags and setup
-        route_to_return = "simple"
-        misconception_to_return = False
-        is_injection = False
-
-        tags_lower = [t.lower() for t in scenario.tags]
-        scen_id_lower = scenario.id.lower()
-
-        if any(t in tags_lower for t in ["clarify", "route_clarify"]) or "clarify" in scen_id_lower:
-            route_to_return = "clarify"
-        elif any(t in tags_lower for t in ["check", "route_check"]) or "check" in scen_id_lower:
-            route_to_return = "check"
-        elif any(t in tags_lower for t in ["deep", "route_deep"]) or "deep" in scen_id_lower:
-            route_to_return = "deep"
-
-        if "misconception" in tags_lower or "repair" in tags_lower or "repair" in scen_id_lower:
-            misconception_to_return = True
-
-        if "adversarial" in scenario.tags or "injection" in scenario.id.lower():
-            is_injection = True
+        # Offline mode: use scenario offline_fixture (NO tag-driven route cheating!)
+        script_items = []
+        fault_items = []
+        if scenario.offline_fixture:
+            script_items = [s.model_dump() for s in scenario.offline_fixture.model_script]
+            fault_items = [f.model_dump() for f in scenario.offline_fixture.faults]
 
         fake_model = DeterministicFakeChatModel(
-            route_to_return=route_to_return,
-            misconception_to_return=misconception_to_return,
-            is_injection=is_injection,
+            scenario_id=scenario.id,
+            model_script=script_items,
+            faults=fault_items,
         )
-        return VLearnAICore(model=fake_model)
+        return VLearnAICore(model=fake_model), fake_model
 
     async def run_scenario(
         self, scenario: ScenarioDefinition, verbose: bool = False
     ) -> ScenarioExecutionResult:
         """Run all turns in a scenario sequentially, enforcing exact start/resume semantics."""
-        core = self._create_core_for_scenario(scenario)
+        core, fake_model_ref = self._create_core_for_scenario(scenario)
         thread_id = f"eval_scenario_{scenario.id}_{int(time.time() * 1000)}"
 
         turn_results: list[TurnExecutionResult] = []
@@ -96,11 +82,15 @@ class ScenarioRunner:
 
         for turn_idx, turn_def in enumerate(scenario.turns, start=1):
             t0 = time.time()
+            ctx_fixture = scenario.offline_fixture.context_fixture if scenario.offline_fixture else None
+
             context_str, retrieved_sources = self.context_provider.get_context(
                 page_number=scenario.start_page,
+                deck_id=scenario.deck_id,
                 selected_text=selected_text,
                 query=turn_def.input,
                 history=conversation_history,
+                context_fixture=ctx_fixture,
             )
 
             error_msg: str | None = None
@@ -134,13 +124,21 @@ class ScenarioRunner:
             latency_ms = int((time.time() - t0) * 1000)
             total_latency_ms += latency_ms
 
-            # Extract result fields
+            # Extract result & state fields
             status = res.get("status", "unknown")
             route_dict = res.get("route") or {}
             route_name = route_dict.get("name") if isinstance(route_dict, dict) else None
-            route_src = route_dict.get("reason") if isinstance(route_dict, dict) else None
 
             assistant_msg = res.get("assistant_message")
+            ui_payload = res.get("ui_payload") or {}
+
+            # Action / Check details
+            check_id = ui_payload.get("check_id") or ui_payload.get("id")
+            action_id = res.get("action_id") or check_id
+            check_q = ui_payload.get("question")
+            check_opts = ui_payload.get("options") or []
+            target_concept = ui_payload.get("target_concept")
+
             citations = res.get("citations") or []
             citation_ids = [str(c.get("citation_id", "")) for c in citations if isinstance(c, dict)]
             citation_pages = [
@@ -155,23 +153,57 @@ class ScenarioRunner:
                 str(tr.get("tool")) for tr in tool_traces if isinstance(tr, dict) and tr.get("tool")
             ]
 
-            # Build turn result model
+            faults_triggered = list(fake_model_ref.faults_triggered) if fake_model_ref else []
+
+            # Public Response DTO matching frontend API
+            public_response = {
+                "status": status,
+                "message": {"role": "assistant", "content": assistant_msg} if assistant_msg else None,
+                "route": route_dict,
+                "action": ui_payload if ui_payload else None,
+                "citations": citations,
+                "suggestions": followups,
+            }
+
+            safe_state = {
+                "status": status,
+                "route": route_name,
+                "check_id": check_id,
+                "action_id": action_id,
+                "citation_ids": citation_ids,
+                "retrieved_sources": retrieved_sources,
+                "faults_triggered": faults_triggered,
+                "error_message": error_msg,
+            }
+
+            response_origin = f"live_{self.model_name}" if self.mode == "live" else "scripted_fixture"
+
             turn_res = TurnExecutionResult(
                 scenario_id=scenario.id,
                 turn_index=turn_idx,
                 input_type=turn_def.type,
                 input_text=turn_def.input,
                 route=route_name,
-                route_source="deterministic_fallback" if "deterministic" in str(route_src).lower() else "structured_model",
+                route_source="structured_model",
                 status=status,
                 assistant_message=assistant_msg,
+                ui_payload=ui_payload,
+                public_response=public_response,
+                check_id=check_id,
+                action_id=action_id,
+                check_question=check_q,
+                check_options=check_opts,
+                target_concept=target_concept,
                 citation_ids=citation_ids,
                 citation_pages=citation_pages,
                 followups=followups,
                 tool_sequence=tool_sequence,
                 tool_traces=tool_traces,
                 retrieved_sources=retrieved_sources,
+                faults_triggered=faults_triggered,
                 error_message=error_msg,
+                response_origin=response_origin,
+                safe_state_snapshot=safe_state,
                 latency_ms=latency_ms,
             )
 
@@ -179,6 +211,19 @@ class ScenarioRunner:
             turn_res.assertions = evaluate_turn_assertions(
                 turn_res, turn_def.expected, previous_turn_res=prev_turn_res
             )
+
+            # Fault verification: check if offline_fixture required a fault that was not triggered
+            if scenario.offline_fixture and scenario.offline_fixture.faults and turn_idx == len(scenario.turns):
+                for f in scenario.offline_fixture.faults:
+                    if f.target not in faults_triggered and f.target not in tool_sequence:
+                        turn_res.assertions.append(
+                            AssertionResult(
+                                name="fault_not_triggered",
+                                passed=False,
+                                message=f"Specified fault target '{f.target}' was never triggered during execution",
+                                category="reliability",
+                            )
+                        )
 
             # Soft quality judge if live mode
             if self.mode == "live" and self.judge and assistant_msg:
@@ -217,6 +262,8 @@ class ScenarioRunner:
         return ScenarioExecutionResult(
             scenario_id=scenario.id,
             name=scenario.name,
+            tier=scenario.tier,
+            evaluation_type=scenario.evaluation_type,
             tags=scenario.tags,
             passed=scenario_passed,
             turn_results=turn_results,

@@ -31,18 +31,33 @@ class LocalSlideRepository:
             return [slide for slide in self.slides if slide.get("deck_id") == deck]
         return list(self.slides)
 
-    def resolve(self, page_number: int | None) -> dict[str, Any] | None:
+    def resolve(
+        self, page_number: int | None, deck_id: str | None = None
+    ) -> dict[str, Any] | None:
         if not self.slides:
             return None
         page = max(1, int(page_number or 1))
+        target_slides = (
+            [s for s in self.slides if s.get("deck_id") == deck_id]
+            if deck_id
+            else self.slides
+        )
+        if not target_slides:
+            target_slides = self.slides
         return next(
-            (slide for slide in self.slides if int(slide.get("page", -1)) == page),
-            None,
+            (
+                slide
+                for slide in target_slides
+                if int(slide.get("page_in_deck", slide.get("page", -1))) == page
+                or int(slide.get("page", -1)) == page
+            ),
+            target_slides[0] if target_slides else None,
         )
 
     def build_context(
         self,
         page_number: int,
+        deck_id: str | None = None,
         selected_text: str = "",
         query: str = "",
         recent_history: list[dict[str, Any]] | None = None,

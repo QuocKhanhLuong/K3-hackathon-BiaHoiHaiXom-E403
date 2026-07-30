@@ -59,7 +59,7 @@ def test_assertions_tool_order_out_of_sequence_fails():
     )
     expected = TurnExpectations(expected_tool_order=[["router", "review_concept"]])
     assertions = evaluate_turn_assertions(turn_res, expected)
-    order_assert = next(a for a in assertions if a.name == "tool_order")
+    order_assert = next(a for a in assertions if a.name == "expected_tool_order")
     assert order_assert.passed is False
 
 
