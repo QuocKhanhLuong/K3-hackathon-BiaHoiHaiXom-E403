@@ -90,8 +90,10 @@ async def run_eval():
             })
             
         # Thêm sleep để tránh lỗi 429 Rate Limit (Free Tier chỉ cho 15 request/phút)
-        print("Sleeping 4s to avoid rate limit...")
-        await asyncio.sleep(4)
+        # LangGraph gọi LLM khoảng 2-3 lần cho mỗi câu hỏi -> mỗi câu hỏi tốn 2-3 requests.
+        # Để an toàn (dưới 15 req/phút), cần nghỉ khoảng 12-15s giữa các câu hỏi.
+        print("Sleeping 15s to avoid rate limit...")
+        await asyncio.sleep(15)
             
     print("\nWriting results to eval_results.md...")
     with open('eval/eval_results.md', 'w', encoding='utf-8') as f:
