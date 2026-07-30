@@ -382,6 +382,36 @@ def health():
     }
 
 
+@app.get("/api/slides/{page_number}/render")
+def render_slide(page_number: int):
+    slide = _resolve_slide(page_number)
+    if not slide:
+        raise HTTPException(status_code=404, detail="Slide not found")
+        
+    code = slide.get("code", "")
+    if "#page=" not in code:
+        raise HTTPException(status_code=404, detail="Invalid slide metadata")
+        
+    filename, page_idx_str = code.split("#page=")
+    pdf_path = ROOT_DIR / "data" / "vlearn-pack" / "slides" / filename
+    if not pdf_path.exists():
+        raise HTTPException(status_code=404, detail="PDF not found")
+        
+    try:
+        import fitz
+        doc = fitz.open(str(pdf_path))
+        page_idx = int(page_idx_str) - 1
+        if page_idx < 0 or page_idx >= len(doc):
+            raise HTTPException(status_code=404, detail="Page out of bounds")
+            
+        page_doc = doc[page_idx]
+        pix = page_doc.get_pixmap(matrix=fitz.Matrix(2, 2))
+        img_bytes = pix.tobytes("png")
+        from fastapi.responses import Response
+        return Response(content=img_bytes, media_type="image/png")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/slides")
 def get_slides(deck: Optional[str] = None):
     slides = ALL_PDF_SLIDES
