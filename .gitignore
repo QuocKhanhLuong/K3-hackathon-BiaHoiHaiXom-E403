@@ -25,3 +25,4 @@ ai_core/.venv/
 *.swo
 .vscode
 .ruff_cache
+.backup_tmp/
