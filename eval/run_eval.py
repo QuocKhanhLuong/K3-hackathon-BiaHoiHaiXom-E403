@@ -42,12 +42,26 @@ async def run_eval():
             # Tạo thread_id riêng cho từng case để không bị dính context cũ
             thread_id = f"eval_thread_{case['id']}"
             
-            # Gọi trực tiếp qua SDK (không qua mạng)
-            res = await core.start_turn(
-                thread_id=thread_id,
-                question=case["question"],
-                selected_context=f"Slide content for page {case.get('page_number', 1)}"
-            )
+            # Khối retry chuyên biệt trị lỗi 429 Rate Limit
+            max_retries = 3
+            res = None
+            for attempt in range(max_retries):
+                try:
+                    res = await core.start_turn(
+                        thread_id=thread_id,
+                        question=case["question"],
+                        selected_context=f"Slide content for page {case.get('page_number', 1)}"
+                    )
+                    break # Thành công thì thoát vòng lặp
+                except Exception as e:
+                    if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                        if attempt < max_retries - 1:
+                            print(f"\n[!] Bị giới hạn Rate Limit (429). Tạm nghỉ 60s trước khi thử lại (Lần {attempt+1}/{max_retries})...")
+                            await asyncio.sleep(60)
+                        else:
+                            raise e
+                    else:
+                        raise e
             
             # Lấy route thực tế từ kết quả
             route_dict = res.get("route")
