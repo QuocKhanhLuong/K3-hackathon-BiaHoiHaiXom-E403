@@ -1,0 +1,26 @@
+{
+  "name": "batch03-k3-ai-product-hackathon",
+  "version": "1.0.0",
+  "description": "**SPEC → Prototype → Demo.** Đây không phải cuộc thi code — đây là cuộc thi **tư duy sản phẩm AI**.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/QuocKhanhLuong/Batch03-K3-AI-Product-Hackathon.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/QuocKhanhLuong/Batch03-K3-AI-Product-Hackathon/issues"
+  },
+  "homepage": "https://github.com/QuocKhanhLuong/Batch03-K3-AI-Product-Hackathon#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}
