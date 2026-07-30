@@ -19,7 +19,12 @@ from vlearn_ai.guardrails.output_guard import (
     sanitize_tool_trace,
 )
 from vlearn_ai.model import get_fast_model, get_generation_model
+from vlearn_ai.prompts.grounding_repair import GROUNDING_REPAIR_PROMPT_VERSION
 from vlearn_ai.prompts.messages import build_trusted_messages
+from vlearn_ai.prompts.pedagogical_tools import (
+    GIVE_DIRECT_ANSWER_PROMPT_VERSION,
+    REVIEW_CONCEPT_PROMPT_VERSION,
+)
 from vlearn_ai.prompts.router import ROUTER_SYSTEM_PROMPT, ROUTER_USER_PROMPT_TEMPLATE
 from vlearn_ai.schemas import (
     AICoreBaseError,
@@ -353,7 +358,14 @@ def grounded_answer_node(
         ans_obj = _run_async(execute_review_concept(query, context, llm))
         tool_used = "review_concept"
 
-    trace = _record_trace(state, tool_used, "success", model=llm)
+    prompt_version = (
+        GIVE_DIRECT_ANSWER_PROMPT_VERSION
+        if tool_used == "give_direct_answer"
+        else REVIEW_CONCEPT_PROMPT_VERSION
+    )
+    trace = _record_trace(
+        state, tool_used, "success", model=llm, prompt_version=prompt_version
+    )
     citations_list = [c.model_dump() for c in ans_obj.citations]
     claims_list = [cl.model_dump() for cl in ans_obj.claims]
 
@@ -364,6 +376,8 @@ def grounded_answer_node(
         "candidate_answer": ans_obj.answer,
         "candidate_claims": claims_list,
         "candidate_citations": citations_list,
+        "answerability": ans_obj.answerability,
+        "answerability_code": ans_obj.answerability_code,
         "tool_trace": trace,
     }
 
@@ -377,10 +391,17 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
     citations_data = state.get("citations", [])
     context = state.get("selected_context", "")
     claims_data = state.get("grounded_claims", [])
-    query = state.get("user_query", "").lower()
-
-    # Bỏ qua grounding nếu query yêu cầu ví dụ, thực tế, ứng dụng
-    if any(kw in query for kw in ["ví dụ", "thực tế", "ứng dụng", "thực tiễn"]):
+    if state.get("answerability") == "insufficient_context":
+        if citations_data or claims_data:
+            return {
+                "grounding_valid": False,
+                "grounding_error": "insufficient_context must not include claims or citations.",
+                "grounding_failure_type": "invalid_insufficient_context",
+                "grounding_invalid_citation_ids": [],
+                "grounding_uncovered_sentences": [],
+                "status": "running",
+                "tool_trace": _record_trace(state, "grounding_guard", "failed"),
+            }
         return {
             "grounding_valid": True,
             "grounding_error": None,
@@ -394,7 +415,7 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
     try:
         citations = [Citation(**c) for c in citations_data if isinstance(c, dict)]
         claims = [GroundedClaim(**c) for c in claims_data if isinstance(c, dict)]
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - validation boundary for model output
         return {
             "grounding_valid": False,
             "grounding_error": f"Invalid grounded structure: {exc}",
@@ -438,6 +459,8 @@ def grounding_failure_node(state: LearningLoopState) -> dict[str, Any]:
         "grounded_answer": msg,
         "abstention_message": msg,
         "grounding_failure_type": state.get("grounding_failure_type"),
+        "answerability": "insufficient_context",
+        "answerability_code": "grounding_unavailable",
         "citations": [],
         "grounded_claims": [],
         "status": "failed",
@@ -464,8 +487,13 @@ def grounding_repair_node(
             candidate_citations=list(state.get("candidate_citations", [])),
             grounding_error=state.get("grounding_error"),
             grounding_failure_type=state.get("grounding_failure_type"),
-            grounding_invalid_citation_ids=list(state.get("grounding_invalid_citation_ids", [])),
-            grounding_uncovered_sentences=list(state.get("grounding_uncovered_sentences", [])),
+            grounding_invalid_citation_ids=list(
+                state.get("grounding_invalid_citation_ids", [])
+            ),
+            grounding_uncovered_sentences=list(
+                state.get("grounding_uncovered_sentences", [])
+            ),
+            user_query=state.get("user_query", ""),
             context=state.get("selected_context", ""),
             model=llm,
         )
@@ -480,13 +508,19 @@ def grounding_repair_node(
         "candidate_answer": repaired.answer,
         "candidate_claims": claims,
         "candidate_citations": citations,
+        "answerability": repaired.answerability,
+        "answerability_code": repaired.answerability_code,
         "grounding_retry_count": retry_count,
         "tool_trace": _record_trace(
             state,
             "grounding_repair",
             "success",
-            {"failure_type": state.get("grounding_failure_type"), "retry_count": retry_count},
+            {
+                "failure_type": state.get("grounding_failure_type"),
+                "retry_count": retry_count,
+            },
             llm,
+            prompt_version=GROUNDING_REPAIR_PROMPT_VERSION,
             latency_ms=int((time.time() - started) * 1000),
         ),
     }
@@ -607,9 +641,7 @@ def evaluate_check_node(
         "check_result": eval_res.model_dump(),
         "grounded_answer": grounded_msg,
         "status": "running",
-        "tool_trace": _record_trace(
-            state, "evaluate_check", "success", model=llm
-        ),
+        "tool_trace": _record_trace(state, "evaluate_check", "success", model=llm),
     }
 
 

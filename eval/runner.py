@@ -36,9 +36,15 @@ class ScenarioRunner:
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
         self.use_judge = use_judge
         self.context_provider = context_provider or EvalContextProvider()
-        self.judge = LiveJudgeEvaluator(model_name=self.model_name, api_key=self.api_key) if use_judge else None
+        self.judge = (
+            LiveJudgeEvaluator(model_name=self.model_name, api_key=self.api_key)
+            if use_judge
+            else None
+        )
 
-    def _create_core_for_scenario(self, scenario: ScenarioDefinition) -> tuple[VLearnAICore, DeterministicFakeChatModel | None]:
+    def _create_core_for_scenario(
+        self, scenario: ScenarioDefinition
+    ) -> tuple[VLearnAICore, DeterministicFakeChatModel | None]:
         """Create fresh VLearnAICore instance tailored strictly to scenario offline_fixture."""
         if self.mode == "live":
             from langchain_openai import ChatOpenAI
@@ -54,7 +60,9 @@ class ScenarioRunner:
         script_items = []
         fault_items = []
         if scenario.offline_fixture:
-            script_items = [s.model_dump() for s in scenario.offline_fixture.model_script]
+            script_items = [
+                s.model_dump() for s in scenario.offline_fixture.model_script
+            ]
             fault_items = [f.model_dump() for f in scenario.offline_fixture.faults]
 
         fake_model = DeterministicFakeChatModel(
@@ -72,7 +80,9 @@ class ScenarioRunner:
         thread_id = f"eval_scenario_{scenario.id}_{int(time.time() * 1000)}"
 
         turn_results: list[TurnExecutionResult] = []
-        conversation_history: list[dict[str, Any]] = list(scenario.setup.conversation_history)
+        conversation_history: list[dict[str, Any]] = list(
+            scenario.setup.conversation_history
+        )
         selected_text = scenario.setup.selected_text
 
         scenario_passed = True
@@ -82,7 +92,11 @@ class ScenarioRunner:
 
         for turn_idx, turn_def in enumerate(scenario.turns, start=1):
             t0 = time.time()
-            ctx_fixture = scenario.offline_fixture.context_fixture if scenario.offline_fixture else None
+            ctx_fixture = (
+                scenario.offline_fixture.context_fixture
+                if scenario.offline_fixture
+                else None
+            )
 
             context_str, retrieved_sources = self.context_provider.get_context(
                 page_number=scenario.start_page,
@@ -107,7 +121,10 @@ class ScenarioRunner:
                     )
                 else:  # action_response (clarification answer or check option)
                     previous_status = prev_turn_res.status if prev_turn_res else None
-                    if previous_status not in {"awaiting_clarification", "awaiting_check"}:
+                    if previous_status not in {
+                        "awaiting_clarification",
+                        "awaiting_check",
+                    }:
                         blocked_by_previous_turn = True
                         res = {
                             "status": "blocked",
@@ -138,12 +155,16 @@ class ScenarioRunner:
             total_latency_ms += latency_ms
 
             snapshot = core.app.get_state({"configurable": {"thread_id": thread_id}})
-            internal_state = dict(snapshot.values or {}) if snapshot and snapshot.values else {}
+            internal_state = (
+                dict(snapshot.values or {}) if snapshot and snapshot.values else {}
+            )
 
             # Extract result & state fields
             status = res.get("status", "unknown")
             route_dict = res.get("route") or {}
-            route_name = route_dict.get("name") if isinstance(route_dict, dict) else None
+            route_name = (
+                route_dict.get("name") if isinstance(route_dict, dict) else None
+            )
 
             assistant_msg = res.get("assistant_message")
             ui_payload = res.get("ui_payload") or {}
@@ -156,7 +177,9 @@ class ScenarioRunner:
             target_concept = ui_payload.get("target_concept")
 
             citations = res.get("citations") or []
-            citation_ids = [str(c.get("citation_id", "")) for c in citations if isinstance(c, dict)]
+            citation_ids = [
+                str(c.get("citation_id", "")) for c in citations if isinstance(c, dict)
+            ]
             citation_pages = [
                 int(c.get("page_number"))
                 for c in citations
@@ -164,17 +187,25 @@ class ScenarioRunner:
             ]
 
             followups = res.get("followups") or []
-            tool_traces = internal_state.get("tool_trace") or res.get("tool_trace") or []
+            tool_traces = (
+                internal_state.get("tool_trace") or res.get("tool_trace") or []
+            )
             tool_sequence = [
-                str(tr.get("tool")) for tr in tool_traces if isinstance(tr, dict) and tr.get("tool")
+                str(tr.get("tool"))
+                for tr in tool_traces
+                if isinstance(tr, dict) and tr.get("tool")
             ]
 
-            faults_triggered = list(fake_model_ref.faults_triggered) if fake_model_ref else []
+            faults_triggered = (
+                list(fake_model_ref.faults_triggered) if fake_model_ref else []
+            )
 
             # Public Response DTO matching frontend API
             public_response = {
                 "status": status,
-                "message": {"role": "assistant", "content": assistant_msg} if assistant_msg else None,
+                "message": {"role": "assistant", "content": assistant_msg}
+                if assistant_msg
+                else None,
                 "route": route_dict,
                 "action": ui_payload if ui_payload else None,
                 "citations": citations,
@@ -194,8 +225,14 @@ class ScenarioRunner:
                 "grounding_error": internal_state.get("grounding_error"),
                 "grounding_failure_type": internal_state.get("grounding_failure_type"),
                 "grounding_retry_count": internal_state.get("grounding_retry_count", 0),
-                "grounding_invalid_citation_ids": internal_state.get("grounding_invalid_citation_ids", []),
-                "grounding_uncovered_sentences": internal_state.get("grounding_uncovered_sentences", []),
+                "grounding_invalid_citation_ids": internal_state.get(
+                    "grounding_invalid_citation_ids", []
+                ),
+                "grounding_uncovered_sentences": internal_state.get(
+                    "grounding_uncovered_sentences", []
+                ),
+                "answerability": internal_state.get("answerability"),
+                "answerability_code": internal_state.get("answerability_code"),
                 "candidate_answer": internal_state.get("candidate_answer"),
                 "candidate_claims": internal_state.get("candidate_claims", []),
                 "candidate_citations": internal_state.get("candidate_citations", []),
@@ -204,7 +241,9 @@ class ScenarioRunner:
                 "route_source": internal_state.get("route_source"),
             }
 
-            response_origin = f"live_{self.model_name}" if self.mode == "live" else "scripted_fixture"
+            response_origin = (
+                f"live_{self.model_name}" if self.mode == "live" else "scripted_fixture"
+            )
 
             turn_res = TurnExecutionResult(
                 scenario_id=scenario.id,
@@ -238,8 +277,14 @@ class ScenarioRunner:
                 grounding_error=internal_state.get("grounding_error"),
                 grounding_failure_type=internal_state.get("grounding_failure_type"),
                 grounding_retry_count=internal_state.get("grounding_retry_count", 0),
-                grounding_invalid_citation_ids=internal_state.get("grounding_invalid_citation_ids", []),
-                grounding_uncovered_sentences=internal_state.get("grounding_uncovered_sentences", []),
+                grounding_invalid_citation_ids=internal_state.get(
+                    "grounding_invalid_citation_ids", []
+                ),
+                grounding_uncovered_sentences=internal_state.get(
+                    "grounding_uncovered_sentences", []
+                ),
+                answerability=internal_state.get("answerability"),
+                answerability_code=internal_state.get("answerability_code"),
                 candidate_answer=internal_state.get("candidate_answer"),
                 candidate_claims=internal_state.get("candidate_claims", []),
                 candidate_citations=internal_state.get("candidate_citations", []),
@@ -253,9 +298,17 @@ class ScenarioRunner:
             )
 
             # Fault verification: check if offline_fixture required a fault that was not triggered
-            if self.mode == "offline" and scenario.offline_fixture and scenario.offline_fixture.faults and turn_idx == len(scenario.turns):
+            if (
+                self.mode == "offline"
+                and scenario.offline_fixture
+                and scenario.offline_fixture.faults
+                and turn_idx == len(scenario.turns)
+            ):
                 for f in scenario.offline_fixture.faults:
-                    if f.target not in faults_triggered and f.target not in tool_sequence:
+                    if (
+                        f.target not in faults_triggered
+                        and f.target not in tool_sequence
+                    ):
                         turn_res.assertions.append(
                             AssertionResult(
                                 name="fault_not_triggered",
@@ -297,7 +350,9 @@ class ScenarioRunner:
             # Append turn history for subsequent user turns
             conversation_history.append({"role": "user", "content": turn_def.input})
             if assistant_msg:
-                conversation_history.append({"role": "assistant", "content": assistant_msg})
+                conversation_history.append(
+                    {"role": "assistant", "content": assistant_msg}
+                )
 
         return ScenarioExecutionResult(
             scenario_id=scenario.id,

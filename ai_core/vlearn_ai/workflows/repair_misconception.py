@@ -56,6 +56,8 @@ async def run_repair_misconception(
     # Validate repair plan tools
     validate_plan_tools(plan.planned_tools, retry_count=retry_count)
 
+    # Grounded facts and trusted supplemental pedagogy stay separate.  A
+    # hypothetical example must never affect source-scoped factual grounding.
     repair_responses: list[str] = []
     grounded_claims: list[GroundedClaim] = []
     grounded_citations: list[Citation] = []
@@ -73,20 +75,15 @@ async def run_repair_misconception(
             grounded_citations.extend(r_obj.citations)
             executed_tools.append("review_concept")
         elif tool_name == "give_example":
-            ex_obj = await execute_give_example(target_concept, context, model)
-            repair_responses.append(f"Ví dụ: {ex_obj.example}")
+            await execute_give_example(target_concept, context, model)
             executed_tools.append("give_example")
         elif tool_name == "give_hint":
-            h_obj = await execute_give_hint(
+            await execute_give_hint(
                 target_concept, context, hint_level=min(retry_count + 1, 3), model=model
-            )
-            repair_responses.append(
-                f"Gợi ý: {h_obj.hint}\nCâu hỏi gợi mở: {h_obj.guiding_question}"
             )
             executed_tools.append("give_hint")
         elif tool_name == "motivate":
-            m_obj = await execute_motivate(check_eval.error_explanation, model)
-            repair_responses.append(f"Lời động viên: {m_obj.message}")
+            await execute_motivate(check_eval.error_explanation, model)
             executed_tools.append("motivate")
 
     combined_repair_text = "\n\n".join(repair_responses)

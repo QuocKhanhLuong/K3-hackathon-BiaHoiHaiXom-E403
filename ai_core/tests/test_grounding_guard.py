@@ -164,3 +164,42 @@ def test_guard_node_propagates_structured_diagnostics_to_state():
     assert uncovered_state["grounding_uncovered_sentences"] == [
         "Nhờ được luyện ở quy mô rộng, nó có thể xử lý nhiều tác vụ ngôn ngữ."
     ]
+
+
+def test_source_scoping_rejects_other_slide_suffix_and_changed_facts():
+    wrong_source = validate_grounding(
+        "LLM là mô hình ngôn ngữ lớn.",
+        [_citation("d1-p6", "LLM là mô hình ngôn ngữ lớn.")],
+        CONTEXT,
+        [GroundedClaim(claim="LLM là mô hình ngôn ngữ lớn.", citation_ids=["d1-p6"])],
+    )
+    assert wrong_source.failure_type == "citation_snippet_not_in_context"
+
+    number_context = (
+        '[source source_id="d1-p10" chunk_id="d1-p10-c1" page=10]\nĐộ chính xác là 95%.'
+    )
+    changed_number = validate_grounding(
+        "Độ chính xác là 90%.",
+        [_citation("d1-p10", "Độ chính xác là 95%.")],
+        number_context,
+        [GroundedClaim(claim="Độ chính xác là 90%.", citation_ids=["d1-p10"])],
+    )
+    assert changed_number.failure_type == "unsupported_claim"
+
+
+def test_unicode_normalization_allows_quotes_and_dashes_but_not_example_bypass():
+    context = '[source source_id="d1-p10" page=10]\nMô hình “A–B” đạt 95%.'
+    valid = validate_grounding(
+        'Mô hình "A-B" đạt 95%.',
+        [_citation("d1-p10", 'Mô hình "A-B" đạt 95%.')],
+        context,
+        [GroundedClaim(claim='Mô hình "A-B" đạt 95%.', citation_ids=["d1-p10"])],
+    )
+    assert valid.valid is True
+    bypass = validate_grounding(
+        "LLM là mô hình ngôn ngữ lớn. <example>Thông tin không có căn cứ.</example>",
+        [_citation()],
+        CONTEXT,
+        [GroundedClaim(claim="LLM là mô hình ngôn ngữ lớn.", citation_ids=["d1-p1"])],
+    )
+    assert bypass.failure_type == "uncovered_factual_sentence"

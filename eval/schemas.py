@@ -96,6 +96,12 @@ class TurnExpectations(BaseModel):
 
     assistant_message_required: bool | None = None
     grounding_required: bool | None = None
+    expected_grounding_valid: bool | None = None
+    expected_answerability: Literal["answerable", "insufficient_context"] | None = None
+    required_citation_ids: list[str] | None = None
+    forbidden_citation_ids: list[str] | None = None
+    expected_grounding_retry_count: int | None = None
+    required_retrieval_order_prefix: list[str] | None = None
     new_check_required: bool | None = None
     no_stale_citations: bool | None = None
     no_duplicate_action: bool | None = None
@@ -203,6 +209,8 @@ class TurnExecutionResult(BaseModel):
     grounding_retry_count: int = 0
     grounding_invalid_citation_ids: list[str] = Field(default_factory=list)
     grounding_uncovered_sentences: list[str] = Field(default_factory=list)
+    answerability: Literal["answerable", "insufficient_context"] | None = None
+    answerability_code: str | None = None
     candidate_answer: str | None = None
     candidate_claims: list[dict[str, Any]] = Field(default_factory=list)
     candidate_citations: list[dict[str, Any]] = Field(default_factory=list)

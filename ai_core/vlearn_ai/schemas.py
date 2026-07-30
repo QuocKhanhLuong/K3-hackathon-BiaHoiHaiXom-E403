@@ -63,7 +63,7 @@ class Citation(StrictBaseModel):
     citation_id: str = Field(
         ...,
         min_length=1,
-        description="Exact source_id copied from a [source source_id=\"...\"] context header.",
+        description='Exact source_id copied from a [source source_id="..."] context header.',
     )
     snippet: str = Field(
         ...,
@@ -89,11 +89,30 @@ class GroundedClaim(StrictBaseModel):
 
 
 class GroundedAnswer(StrictBaseModel):
-    """Answer with embedded claims and citations."""
+    """Conditionally validated factual answerability result.
+
+    ``insufficient_context`` is a normal course-evidence outcome, not a model
+    or infrastructure failure.  It deliberately cannot carry factual claims or
+    citations because there is no evidence to ground them.
+    """
 
     answer: str = Field(..., min_length=1)
-    claims: list[GroundedClaim] = Field(..., min_length=1)
-    citations: list[Citation] = Field(..., min_length=1)
+    answerability: Literal["answerable", "insufficient_context"] = "answerable"
+    answerability_code: str = "answerable"
+    claims: list[GroundedClaim] = Field(default_factory=list)
+    citations: list[Citation] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_answerability(self) -> "GroundedAnswer":
+        if self.answerability == "answerable":
+            if not self.claims or not self.citations:
+                raise ValueError("Answerable outputs require claims and citations.")
+            return self
+        if self.claims or self.citations:
+            raise ValueError(
+                "insufficient_context outputs must have zero claims and citations."
+            )
+        return self
 
 
 class ClarificationRequest(StrictBaseModel):

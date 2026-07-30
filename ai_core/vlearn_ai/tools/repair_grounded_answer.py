@@ -18,11 +18,13 @@ async def execute_repair_grounded_answer(
     grounding_failure_type: str | None,
     grounding_invalid_citation_ids: list[str],
     grounding_uncovered_sentences: list[str],
+    user_query: str,
     context: str,
     model: BaseChatModel,
 ) -> GroundedAnswer:
     """Repair only the candidate's grounded structure using the current context."""
     diagnostic = {
+        "original_user_query": user_query,
         "answer": candidate_answer or "",
         "claims": candidate_claims,
         "citations": candidate_citations,
@@ -38,11 +40,15 @@ async def execute_repair_grounded_answer(
     messages = build_trusted_messages(GROUNDING_REPAIR_PROMPT, untrusted_payload)
     try:
         if hasattr(model, "with_structured_output"):
-            result = await model.with_structured_output(GroundedAnswer).ainvoke(messages)
+            result = await model.with_structured_output(GroundedAnswer).ainvoke(
+                messages
+            )
             if isinstance(result, GroundedAnswer) and result.answer.strip():
                 return result
     except Exception as exc:
         raise AIStructuredOutputError(
             f"repair_grounded_answer structured output failed: {exc}"
         ) from exc
-    raise AIStructuredOutputError("repair_grounded_answer failed to produce GroundedAnswer.")
+    raise AIStructuredOutputError(
+        "repair_grounded_answer failed to produce GroundedAnswer."
+    )

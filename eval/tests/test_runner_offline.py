@@ -4,6 +4,8 @@ import pytest
 
 from eval.runner import ScenarioRunner
 from eval.schemas import (
+    ContextFixture,
+    ContextSlideFixture,
     OfflineFixture,
     ScenarioDefinition,
     ScenarioSetup,
@@ -24,6 +26,16 @@ async def test_offline_runner_single_turn():
         mode="offline",
         setup=ScenarioSetup(selected_text="Key dùng để so khớp với Query."),
         offline_fixture=OfflineFixture(
+            context_fixture=ContextFixture(
+                type="synthetic_slides",
+                slides=[
+                    ContextSlideFixture(
+                        source_id="d1-p1",
+                        page=1,
+                        raw_text="Key dùng để so khớp với Query.",
+                    )
+                ],
+            ),
             model_script=[
                 ScriptedOutput(
                     schema="RouteOutput",
@@ -33,11 +45,21 @@ async def test_offline_runner_single_turn():
                     schema="GroundedAnswer",
                     output={
                         "answer": "Key dùng để so khớp với Query.",
-                        "claims": [{"claim": "Key dùng để so khớp với Query.", "citation_ids": ["d1-p1"]}],
-                        "citations": [{"citation_id": "d1-p1", "snippet": "Key dùng để so khớp với Query."}],
+                        "claims": [
+                            {
+                                "claim": "Key dùng để so khớp với Query.",
+                                "citation_ids": ["d1-p1"],
+                            }
+                        ],
+                        "citations": [
+                            {
+                                "citation_id": "d1-p1",
+                                "snippet": "Key dùng để so khớp với Query.",
+                            }
+                        ],
                     },
                 ),
-            ]
+            ],
         ),
         turns=[
             ScenarioTurn(
@@ -68,6 +90,16 @@ async def test_offline_runner_multi_turn_start_and_resume():
         mode="offline",
         setup=ScenarioSetup(selected_text="Key dùng để so khớp với Query."),
         offline_fixture=OfflineFixture(
+            context_fixture=ContextFixture(
+                type="synthetic_slides",
+                slides=[
+                    ContextSlideFixture(
+                        source_id="d1-p1",
+                        page=1,
+                        raw_text="Key dùng để so khớp với Query.",
+                    )
+                ],
+            ),
             model_script=[
                 ScriptedOutput(
                     schema="RouteOutput",
@@ -77,8 +109,18 @@ async def test_offline_runner_multi_turn_start_and_resume():
                     schema="GroundedAnswer",
                     output={
                         "answer": "Key dùng để so khớp với Query.",
-                        "claims": [{"claim": "Key dùng để so khớp với Query.", "citation_ids": ["d1-p1"]}],
-                        "citations": [{"citation_id": "d1-p1", "snippet": "Key dùng để so khớp với Query."}],
+                        "claims": [
+                            {
+                                "claim": "Key dùng để so khớp với Query.",
+                                "citation_ids": ["d1-p1"],
+                            }
+                        ],
+                        "citations": [
+                            {
+                                "citation_id": "d1-p1",
+                                "snippet": "Key dùng để so khớp với Query.",
+                            }
+                        ],
                     },
                 ),
                 ScriptedOutput(
@@ -117,7 +159,7 @@ async def test_offline_runner_multi_turn_start_and_resume():
                     schema="FollowUpSuggestions",
                     output={"followups": [{"label": "L", "question": "Q?"}]},
                 ),
-            ]
+            ],
         ),
         turns=[
             ScenarioTurn(
