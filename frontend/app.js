@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let slidesData = [];
   let selectedTextOnSlide = "";
   let chatHistory = [];
+  let currentThreadId = null;
 
   // DOM Elements
   const leftPane = document.getElementById('leftPane');
@@ -424,6 +425,8 @@ document.addEventListener('DOMContentLoaded', () => {
         chat_history: chatHistory
       }, thinkingTrace);
       
+      if (data.thread_id) currentThreadId = data.thread_id;
+      
       activeNodeBadge.textContent = `📍 ${data.orchestrator.title}`;
       activeNodeBadge.style.background = "#dcfce7";
       completeThinkingTrace(thinkingTrace);
@@ -758,6 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await submitQuizPayload({
           quiz_id: quizData.quiz_id,
+          thread_id: currentThreadId,
           quiz_type: "short_answer",
           user_text_answer: userText,
           expected_keywords: quizData.expected_keywords || [],
@@ -787,6 +791,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const selectedIdx = parseInt(btn.getAttribute('data-idx'));
           await submitQuizPayload({
             quiz_id: quizData.quiz_id,
+            thread_id: currentThreadId,
             quiz_type: "multiple_choice",
             selected_option: selectedIdx,
             correct_option: quizData.correct_index,
