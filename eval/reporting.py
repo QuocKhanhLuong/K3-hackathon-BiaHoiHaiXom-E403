@@ -197,6 +197,18 @@ def write_run_reports(
                     "tool_sequence": t.tool_sequence,
                     "passed": t.passed,
                     "latency_ms": t.latency_ms,
+                    "blocked_by_previous_turn": t.blocked_by_previous_turn,
+                    "grounding_valid": t.grounding_valid,
+                    "grounding_error": t.grounding_error,
+                    "grounding_failure_type": t.grounding_failure_type,
+                    "grounding_retry_count": t.grounding_retry_count,
+                    "grounding_invalid_citation_ids": t.grounding_invalid_citation_ids,
+                    "grounding_uncovered_sentences": t.grounding_uncovered_sentences,
+                    "candidate_answer": t.candidate_answer,
+                    "candidate_claims": t.candidate_claims,
+                    "candidate_citations": t.candidate_citations,
+                    "failure_code": t.failure_code,
+                    "failure_stage": t.failure_stage,
                     "assertions": [a.model_dump() for a in t.assertions],
                 }
                 f.write(json.dumps(turn_dict, ensure_ascii=False) + "\n")

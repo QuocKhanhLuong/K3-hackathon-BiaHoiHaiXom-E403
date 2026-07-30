@@ -75,20 +75,26 @@ class LocalSlideRepository:
         7. Deduplicate slides
         8. Budget cap under max_chars
         """
-        current_slide = self.resolve(page_number)
+        current_slide = self.resolve(page_number, deck_id=deck_id)
         if not current_slide and self.slides:
             current_slide = self.slides[0]
 
-        deck_id = current_slide.get("deck_id") if current_slide else None
+        deck_id = current_slide.get("deck_id") if current_slide else deck_id
         deck_slides = self.list_slides(deck=deck_id) if deck_id else list(self.slides)
 
         curr_p_in_deck = current_slide.get("page_in_deck", 1) if current_slide else 1
 
-        # Collect neighboring slides (±2 in deck)
+        # Explicit slide/page references outrank neighboring semantic retrieval.
+        explicit_pages: set[int] = set()
+        for match in re.finditer(r"\b(?:slide|slides|trang)\s+(\d+)(?:\s*[-–]\s*(\d+))?", query.lower()):
+            start, end = int(match.group(1)), int(match.group(2) or match.group(1))
+            explicit_pages.update(range(min(start, end), max(start, end) + 1))
+
+        # Collect neighboring slides (±1 in deck)
         neighbor_pages: set[int] = set()
         for s in deck_slides:
             p_ind = int(s.get("page_in_deck", 1))
-            if abs(p_ind - curr_p_in_deck) <= 2:
+            if abs(p_ind - curr_p_in_deck) <= 1:
                 neighbor_pages.add(int(s.get("page", -1)))
 
         # Token scoring for relevant slides in deck
@@ -105,7 +111,7 @@ class LocalSlideRepository:
             scored_slides.append((score, s))
         scored_slides.sort(key=lambda x: x[0], reverse=True)
 
-        top_scored_pages = {int(s.get("page", -1)) for _, s in scored_slides[:5]}
+        top_scored_pages = {int(s.get("page", -1)) for _, s in scored_slides[:2]}
 
         # Combine page numbers in order of priority while preserving deck flow
         ordered_pages: list[int] = []
@@ -113,11 +119,18 @@ class LocalSlideRepository:
             ordered_pages.append(int(current_slide.get("page", 1)))
 
         for s in deck_slides:
+            page = int(s.get("page_in_deck", s.get("page", -1)))
+            if page in explicit_pages and int(s.get("page", -1)) not in ordered_pages:
+                ordered_pages.append(int(s.get("page", -1)))
+
+        for s in deck_slides:
             p = int(s.get("page", -1))
-            if p not in ordered_pages and (
-                p in neighbor_pages or p in top_scored_pages
-            ):
+            if p not in ordered_pages and (p in neighbor_pages or p in top_scored_pages):
                 ordered_pages.append(p)
+
+        # Short factual questions should remain focused unless explicit pages need more.
+        if len(query.split()) <= 12 and not explicit_pages:
+            ordered_pages = ordered_pages[:4]
 
         page_to_slide = {int(s.get("page", -1)): s for s in deck_slides}
 
@@ -154,8 +167,10 @@ class LocalSlideRepository:
 
         return "\n\n".join(pieces)
 
-    def pdf_path_for_page(self, page_number: int) -> tuple[Path, int] | None:
-        slide = self.resolve(page_number)
+    def pdf_path_for_page(
+        self, page_number: int, deck_id: str | None = None
+    ) -> tuple[Path, int] | None:
+        slide = self.resolve(page_number, deck_id=deck_id)
         code = str((slide or {}).get("code", ""))
         if "#page=" not in code:
             return None

@@ -17,6 +17,7 @@ from vlearn_ai.graph.nodes import (
     grounded_answer_node,
     grounding_failure_node,
     grounding_guard_node,
+    grounding_repair_node,
     guard_check_input_node,
     guard_clarification_input_node,
     input_guard_node,
@@ -85,6 +86,9 @@ def build_learning_loop_graph(
     def n_grounding_failure(state: LearningLoopState):
         return grounding_failure_node(state)
 
+    def n_grounding_repair(state: LearningLoopState):
+        return grounding_repair_node(state, model=model)
+
     def n_generate_check(state: LearningLoopState):
         return generate_check_node(state, model=model)
 
@@ -122,6 +126,7 @@ def build_learning_loop_graph(
     builder.add_node("grounded_answer", n_grounded_answer)
     builder.add_node("grounding_guard", n_grounding_guard)
     builder.add_node("grounding_failure", n_grounding_failure)
+    builder.add_node("grounding_repair", n_grounding_repair)
     builder.add_node("generate_check", n_generate_check)
     builder.add_node("await_check", n_await_check)
     builder.add_node("guard_check_input", n_guard_check_input)
@@ -196,9 +201,15 @@ def build_learning_loop_graph(
             "output_guard": "output_guard",
             "suggest_followups": "suggest_followups",
             "generate_check": "generate_check",
+            "grounding_repair": "grounding_repair",
             "grounding_failure": "grounding_failure",
             "failure": "failure",
         },
+    )
+    builder.add_conditional_edges(
+        "grounding_repair",
+        _route_or_failure(lambda state: "grounding_guard"),
+        {"grounding_guard": "grounding_guard", "failure": "failure"},
     )
     builder.add_edge("grounding_failure", "output_guard")
 

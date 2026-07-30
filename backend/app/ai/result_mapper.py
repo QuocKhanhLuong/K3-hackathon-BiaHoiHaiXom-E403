@@ -111,8 +111,17 @@ def _page_from_citation(citation: dict[str, Any]) -> int | None:
     return int(match.group(1)) if match else None
 
 
+def _deck_from_citation(citation: dict[str, Any]) -> str | None:
+    """Extract the deck prefix from canonical source IDs such as d2-p1."""
+    source_id = str(citation.get("citation_id") or citation.get("source_id") or "")
+    match = re.match(r"([A-Za-z0-9_-]+)-p\d+$", source_id)
+    return match.group(1) if match else None
+
+
 def public_citations(
-    citations: list[dict[str, Any]], fallback_page: int | None = None
+    citations: list[dict[str, Any]],
+    fallback_page: int | None = None,
+    fallback_deck_id: str | None = None,
 ) -> list[PublicCitation]:
     output: list[PublicCitation] = []
     for index, item in enumerate(citations):
@@ -128,6 +137,11 @@ def public_citations(
                     else None
                 ),
                 page_number=_page_from_citation(item) or fallback_page,
+                deck_id=(
+                    str(item.get("deck_id"))
+                    if item.get("deck_id")
+                    else _deck_from_citation(item) or fallback_deck_id
+                ),
             )
         )
     return output
@@ -176,6 +190,6 @@ def to_turn_response(
         message=PublicMessage(role="assistant", content=str(message)),
         route=route,
         action=public_action(outcome.action),
-        citations=public_citations(result.get("citations") or [], outcome.page_number),
+        citations=public_citations(result.get("citations") or [], outcome.page_number, outcome.deck_id),
         suggestions=suggestions(result),
     )

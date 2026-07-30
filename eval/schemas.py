@@ -196,6 +196,18 @@ class TurnExecutionResult(BaseModel):
     error_message: str | None = None
     response_origin: str = "scripted_fixture"
     safe_state_snapshot: dict[str, Any] = Field(default_factory=dict)
+    blocked_by_previous_turn: bool = False
+    grounding_valid: bool | None = None
+    grounding_error: str | None = None
+    grounding_failure_type: str | None = None
+    grounding_retry_count: int = 0
+    grounding_invalid_citation_ids: list[str] = Field(default_factory=list)
+    grounding_uncovered_sentences: list[str] = Field(default_factory=list)
+    candidate_answer: str | None = None
+    candidate_claims: list[dict[str, Any]] = Field(default_factory=list)
+    candidate_citations: list[dict[str, Any]] = Field(default_factory=list)
+    failure_code: str | None = None
+    failure_stage: str | None = None
 
 
 class ScenarioExecutionResult(BaseModel):
