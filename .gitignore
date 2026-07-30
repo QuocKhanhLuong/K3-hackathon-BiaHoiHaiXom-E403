@@ -30,3 +30,10 @@ ENV/
 *.swp
 *.swo
 .DS_Store
+
+# Linting and Type Checking Cache
+.ruff_cache/
+.mypy_cache/
+
+# AI Logs (JSONL)
+logs/*.jsonl

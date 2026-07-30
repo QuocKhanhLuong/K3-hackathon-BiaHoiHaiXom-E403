@@ -1,5 +1,6 @@
-"""LangGraph workflow node implementations using pure native interrupt() and strict error handling."""
+"""LangGraph workflow node implementations with pure native interrupt() and strict error handling."""
 
+import time
 from typing import Any
 
 from langchain_core.language_models import BaseChatModel
@@ -19,6 +20,7 @@ from vlearn_ai.model import get_fast_model, get_generation_model
 from vlearn_ai.prompts.messages import build_trusted_messages
 from vlearn_ai.prompts.router import ROUTER_SYSTEM_PROMPT, ROUTER_USER_PROMPT_TEMPLATE
 from vlearn_ai.schemas import (
+    AICoreBaseError,
     CheckEvaluation,
     CheckOption,
     Citation,
@@ -35,47 +37,103 @@ from vlearn_ai.workflows.repair_misconception import run_repair_misconception
 from vlearn_ai.workflows.suggest_followups import run_suggest_followups
 
 
+def _get_model_name(model: BaseChatModel | None) -> str:
+    """Extract model name from injected model or settings."""
+    if model and hasattr(model, "model_name"):
+        return str(model.model_name)
+    if model and hasattr(model, "model"):
+        return str(model.model)
+    return get_settings().OPENAI_MODEL
+
+
 def _record_trace(
     state: LearningLoopState,
     tool: str,
     status: str = "success",
     details: dict | None = None,
+    model: BaseChatModel | None = None,
+    prompt_version: str = "1.0.0",
+    latency_ms: int | None = None,
 ) -> list[dict]:
     trace = list(state.get("tool_trace", []))
-    trace.append(
-        {
-            "tool": tool,
-            "status": status,
-            "prompt_version": "1.0.0",
-            "model": get_settings().OPENAI_MODEL,
-            "details": details or {},
-        }
-    )
+    entry: dict[str, Any] = {
+        "tool": tool,
+        "status": status,
+        "prompt_version": prompt_version,
+        "model": _get_model_name(model),
+    }
+    if latency_ms is not None:
+        entry["latency_ms"] = latency_ms
+    if details:
+        entry["details"] = details
+    trace.append(entry)
     return trace
 
 
+def _safe_node(node_name: str):
+    """Decorator that converts exceptions into failure state updates."""
+
+    def decorator(func):
+        async def wrapper(state: LearningLoopState, model: BaseChatModel | None = None):
+            try:
+                return await func(state, model)
+            except AICoreBaseError as exc:
+                return {
+                    "status": "failed",
+                    "failure_code": type(exc).__name__,
+                    "failure_stage": node_name,
+                    "tool_trace": _record_trace(
+                        state, node_name, "failed", {"error": type(exc).__name__}, model
+                    ),
+                }
+            except Exception as exc:
+                return {
+                    "status": "failed",
+                    "failure_code": type(exc).__name__,
+                    "failure_stage": node_name,
+                    "tool_trace": _record_trace(
+                        state, node_name, "failed", {"error": type(exc).__name__}, model
+                    ),
+                }
+
+        wrapper.__name__ = func.__name__
+        return wrapper
+
+    return decorator
+
+
+# =====================================================================
+# Node 1: Input Guard
+# =====================================================================
+@_safe_node("input_guard")
 async def input_guard_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 1: Input guard checking initial query for prompt injection attacks."""
+    """Input guard checking initial query for prompt injection attacks."""
     query = state.get("user_query", "")
     llm = model or get_fast_model()
+    t0 = time.time()
 
     assessment = await assess_input_injection(query, llm)
+    ms = int((time.time() - t0) * 1000)
+
     if assessment.injection_detected:
         return {
             "status": "blocked",
             "blocked_reason": f"Prompt injection blocked: {assessment.reason}",
             "tool_trace": _record_trace(
-                state, "input_guard", "blocked", {"reason": assessment.reason}
+                state, "input_guard", "blocked",
+                {"reason": assessment.reason}, llm, latency_ms=ms,
             ),
         }
-
     return {"status": "running"}
 
 
+# =====================================================================
+# Node 2: Context Guard
+# =====================================================================
 async def context_guard_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 2: Context guard verifying course context length and safety."""
+    """Context guard verifying course context length and safety."""
     context = state.get("selected_context", "")
     cfg = get_settings()
 
@@ -87,21 +145,24 @@ async def context_guard_node(state: LearningLoopState) -> dict[str, Any]:
         "context_injection_patterns": res["context_injection_patterns"],
         "status": "running",
         "tool_trace": _record_trace(
-            state,
-            "context_guard",
-            "success",
+            state, "context_guard", "success",
             {"context_injection_detected": res["context_injection_detected"]},
         ),
     }
 
 
+# =====================================================================
+# Node 3: Router
+# =====================================================================
+@_safe_node("router")
 async def router_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 3: Router node classifying query into 1 of 4 routes."""
+    """Router node classifying query into 1 of 4 routes."""
     query = state.get("user_query", "")
     context = state.get("selected_context", "")
     llm = model or get_fast_model()
+    t0 = time.time()
 
     untrusted_payload = ROUTER_USER_PROMPT_TEMPLATE.format(
         selected_context=context, user_query=query
@@ -119,7 +180,6 @@ async def router_node(
         route_out = None
 
     if route_out is None:
-        # Rules-based fallback heuristic classification
         q_lower = query.lower()
         if "cái này hoạt động" in q_lower or len(context.strip()) < 10:
             r, c, reason = "clarify", 0.9, "Context or query ambiguous"
@@ -131,20 +191,25 @@ async def router_node(
             r, c, reason = "simple", 0.9, "Simple factual question"
         route_out = RouteOutput(route=r, confidence=c, reason=reason)
 
+    ms = int((time.time() - t0) * 1000)
     return {
         "route": route_out.route,
         "route_confidence": route_out.confidence,
         "route_reason": route_out.reason,
         "tool_trace": _record_trace(
-            state, "router", "success", {"route": route_out.route}
+            state, "router", "success", {"route": route_out.route}, llm, latency_ms=ms,
         ),
     }
 
 
+# =====================================================================
+# Node 4A: Generate Clarification
+# =====================================================================
+@_safe_node("generate_clarification")
 async def generate_clarification_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 4A: Generate clarification question (no interrupt)."""
+    """Generate clarification question (no interrupt)."""
     query = state.get("user_query", "")
     context = state.get("selected_context", "")
     llm = model or get_fast_model()
@@ -153,29 +218,29 @@ async def generate_clarification_node(
     return {
         "clarification_question": req.clarification_question,
         "status": "awaiting_clarification",
-        "tool_trace": _record_trace(state, "ask_clarification", "success"),
+        "tool_trace": _record_trace(state, "ask_clarification", "success", model=llm),
     }
 
 
+# =====================================================================
+# Node 4B: Await Clarification (pure interrupt)
+# =====================================================================
 def await_clarification_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 4B: Pure native interrupt pausing graph for clarification answer."""
+    """Pure native interrupt pausing graph for clarification answer."""
     question = state.get("clarification_question")
-    resumed_input = None
-    try:
-        resumed_input = interrupt(
-            {
-                "type": "clarification_request",
-                "question": question,
-            }
-        )
-    except RuntimeError:
-        resumed_input = state.get("clarification_answer")
 
-    if not resumed_input:
+    # Check if already resumed via update_state fallback
+    existing_answer = state.get("clarification_answer")
+    if existing_answer:
         return {
-            "status": "awaiting_clarification",
-            "clarification_question": question,
+            "clarification_answer": str(existing_answer),
+            "status": "running",
         }
+
+    resumed_input = interrupt({
+        "type": "clarification_request",
+        "question": question,
+    })
 
     return {
         "clarification_answer": str(resumed_input),
@@ -183,10 +248,14 @@ def await_clarification_node(state: LearningLoopState) -> dict[str, Any]:
     }
 
 
+# =====================================================================
+# Node 4C: Guard Clarification Input
+# =====================================================================
+@_safe_node("guard_clarification_input")
 async def guard_clarification_input_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 4C: Guard prompt injection on resumed clarification answer."""
+    """Guard prompt injection on resumed clarification answer."""
     clar_ans = state.get("clarification_answer", "")
     llm = model or get_fast_model()
 
@@ -196,17 +265,20 @@ async def guard_clarification_input_node(
             "status": "blocked",
             "blocked_reason": f"Prompt injection in clarification answer: {assessment.reason}",
             "tool_trace": _record_trace(
-                state, "input_guard", "blocked", {"reason": assessment.reason}
+                state, "input_guard", "blocked", {"reason": assessment.reason}, llm,
             ),
         }
-
     return {"status": "running"}
 
 
+# =====================================================================
+# Node 5: Grounded Answer
+# =====================================================================
+@_safe_node("grounded_answer")
 async def grounded_answer_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 5: Produce grounded answer using direct answer or review concept tool."""
+    """Produce grounded answer using direct answer or review concept tool."""
     query = state.get("user_query", "")
     if state.get("clarification_answer"):
         query = f"{query} (Làm rõ: {state.get('clarification_answer')})"
@@ -214,6 +286,7 @@ async def grounded_answer_node(
     context = state.get("selected_context", "")
     route = state.get("route", "simple")
     llm = model or get_generation_model()
+    trace = list(state.get("tool_trace", []))
 
     if route == "simple":
         ans_obj = await execute_give_direct_answer(query, context, llm)
@@ -222,21 +295,33 @@ async def grounded_answer_node(
         ans_obj = await execute_review_concept(query, context, llm)
         tool_used = "review_concept"
 
-        if route == "check":
-            ex_obj = await execute_give_example(query, context, llm)
-            ans_obj.answer = f"{ans_obj.answer}\n\nVí dụ: {ex_obj.example}"
-
+    trace = _record_trace(state, tool_used, "success", model=llm)
     citations_list = [c.model_dump() for c in ans_obj.citations]
+    claims_list = [cl.model_dump() for cl in ans_obj.claims]
+
+    if route == "check":
+        ex_obj = await execute_give_example(query, context, llm)
+        ans_obj.answer = f"{ans_obj.answer}\n\nVí dụ: {ex_obj.example}"
+        trace.append({
+            "tool": "give_example",
+            "status": "success",
+            "prompt_version": "1.0.0",
+            "model": _get_model_name(llm),
+        })
 
     return {
         "grounded_answer": ans_obj.answer,
+        "grounded_claims": claims_list,
         "citations": citations_list,
-        "tool_trace": _record_trace(state, tool_used, "success"),
+        "tool_trace": trace,
     }
 
 
+# =====================================================================
+# Node 6: Grounding Guard
+# =====================================================================
 async def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 6: Grounding guard verifying citations against context."""
+    """Grounding guard verifying citations against context."""
     answer = state.get("grounded_answer", "")
     citations_data = state.get("citations", [])
     context = state.get("selected_context", "")
@@ -254,28 +339,37 @@ async def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
     }
 
 
+# =====================================================================
+# Node 6B: Grounding Failure
+# =====================================================================
 async def grounding_failure_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 6B: Explicit grounding failure abstention node replacing unsupported answer."""
-    msg = "Ngữ cảnh bài học hiện tại chưa đủ để tạo câu trả lời có căn cứ. Bạn hãy chọn thêm nội dung liên quan hoặc làm rõ câu hỏi."
+    """Explicit grounding failure abstention node."""
+    msg = (
+        "Ngữ cảnh bài học hiện tại chưa đủ để tạo câu trả lời có căn cứ. "
+        "Bạn hãy chọn thêm nội dung liên quan hoặc làm rõ câu hỏi."
+    )
     return {
         "grounded_answer": msg,
         "abstention_message": msg,
         "grounding_failure_type": "unsupported_claim_or_missing_citation",
         "citations": [],
+        "grounded_claims": [],
         "status": "failed",
         "tool_trace": _record_trace(
-            state,
-            "grounding_failure",
-            "failed",
+            state, "grounding_failure", "failed",
             {"reason": state.get("grounding_error")},
         ),
     }
 
 
+# =====================================================================
+# Node 7A: Generate Check
+# =====================================================================
+@_safe_node("generate_check")
 async def generate_check_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 7A: Generate understanding check question (no interrupt)."""
+    """Generate understanding check question (no interrupt)."""
     context = state.get("selected_context", "")
     grounded_ans = state.get("grounded_answer", "")
     llm = model or get_generation_model()
@@ -292,30 +386,30 @@ async def generate_check_node(
         "student_check_answer": None,
         "check_result": None,
         "status": "awaiting_check",
-        "tool_trace": _record_trace(state, "validate_understanding", "success"),
+        "tool_trace": _record_trace(state, "validate_understanding", "success", model=llm),
     }
 
 
+# =====================================================================
+# Node 7B: Await Check (pure interrupt)
+# =====================================================================
 def await_check_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 7B: Pure native interrupt pausing graph for student check answer."""
+    """Pure native interrupt pausing graph for student check answer."""
     check = state.get("check_question") or {}
-    resumed_answer = None
-    try:
-        resumed_answer = interrupt(
-            {
-                "type": check.get("question_type", "multiple_choice"),
-                "question": check.get("question"),
-                "options": check.get("options", []),
-            }
-        )
-    except RuntimeError:
-        resumed_answer = state.get("student_check_answer")
 
-    if not resumed_answer:
+    # Check if already resumed via update_state fallback
+    existing_answer = state.get("student_check_answer")
+    if existing_answer:
         return {
-            "status": "awaiting_check",
-            "check_question": check,
+            "student_check_answer": str(existing_answer),
+            "status": "running",
         }
+
+    resumed_answer = interrupt({
+        "type": check.get("question_type", "multiple_choice"),
+        "question": check.get("question"),
+        "options": check.get("options", []),
+    })
 
     return {
         "student_check_answer": str(resumed_answer),
@@ -323,10 +417,14 @@ def await_check_node(state: LearningLoopState) -> dict[str, Any]:
     }
 
 
+# =====================================================================
+# Node 7C: Guard Check Input
+# =====================================================================
+@_safe_node("guard_check_input")
 async def guard_check_input_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 7C: Guard prompt injection on resumed student check answer."""
+    """Guard prompt injection on resumed student check answer."""
     student_ans = state.get("student_check_answer", "")
     llm = model or get_fast_model()
 
@@ -336,17 +434,20 @@ async def guard_check_input_node(
             "status": "blocked",
             "blocked_reason": f"Prompt injection in check answer: {assessment.reason}",
             "tool_trace": _record_trace(
-                state, "input_guard", "blocked", {"reason": assessment.reason}
+                state, "input_guard", "blocked", {"reason": assessment.reason}, llm,
             ),
         }
-
     return {"status": "running"}
 
 
+# =====================================================================
+# Node 7D: Evaluate Check
+# =====================================================================
+@_safe_node("evaluate_check")
 async def evaluate_check_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 7D: Evaluate resumed student check answer against question."""
+    """Evaluate resumed student check answer against question."""
     context = state.get("selected_context", "")
     check_q = state.get("check_question") or {}
     student_ans = state.get("student_check_answer", "")
@@ -368,14 +469,18 @@ async def evaluate_check_node(
     return {
         "check_result": eval_res.model_dump(),
         "status": "running",
-        "tool_trace": _record_trace(state, "validate_understanding", "success"),
+        "tool_trace": _record_trace(state, "validate_understanding", "success", model=llm),
     }
 
 
+# =====================================================================
+# Node 8: Misconception Repair
+# =====================================================================
+@_safe_node("misconception")
 async def misconception_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 8: Detect misconception and execute repair plan."""
+    """Detect misconception and execute repair plan."""
     context = state.get("selected_context", "")
     check_result_dict = state.get("check_result") or {}
     retry = state.get("retry_count", 0)
@@ -397,24 +502,20 @@ async def misconception_node(
     plan, repair_text, executed_tools = await run_repair_misconception(
         check_eval=eval_obj,
         context=context,
-        target_concept=state.get("check_question", {}).get(
-            "target_concept", "khái niệm"
-        ),
+        target_concept=state.get("check_question", {}).get("target_concept", "khái niệm"),
         retry_count=retry,
         model=llm,
     )
 
     trace = list(state.get("tool_trace", []))
     for t_name in executed_tools:
-        trace.append(
-            {
-                "tool": t_name,
-                "status": "success",
-                "prompt_version": "1.0.0",
-                "model": get_settings().OPENAI_MODEL,
-                "details": {"repair_step": True},
-            }
-        )
+        trace.append({
+            "tool": t_name,
+            "status": "success",
+            "prompt_version": "1.0.0",
+            "model": _get_model_name(llm),
+            "details": {"repair_step": True},
+        })
 
     return {
         "repair_plan": plan.model_dump(),
@@ -425,8 +526,11 @@ async def misconception_node(
     }
 
 
+# =====================================================================
+# Node 9: Safe End
+# =====================================================================
 async def safe_end_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 9: Terminal node reached when max retry count is reached."""
+    """Terminal node reached when max retry count is reached."""
     msg = (
         "Bạn đã nỗ lực trả lời các câu hỏi kiểm tra! Khái niệm này tương đối phức tạp. "
         "Bạn nên đọc lại tài liệu bài học hoặc trao đổi với giảng viên để nắm vững hơn nhé."
@@ -437,10 +541,14 @@ async def safe_end_node(state: LearningLoopState) -> dict[str, Any]:
     }
 
 
+# =====================================================================
+# Node 10: Suggest Follow-ups
+# =====================================================================
+@_safe_node("suggest_followups")
 async def suggest_followups_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Node 10: Generate follow-up suggestions."""
+    """Generate follow-up suggestions."""
     query = state.get("user_query", "")
     context = state.get("selected_context", "")
     grounded_ans = state.get("grounded_answer", "")
@@ -452,13 +560,19 @@ async def suggest_followups_node(
     return {
         "followups": f_list,
         "status": "running",
-        "tool_trace": _record_trace(state, "suggest_followups", "success"),
+        "tool_trace": _record_trace(state, "suggest_followups", "success", model=llm),
     }
 
 
+# =====================================================================
+# Node 11: Failure
+# =====================================================================
 async def failure_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 12: Safe failure node for unhandled exceptions or execution failures."""
-    msg = "Hệ thống chưa thể tạo phản hồi ổn định cho lượt này. Bạn hãy thử lại hoặc chọn lại nội dung bài học."
+    """Safe failure node for unhandled exceptions or execution failures."""
+    msg = (
+        "Hệ thống chưa thể tạo phản hồi ổn định cho lượt này. "
+        "Bạn hãy thử lại hoặc chọn lại nội dung bài học."
+    )
     return {
         "grounded_answer": msg,
         "status": "failed",
@@ -468,8 +582,11 @@ async def failure_node(state: LearningLoopState) -> dict[str, Any]:
     }
 
 
+# =====================================================================
+# Node 12: Output Guard
+# =====================================================================
 async def output_guard_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 11: Output guard sanitizing final assistant message."""
+    """Output guard sanitizing final assistant message."""
     ans = state.get("grounded_answer", "")
     sanitized, _leak = sanitize_output(ans)
 

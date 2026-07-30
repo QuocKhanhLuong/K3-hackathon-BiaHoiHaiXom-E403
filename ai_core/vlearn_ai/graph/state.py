@@ -31,6 +31,7 @@ class LearningLoopState(TypedDict, total=False):
     clarification_answer: str | None
 
     grounded_answer: str | None
+    grounded_claims: list[dict[str, Any]]
     citations: list[dict[str, Any]]
 
     check_question: dict[str, Any] | None
