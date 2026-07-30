@@ -79,6 +79,12 @@ class DeterministicFakeChatModel(BaseChatModel):
             if schema == GroundedAnswer:
                 return GroundedAnswer(
                     answer="Key dùng để so khớp với Query.",
+                    claims=[
+                        {
+                            "claim": "Key dùng để so khớp với Query.",
+                            "citation_ids": ["ctx_1"],
+                        }
+                    ],
                     citations=[
                         Citation(
                             citation_id="ctx_1",

@@ -10,6 +10,49 @@ def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip().lower())
 
 
+_STOPWORDS = {
+    "va",
+    "và",
+    "la",
+    "là",
+    "cua",
+    "của",
+    "voi",
+    "với",
+    "de",
+    "để",
+    "mot",
+    "một",
+    "trong",
+    "cho",
+    "cac",
+    "các",
+    "the",
+    "mà",
+    "as",
+    "is",
+    "a",
+    "an",
+    "the",
+}
+
+
+def _content_tokens(text: str) -> list[str]:
+    tokens = re.findall(r"[\wÀ-ỹ]+", text.lower())
+    return [token for token in tokens if token not in _STOPWORDS and len(token) > 1]
+
+
+def _claim_supported_by_citation(claim: str, snippet: str) -> bool:
+    claim_tokens = set(_content_tokens(claim))
+    snippet_tokens = set(_content_tokens(snippet))
+    if not claim_tokens:
+        return False
+    if claim_tokens <= snippet_tokens:
+        return True
+    overlap = claim_tokens & snippet_tokens
+    return len(overlap) / max(len(claim_tokens), 1) >= 0.75
+
+
 def verify_grounding(
     answer: str,
     citations: list[Citation],
@@ -48,17 +91,36 @@ def verify_grounding(
                 f"Citation snippet '{snippet[:40]}...' is not grounded in context.",
             )
 
-    # Validate structured claims if provided
-    if claims:
-        for claim_obj in claims:
-            if not claim_obj.citation_ids:
-                return (
-                    False,
-                    f"Claim '{claim_obj.claim[:30]}' does not reference any citation ID.",
-                )
+    if not claims:
+        return False, "Grounded answer contains no structured claims."
 
-            for cid in claim_obj.citation_ids:
-                if cid not in valid_citation_ids:
-                    return False, f"Claim references unknown citation ID '{cid}'."
+    # Validate structured claims and claim-to-citation support.
+    citation_by_id = {citation.citation_id: citation for citation in citations}
+    for claim_obj in claims:
+        if not claim_obj.claim.strip():
+            return False, "Grounded claim text is empty."
+        if not claim_obj.citation_ids:
+            return (
+                False,
+                f"Claim '{claim_obj.claim[:30]}' does not reference any citation ID.",
+            )
+
+        supporting_citations: list[Citation] = []
+        for cid in claim_obj.citation_ids:
+            if cid not in valid_citation_ids:
+                return False, f"Claim references unknown citation ID '{cid}'."
+            supporting_citations.append(citation_by_id[cid])
+
+        claim_supported = False
+        for citation in supporting_citations:
+            if _claim_supported_by_citation(claim_obj.claim, citation.snippet):
+                claim_supported = True
+                break
+
+        if not claim_supported:
+            return (
+                False,
+                f"Claim '{claim_obj.claim[:40]}' is not supported by its cited evidence.",
+            )
 
     return True, None

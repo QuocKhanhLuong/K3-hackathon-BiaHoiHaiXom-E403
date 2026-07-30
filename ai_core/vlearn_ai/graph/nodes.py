@@ -26,6 +26,7 @@ from vlearn_ai.schemas import (
     CheckEvaluation,
     CheckOption,
     Citation,
+    GroundedClaim,
     MicroCheck,
     RouteOutput,
 )
@@ -336,12 +337,12 @@ def grounded_answer_node(
 
     if route == "check":
         ex_obj = _run_async(execute_give_example(query, context, llm))
-        ans_obj.answer = f"{ans_obj.answer}\n\nVí dụ: {ex_obj.example}"
         trace.append({
             "tool": "give_example",
             "status": "success",
             "prompt_version": "1.0.0",
             "model": _get_model_name(llm),
+            "details": {"example_length": len(ex_obj.example)},
         })
 
     return {
@@ -360,13 +361,31 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
     answer = state.get("grounded_answer", "")
     citations_data = state.get("citations", [])
     context = state.get("selected_context", "")
+    claims_data = state.get("grounded_claims", [])
 
-    citations = [Citation(**c) for c in citations_data if isinstance(c, dict)]
-    is_valid, err_msg = verify_grounding(answer, citations, context)
+    try:
+        citations = [Citation(**c) for c in citations_data if isinstance(c, dict)]
+        claims = [GroundedClaim(**c) for c in claims_data if isinstance(c, dict)]
+    except Exception as exc:
+        return {
+            "grounding_valid": False,
+            "grounding_error": f"Invalid grounded structure: {exc}",
+            "grounding_failure_type": "invalid_grounded_structure",
+            "status": "running",
+            "tool_trace": _record_trace(
+                state,
+                "grounding_guard",
+                "failed",
+                {"error": type(exc).__name__},
+            ),
+        }
+
+    is_valid, err_msg = verify_grounding(answer, citations, context, claims=claims)
 
     return {
         "grounding_valid": is_valid,
         "grounding_error": err_msg,
+        "grounding_failure_type": None if is_valid else "unsupported_claim_or_missing_citation",
         "status": "running",
         "tool_trace": _record_trace(
             state, "grounding_guard", "success" if is_valid else "failed"
@@ -529,7 +548,7 @@ def misconception_node(
         )
     )
 
-    plan, repair_text, executed_tools = _run_async(run_repair_misconception(
+    plan, grounded_repair, executed_tools = _run_async(run_repair_misconception(
         check_eval=eval_obj,
         context=context,
         target_concept=state.get("check_question", {}).get("target_concept", "khái niệm"),
@@ -549,7 +568,9 @@ def misconception_node(
 
     return {
         "repair_plan": plan.model_dump(),
-        "grounded_answer": repair_text,
+        "grounded_answer": grounded_repair.answer,
+        "grounded_claims": [claim.model_dump() for claim in grounded_repair.claims],
+        "citations": [citation.model_dump() for citation in grounded_repair.citations],
         "retry_count": retry + 1,
         "tool_trace": trace,
         "status": "running",
