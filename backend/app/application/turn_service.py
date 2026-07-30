@@ -82,7 +82,7 @@ class TurnService:
             await self.repository.save_message(
                 conversation, turn, "user", question
             )
-            context = self.slides.build_context(page_number, selected_text)
+            context = self.slides.build_context(page_number, selected_text, question)
             invocation = await self.ai_core.start_turn(
                 thread_id=turn.ai_thread_id,
                 question=question,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +35,7 @@ class LocalSlideRepository:
             None,
         )
 
-    def build_context(self, page_number: int, selected_text: str = "") -> str:
+    def build_context(self, page_number: int, selected_text: str = "", question: str = "") -> str:
         slide = self.resolve(page_number)
         pieces: list[str] = []
         if slide:
@@ -49,6 +50,29 @@ class LocalSlideRepository:
                     str(slide.get("raw_text", "")),
                 ]
             )
+
+        if question.strip():
+            # Very simple stopword removal and tokenization
+            words = [w.lower() for w in re.findall(r'\b\w+\b', question) if len(w) > 3]
+            if words:
+                scored_slides = []
+                for s in self.slides:
+                    if int(s.get("page", -1)) == page_number:
+                        continue # Already included
+                    
+                    text = (s.get("title", "") + " " + s.get("raw_text", "")).lower()
+                    score = sum(1 for w in words if w in text)
+                    if score > 0:
+                        scored_slides.append((score, s))
+                
+                # Take top 1 relevant slide
+                scored_slides.sort(key=lambda x: x[0], reverse=True)
+                for score, related_slide in scored_slides[:1]:
+                    pieces.append("--- THÔNG TIN THÊM TỪ SLIDE KHÁC ---")
+                    pieces.append(f"[source page={related_slide.get('page')} deck={related_slide.get('deck_id')}]")
+                    pieces.append(f"Tiêu đề: {related_slide.get('title', '')}")
+                    pieces.append(str(related_slide.get("raw_text", "")))
+
         if selected_text.strip():
             pieces.append(f"Đoạn học viên chọn: {selected_text.strip()}")
         return "\n\n".join(piece for piece in pieces if piece).strip()
