@@ -60,24 +60,40 @@ class RouteOutput(StrictBaseModel):
 class Citation(StrictBaseModel):
     """Citation referencing grounded course context."""
 
-    citation_id: str = Field(..., min_length=1)
-    snippet: str = Field(..., min_length=1)
+    citation_id: str = Field(
+        ...,
+        min_length=1,
+        description="Exact source_id copied from a [source source_id=\"...\"] context header.",
+    )
+    snippet: str = Field(
+        ...,
+        min_length=1,
+        description="Verbatim excerpt copied from the source identified by citation_id.",
+    )
     source_location: str | None = None
 
 
 class GroundedClaim(StrictBaseModel):
     """Structured claim referencing citation IDs for verifier validation."""
 
-    claim: str = Field(..., min_length=1)
-    citation_ids: list[str] = Field(..., min_length=1)
+    claim: str = Field(
+        ...,
+        min_length=1,
+        description="A factual sentence in answer, or text very close to that factual sentence.",
+    )
+    citation_ids: list[str] = Field(
+        ...,
+        min_length=1,
+        description="Citation IDs included in this same output that support this claim.",
+    )
 
 
 class GroundedAnswer(StrictBaseModel):
     """Answer with embedded claims and citations."""
 
     answer: str = Field(..., min_length=1)
-    claims: list[GroundedClaim] = Field(default_factory=list)
-    citations: list[Citation] = Field(default_factory=list)
+    claims: list[GroundedClaim] = Field(..., min_length=1)
+    citations: list[Citation] = Field(..., min_length=1)
 
 
 class ClarificationRequest(StrictBaseModel):
