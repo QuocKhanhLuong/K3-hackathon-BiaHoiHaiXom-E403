@@ -1,3 +1,20 @@
+Metadata-Version: 2.4
+Name: vlearn-ai-core
+Version: 0.1.0
+Summary: VLearn AI Core - Pedagogical Learning Loop Orchestration Engine
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: openai>=1.0.0
+Requires-Dist: langgraph>=0.2.0
+Requires-Dist: langchain-core>=0.3.0
+Requires-Dist: langchain-openai>=0.2.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: pydantic-settings>=2.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23.0; extra == "dev"
+Requires-Dist: ruff>=0.4.0; extra == "dev"
+
 # VLearn AI Core Package
 
 Package xử lý logic AI và điều phối chu trình học tập **VLearn Learning Loop** sử dụng **LangGraph** và **OpenAI `gpt-5-nano`**.

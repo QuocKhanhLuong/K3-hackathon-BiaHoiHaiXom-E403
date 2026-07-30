@@ -1,9 +1,13 @@
-"""Workflow module: suggest followups."""
+"""Workflow 5: Suggest follow-ups."""
 
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import HumanMessage, SystemMessage
 
-from vlearn_ai.prompts.followups import FOLLOWUPS_SYSTEM_PROMPT
-from vlearn_ai.schemas import FollowUp, FollowUpSuggestions
+from vlearn_ai.prompts.followups import (
+    FOLLOWUPS_SYSTEM_PROMPT,
+    FOLLOWUPS_USER_PROMPT_TEMPLATE,
+)
+from vlearn_ai.schemas import AIStructuredOutputError, FollowUp, FollowUpSuggestions
 
 
 async def run_suggest_followups(
@@ -12,28 +16,42 @@ async def run_suggest_followups(
     grounded_answer: str,
     model: BaseChatModel,
 ) -> FollowUpSuggestions:
-    """Generate 2-3 relevant follow-up suggestions for deeper exploration."""
-    prompt = (
-        f"{FOLLOWUPS_SYSTEM_PROMPT}\n\n"
-        f"<untrusted_course_context>\n{context}\n</untrusted_course_context>\n"
-        f"Câu hỏi: {query}\n"
-        f"Lời giải thích: {grounded_answer}\n"
-    )
+    """Run suggest followups workflow."""
+    messages = [
+        SystemMessage(content=FOLLOWUPS_SYSTEM_PROMPT),
+        HumanMessage(
+            content=FOLLOWUPS_USER_PROMPT_TEMPLATE.format(
+                user_query=query,
+                selected_context=context,
+                grounded_answer=grounded_answer,
+            )
+        ),
+    ]
 
     try:
         if hasattr(model, "with_structured_output"):
             structured = model.with_structured_output(FollowUpSuggestions)
-            res = await structured.ainvoke(prompt)
-            if isinstance(res, FollowUpSuggestions) and len(res.followups) >= 1:
+            res = await structured.ainvoke(messages)
+            if isinstance(res, FollowUpSuggestions) and len(res.followups) >= 2:
                 return res
-    except (AttributeError, ValueError, TypeError, RuntimeError):
-        pass
+    except Exception as exc:
+        raise AIStructuredOutputError(
+            f"run_suggest_followups structured output failed: {exc}"
+        ) from exc
 
+    try:
+        await model.ainvoke(messages)
+    except Exception as exc:
+        raise AIStructuredOutputError(
+            f"run_suggest_followups invocation failed: {exc}"
+        ) from exc
+
+    q_clean = query[:30] if query else "khái niệm"
     return FollowUpSuggestions(
         followups=[
             FollowUp(
                 label="Hiểu cơ chế sâu hơn",
-                question=f"Cơ chế chi tiết của '{query[:30]}' là gì?",
+                question=f"Cơ chế chi tiết của '{q_clean}' là gì?",
             ),
             FollowUp(
                 label="Xem ví dụ thực tế",

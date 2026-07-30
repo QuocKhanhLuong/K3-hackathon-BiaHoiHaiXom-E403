@@ -1,8 +1,12 @@
-"""Workflow module: repair misconception."""
+"""Workflow 4: Repair misconception."""
 
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import HumanMessage, SystemMessage
 
-from vlearn_ai.guardrails.plan_guard import validate_plan_steps
+from vlearn_ai.prompts.repair import (
+    REPAIR_SYSTEM_PROMPT,
+    REPAIR_USER_PROMPT_TEMPLATE,
+)
 from vlearn_ai.schemas import CheckEvaluation, RepairPlan
 from vlearn_ai.tools.give_example import execute_give_example
 from vlearn_ai.tools.give_hint import execute_give_hint
@@ -14,56 +18,92 @@ async def run_repair_misconception(
     check_eval: CheckEvaluation,
     context: str,
     target_concept: str,
+    retry_count: int,
     model: BaseChatModel,
-) -> tuple[RepairPlan, str]:
-    """Orchestrate allowed pedagogical tools to repair student misconception."""
-    # Plan repair strategy using allowed tools
-    plan_tools: list[str] = ["review_concept", "give_example"]
-    if check_eval.score < 0.5:
-        plan_tools = ["motivate", "give_hint", "give_example"]
+) -> tuple[RepairPlan, str, list[str]]:
+    """Run repair misconception workflow and return plan, repair text, and list of executed tool names."""
+    messages = [
+        SystemMessage(content=REPAIR_SYSTEM_PROMPT),
+        HumanMessage(
+            content=REPAIR_USER_PROMPT_TEMPLATE.format(
+                misconception_code=check_eval.misconception_code,
+                error_explanation=check_eval.error_explanation,
+                retry_count=retry_count,
+                target_concept=target_concept,
+                selected_context=context,
+            )
+        ),
+    ]
 
-    # Validate plan using plan_guard
-    is_valid, _err = validate_plan_steps(plan_tools, max_steps=4)
-    if not is_valid:
-        plan_tools = ["review_concept", "give_example"]
+    plan: RepairPlan | None = None
+    try:
+        if hasattr(model, "with_structured_output"):
+            structured = model.with_structured_output(RepairPlan)
+            res = await structured.ainvoke(messages)
+            if isinstance(res, RepairPlan):
+                plan = res
+    except (AttributeError, ValueError, TypeError, KeyError):
+        plan = None
 
-    repair_plan = RepairPlan(
-        tools=plan_tools,  # type: ignore
-        reasoning=f"Sửa điểm nhầm '{check_eval.misconception_code}' bằng chuỗi sư phạm thích hợp.",
-    )
+    if plan is None:
+        # Fallback plan based on retry_count rule: motivate ONLY when retry_count > 0
+        planned_tools = (
+            ["motivate", "review_concept", "give_example"]
+            if retry_count > 0
+            else ["review_concept", "give_example"]
+        )
+        plan = RepairPlan(
+            misconception_code=check_eval.misconception_code,
+            recommended_strategy=check_eval.recommended_repair_strategy,
+            planned_tools=planned_tools,  # type: ignore
+        )
 
-    repair_explanation_parts: list[str] = []
+    # Filter out motivate if retry_count == 0 to enforce rule
+    if retry_count == 0 and "motivate" in plan.planned_tools:
+        plan.planned_tools = [t for t in plan.planned_tools if t != "motivate"]
+        if not plan.planned_tools:
+            plan.planned_tools = ["review_concept", "give_example"]
 
-    for tool in repair_plan.tools:
-        if tool == "motivate":
+    parts: list[str] = []
+    executed_tools: list[str] = []
+
+    for tool_name in plan.planned_tools:
+        if tool_name == "motivate":
             mot_res = await execute_motivate(
-                difficulty=check_eval.error_explanation or "khái niệm khó",
-                model=model,
+                difficulty=check_eval.error_explanation, model=model
             )
-            repair_explanation_parts.append(mot_res.message)
-        elif tool == "give_hint":
-            hint_res = await execute_give_hint(
-                topic=target_concept,
-                current_state=check_eval.answer_evidence or "",
-                model=model,
-            )
-            repair_explanation_parts.append(f"Gợi ý: {hint_res.hint}")
-        elif tool == "review_concept":
+            parts.append(f"💪 {mot_res.message}")
+            executed_tools.append("motivate")
+
+        elif tool_name == "review_concept":
             rev_res = await execute_review_concept(
-                query=f"Giải thích lại điểm nhầm {check_eval.error_explanation}",
+                query=f"Khắc phục nhầm lẫn: {check_eval.error_explanation}",
                 context=context,
                 model=model,
             )
-            repair_explanation_parts.append(rev_res.answer)
-        elif tool == "give_example":
+            parts.append(f"📚 {rev_res.answer}")
+            executed_tools.append("review_concept")
+
+        elif tool_name == "give_example":
             ex_res = await execute_give_example(
+                concept=target_concept, context=context, model=model
+            )
+            parts.append(f"💡 Ví dụ: {ex_res.example}")
+            executed_tools.append("give_example")
+
+        elif tool_name == "give_hint":
+            hint_res = await execute_give_hint(
                 concept=target_concept,
                 context=context,
+                hint_level=retry_count + 1,
                 model=model,
             )
-            repair_explanation_parts.append(
-                f"Ví dụ mới: {ex_res.example}\n{ex_res.explanation}"
-            )
+            parts.append(f"🔍 Gợi ý: {hint_res.hint}")
+            executed_tools.append("give_hint")
 
-    repair_text = "\n\n".join(repair_explanation_parts)
-    return repair_plan, repair_text
+    repair_text = (
+        "\n\n".join(parts)
+        if parts
+        else "Chúng ta cùng giải thích lại khái niệm này nhé."
+    )
+    return plan, repair_text, executed_tools

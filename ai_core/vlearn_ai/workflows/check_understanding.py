@@ -1,4 +1,4 @@
-"""Workflow module: check understanding."""
+"""Workflow 2: Check understanding."""
 
 from langchain_core.language_models import BaseChatModel
 
@@ -11,7 +11,7 @@ async def run_check_understanding(
     grounded_answer: str,
     model: BaseChatModel,
 ) -> MicroCheck:
-    """Generate micro-check using validate_understanding tool in generate_check mode."""
+    """Run check understanding workflow in generate mode."""
     res = await execute_validate_understanding(
         mode="generate_check",
         context=context,
@@ -20,13 +20,4 @@ async def run_check_understanding(
     )
     if isinstance(res, MicroCheck):
         return res
-
-    return MicroCheck(
-        question="Phát biểu nào mô tả đúng nhất về nội dung vừa học?",
-        question_type="multiple_choice",
-        target_concept="core_concept",
-        expected_answer="Lựa chọn A đúng theo tài liệu.",
-        options=["Lựa chọn A đúng theo tài liệu.", "Lựa chọn B mô tả sai."],
-        explanation="Căn cứ theo bài học.",
-        evidence=[context[:100]] if context else [],
-    )
+    raise ValueError("Expected MicroCheck from execute_validate_understanding.")
