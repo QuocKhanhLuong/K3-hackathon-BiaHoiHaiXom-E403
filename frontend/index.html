@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VLearn Tutor — Trợ lý Học thích ứng đa Agent</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="nav-left">
+      <button class="nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+      <div class="logo-group">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span>VLearn</span>
+      </div>
+      <div class="doc-info">
+        <i class="fa-solid fa-file-pdf" style="color: #dc2626;"></i>
+        <div>
+          <div class="doc-name">day05-ai-product-thinking-requirements.pdf</div>
+          <div class="doc-code">COMP2010 · Lecture_material_ms204v3b_r9mo78</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <span class="nav-btn">VI</span>
+      <button class="nav-btn" id="themeToggleBtn"><i class="fa-regular fa-moon"></i></button>
+      <button class="nav-btn user-badge"><i class="fa-solid fa-user-circle"></i> Sinh viên ẩn danh</button>
+    </div>
+  </header>
+
+  <!-- Main App Container -->
+  <main class="app-container">
+    
+    <!-- Left Pane: Slide & Notes -->
+    <section class="left-pane" id="leftPane">
+      <!-- Toolbar -->
+      <div class="slide-toolbar">
+        <div class="tool-group">
+          <button class="tool-btn active"><i class="fa-solid fa-mouse-pointer"></i> Đọc</button>
+          <button class="tool-btn"><i class="fa-solid fa-pen"></i> Bút</button>
+          <button class="tool-btn"><i class="fa-solid fa-highlighter"></i> Highlight</button>
+          <button class="tool-btn"><i class="fa-solid fa-ellipsis"></i></button>
+        </div>
+
+        <div class="tool-group">
+          <span class="doc-code" id="pageNoteBadge">Trang 1 · 1 note</span>
+          <div class="zoom-ctrl">
+            <button class="tool-btn" id="zoomOutBtn">-</button>
+            <span id="zoomVal">90%</span>
+            <button class="tool-btn" id="zoomInBtn">+</button>
+          </div>
+        </div>
+
+        <div class="tool-group">
+          <button class="tool-btn"><i class="fa-solid fa-download"></i></button>
+          <button class="tool-btn"><i class="fa-solid fa-print"></i></button>
+          <button class="tool-btn" id="toggleNoteBtn"><i class="fa-solid fa-sticky-note"></i> Note</button>
+        </div>
+      </div>
+
+      <!-- Slide Viewport -->
+      <div class="slide-viewport">
+        <!-- Interactive Slide Card -->
+        <div class="slide-card" id="slideCard">
+          <div class="slide-header-badge">
+            <span class="vin-logo"><i class="fa-solid fa-shield-halved"></i> VINUNIVERSITY</span>
+            <span class="doc-code" id="slideFileRef">day05-ai-product-thinking-requirements.pdf</span>
+          </div>
+
+          <div class="slide-title-area">
+            <h2 id="slideTitle">AI Product Thinking & Requirements</h2>
+            <p id="slideSubtitle">AICB-P1 · Ngày 5 · Build agent xong, nhưng sản phẩm cho ai?</p>
+          </div>
+
+          <div class="slide-body-content" id="slideBody">
+            <!-- Dynamic Slide Content -->
+          </div>
+
+          <!-- Selection Tooltip -->
+          <div class="selection-tooltip" id="selectionTooltip">
+            <i class="fa-solid fa-sparkles"></i> Hỏi VLearn Tutor đoạn này
+          </div>
+        </div>
+
+        <!-- Lined Note Paper Panel -->
+        <div class="note-panel" id="notePanel">
+          <div class="note-header">
+            <span><i class="fa-solid fa-book-open"></i> GHI CHÚ TRANG <span id="notePageNum">1</span></span>
+            <span style="font-size:10px; color:#a16207;" id="noteSaveStatus">Đã lưu</span>
+          </div>
+          <textarea class="note-textarea" id="noteTextarea" placeholder="Kéo đến trang này để mở note riêng của trang..."></textarea>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="slide-pagination">
+        <button class="tool-btn" id="prevPageBtn"><i class="fa-solid fa-chevron-left"></i></button>
+        <span>Trang <span id="currentPageNum">1</span> / <span id="totalPagesNum">5</span></span>
+        <button class="tool-btn" id="nextPageBtn"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+    </section>
+
+    <!-- Resizer -->
+    <div class="resizer" id="resizer"></div>
+
+    <!-- Right Pane: VLearn Tutor Chatbot -->
+    <section class="right-pane" id="rightPane">
+      <!-- Tutor Header -->
+      <div class="tutor-header">
+        <div class="tutor-title">
+          <div class="tutor-avatar"><i class="fa-solid fa-robot"></i></div>
+          <div>
+            <div style="font-weight: 700; font-size: 14px;">VLearn Tutor</div>
+            <div style="font-size: 11px; color: var(--accent-teal);">Trợ lý học theo ngữ cảnh (Python FastAPI Multi-Agent)</div>
+          </div>
+        </div>
+
+        <div class="tool-group">
+          <button class="tool-btn"><i class="fa-solid fa-clock-rotate-left"></i></button>
+          <button class="tool-btn" id="newChatBtn"><i class="fa-solid fa-plus"></i></button>
+          <span class="doc-info" style="font-size: 11px;">Trang slide: <strong id="tutorSlideBadge">1</strong></span>
+        </div>
+      </div>
+
+      <!-- Quota Bar -->
+      <div class="quota-bar">
+        <span>Quota Tutor trong ngày: <strong>0/15 câu</strong></span>
+        <button class="byok-btn"><i class="fa-solid fa-key"></i> BYOK</button>
+      </div>
+
+      <!-- Live Orchestrator Status Bar -->
+      <div class="orchestrator-status-bar">
+        <div>
+          <span><i class="fa-solid fa-diagram-project"></i> Bước tiếp theo? </span>
+          <span class="status-node-badge" id="activeNodeBadge">Sẵn sàng</span>
+        </div>
+        <button class="wf-btn" id="openWfModalBtn"><i class="fa-solid fa-sitemap"></i> Workflow Diagram</button>
+      </div>
+
+      <!-- Chat Messages Container -->
+      <div class="chat-messages" id="chatMessages">
+        <!-- Initial Tutor Welcome Message -->
+        <div class="msg-bubble msg-tutor">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ngữ cảnh: Slide trang <span class="welcome-page">1</span></div>
+          Xin chào! Mình là <strong>VLearn Tutor</strong>. Bạn có thể bôi đen một đoạn trên slide để hỏi hoặc gửi câu hỏi tự do nhé!
+        </div>
+      </div>
+
+      <!-- Chat Input Footer -->
+      <div class="chat-footer">
+        <div class="input-wrapper">
+          <input type="text" class="chat-input" id="chatInput" placeholder="Nhập câu hỏi hoặc bôi đen tài liệu...">
+          <button class="send-btn" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Workflow Diagram Modal -->
+  <div class="modal-overlay" id="wfModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 16px;"><i class="fa-solid fa-diagram-project"></i> Learning Loop Orchestrator — Workflow Cập nhật ("Bước tiếp theo?")</h3>
+        <button class="close-btn" id="closeWfModalBtn">&times;</button>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Sơ đồ điều phối sư phạm mới: 3 câu hỏi gợi ý đào sâu đính kèm mặc định trước khi kết thúc lượt.
+      </p>
+
+      <div class="wf-diagram-box">
+<pre>
+[Học viên chọn đoạn và hỏi] 
+       │
+       ▼
+[Tutor trả lời có căn cứ]
+       │
+       ▼
+[Learning Loop Orchestrator]
+       │
+       ▼
+◆ Bước tiếp theo?
+   ├── ① Câu hỏi đơn giản ─────────► [3 Gợi ý đào sâu] ──► [Kết thúc lượt]
+   │
+   ├── ② Thiếu thông tin ──────────► [Hỏi làm rõ] ──► [Học viên trả lời] ──┐
+   │                                                                      │
+   ├── ③ Cần kiểm tra hiểu ────────► [Understanding Check] ◄──────────────┤
+   │                                      │                               │
+   │                                      ├── (Đúng) ──► [3 Gợi ý] ───────┼──► [Kết thúc lượt]
+   │                                      │                               │
+   │                                      └── (Sai)  ──► [Misconception Detection]
+   │                                                           │
+   │                                                           ├──► [Giải thích lại điểm nhầm]
+   │                                                           └──► [Check lại ví dụ mới] ──► [3 Gợi ý] ──► [Kết thúc lượt]
+   │
+   └── ④ Có thể đào sâu ───────────► [Mở rộng tri thức] ─────────────────┘
+</pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
