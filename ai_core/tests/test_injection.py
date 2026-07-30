@@ -92,7 +92,7 @@ async def test_resumed_check_answer_injection_blocked():
     await ai_core.start_turn(
         thread_id="test_inj_check_1",
         question="Key và Value khác nhau thế nào?",
-        selected_context="Key dùng để so khớp với Query.",
+        selected_context='[source source_id="ctx_1"]\nKey dùng để so khớp với Query.',
     )
 
     # Turn 2: resumed check answer contains prompt injection -> blocked

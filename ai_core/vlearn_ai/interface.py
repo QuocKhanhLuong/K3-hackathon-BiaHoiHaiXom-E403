@@ -78,6 +78,8 @@ _TRANSIENT_FIELDS: dict[str, Any] = {
     "grounding_uncovered_sentences": [],
     "grounding_invalid_citation_ids": [],
     "abstention_message": None,
+    "answerability": None,
+    "answerability_code": None,
     "check_question": None,
     "student_check_answer": None,
     "check_result": None,

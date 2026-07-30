@@ -41,3 +41,4 @@ eval/results/*-offline/
 eval/results/*-live/
 eval/results/**/events.jsonl
 eval/results/**/turns.jsonl
+backend/.generated/
