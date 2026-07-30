@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedTextOnSlide = "";
   let chatHistory = [];
   let currentThreadId = null;
+  let isSending = false;
 
   // DOM Elements
   const leftPane = document.getElementById('leftPane');
@@ -68,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const chatMessages = document.getElementById('chatMessages');
   const chatInput = document.getElementById('chatInput');
+  const chatInputWrapper = document.getElementById('chatInputWrapper');
   const sendBtn = document.getElementById('sendBtn');
   const activeNodeBadge = document.getElementById('activeNodeBadge');
 
@@ -420,16 +422,30 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 5. Chat Messaging & Multi-Agent API Engine
+  function setComposerProcessing(processing) {
+    chatInput.disabled = processing;
+    sendBtn.disabled = processing;
+    chatMessages.setAttribute('aria-busy', String(processing));
+    chatInputWrapper.classList.toggle('is-processing', processing);
+    sendBtn.classList.toggle('is-processing', processing);
+    sendBtn.setAttribute('aria-label', processing ? 'VLearn đang xử lý câu hỏi' : 'Gửi câu hỏi');
+    sendBtn.innerHTML = processing
+      ? '<i class="fa-solid fa-circle-notch fa-spin"></i>'
+      : '<i class="fa-solid fa-paper-plane"></i>';
+  }
+
   async function sendMessage(textOverride = null) {
     const text = textOverride || chatInput.value.trim();
-    if (!text) return;
+    if (!text || isSending) return;
+    isSending = true;
+    setComposerProcessing(true);
 
     appendMessage('student', text);
     if (!textOverride) chatInput.value = '';
 
     activeNodeBadge.textContent = "⚙️ Đang suy nghĩ...";
     activeNodeBadge.style.background = "#fef08a";
-    const thinkingTrace = createThinkingTrace();
+    const thinkingTrace = createThinkingTrace(text);
 
     try {
       const data = await requestTutorStream({
@@ -483,6 +499,10 @@ document.addEventListener('DOMContentLoaded', () => {
         { title: "Không thể xử lý" }
       );
       attachTraceControl(fallbackAnswer, thinkingTrace);
+    } finally {
+      isSending = false;
+      setComposerProcessing(false);
+      chatInput.focus();
     }
   }
 
@@ -522,19 +542,36 @@ document.addEventListener('DOMContentLoaded', () => {
     return finalData;
   }
 
-  function createThinkingTrace() {
+  function createThinkingTrace(question = '') {
     const trace = document.createElement('div');
     trace.className = 'thinking-trace';
+    trace.setAttribute('role', 'status');
+    trace.setAttribute('aria-live', 'polite');
     trace.innerHTML = `
       <button type="button" class="thinking-trace-toggle" aria-expanded="true">
-        <span class="thinking-trace-title"><span class="thinking-pulse"></span> VLearn đang xử lý</span>
-        <span class="thinking-trace-meta">0 bước <i class="fa-solid fa-chevron-up"></i></span>
+        <span class="thinking-trace-title"><span class="thinking-pulse"></span> VLearn đang suy nghĩ...</span>
+        <span class="thinking-trace-meta">2 bước <i class="fa-solid fa-chevron-up"></i></span>
       </button>
       <div class="thinking-trace-body">
-        <div class="thinking-trace-intro">Tiến trình công cụ theo thời gian thực</div>
-        <div class="thinking-trace-steps"></div>
+        <div class="thinking-trace-intro"></div>
+        <div class="thinking-trace-steps">
+          <div class="thinking-step completed" data-tool="request_received">
+            <span class="thinking-step-icon"><i class="fa-solid fa-check"></i></span>
+            <span class="thinking-step-copy"><strong>Đã nhận câu hỏi</strong><small>Yêu cầu đã được gửi tới VLearn Tutor</small></span>
+            <span class="thinking-step-status">Đã nhận</span>
+          </div>
+          <div class="thinking-step is-active" data-tool="preparing_context">
+            <span class="thinking-step-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+            <span class="thinking-step-copy"><strong>Đang chuẩn bị ngữ cảnh</strong><small>Đọc slide hiện tại và lịch sử hội thoại</small></span>
+            <span class="thinking-step-status">Đang xử lý</span>
+          </div>
+        </div>
       </div>
     `;
+    const compactQuestion = String(question).replace(/\s+/g, ' ').trim();
+    trace.querySelector('.thinking-trace-intro').textContent = compactQuestion
+      ? `Đang xử lý: “${compactQuestion.slice(0, 90)}${compactQuestion.length > 90 ? '…' : ''}”`
+      : 'VLearn đã nhận yêu cầu và đang chuẩn bị câu trả lời.';
     chatMessages.appendChild(trace);
     trace.dataset.traceId = `trace-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     trace.querySelector('.thinking-trace-toggle').addEventListener('click', () => toggleThinkingTrace(trace));
@@ -544,6 +581,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateThinkingTrace(trace, event) {
     const steps = trace.querySelector('.thinking-trace-steps');
+    const preparingStep = steps.querySelector('[data-tool="preparing_context"]');
+    if (preparingStep && !preparingStep.classList.contains('completed')) {
+      markThinkingStepCompleted(preparingStep);
+    }
     let step = steps.querySelector(`[data-tool="${event.tool}"]`);
     if (!step) {
       step = document.createElement('div');
@@ -559,16 +600,24 @@ document.addEventListener('DOMContentLoaded', () => {
     step.querySelector('strong').textContent = event.title;
     step.querySelector('small').textContent = event.detail || '';
     step.classList.toggle('completed', event.status === 'completed');
+    step.classList.toggle('is-active', event.status !== 'completed');
     if (event.status === 'completed') {
-      step.querySelector('.thinking-step-icon').innerHTML = '<i class="fa-solid fa-check"></i>';
-      step.querySelector('.thinking-step-status').textContent = 'Xong';
+      markThinkingStepCompleted(step);
     }
     const count = steps.children.length;
     trace.querySelector('.thinking-trace-meta').childNodes[0].textContent = `${count} bước `;
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
+  function markThinkingStepCompleted(step) {
+    step.classList.add('completed');
+    step.classList.remove('is-active');
+    step.querySelector('.thinking-step-icon').innerHTML = '<i class="fa-solid fa-check"></i>';
+    step.querySelector('.thinking-step-status').textContent = 'Xong';
+  }
+
   function completeThinkingTrace(trace) {
+    trace.querySelectorAll('.thinking-step:not(.completed)').forEach(markThinkingStepCompleted);
     trace.classList.add('completed');
     trace.querySelector('.thinking-trace-title').innerHTML = '<i class="fa-solid fa-circle-check"></i> Đã hoàn tất tiến trình';
     window.setTimeout(() => {
@@ -581,6 +630,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function failThinkingTrace(trace) {
     trace.classList.add('failed');
     trace.querySelector('.thinking-trace-title').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Không thể tải tiến trình';
+    trace.querySelectorAll('.thinking-step:not(.completed)').forEach(step => {
+      step.classList.remove('is-active');
+      step.querySelector('.thinking-step-icon').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+      step.querySelector('.thinking-step-status').textContent = 'Đã dừng';
+    });
   }
 
   function toggleThinkingTrace(trace, forceExpanded = null) {
@@ -900,8 +954,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Listeners
   sendBtn.addEventListener('click', () => sendMessage());
-  chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
   });
 
   // 6. Resizer Handle Logic
