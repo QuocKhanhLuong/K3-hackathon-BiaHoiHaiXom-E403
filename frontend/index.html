@@ -159,13 +159,13 @@
       <div class="orchestrator-status-bar">
         <div>
           <span><i class="fa-solid fa-diagram-project"></i> Bước tiếp theo? </span>
-          <span class="status-node-badge" id="activeNodeBadge">Sẵn sàng</span>
+          <span class="status-node-badge" id="activeNodeBadge" role="status" aria-live="polite">Sẵn sàng</span>
         </div>
         <button class="wf-btn" id="openWfModalBtn"><i class="fa-solid fa-sitemap"></i> Workflow Diagram</button>
       </div>
 
       <!-- Chat Messages Container -->
-      <div class="chat-messages" id="chatMessages">
+      <div class="chat-messages" id="chatMessages" role="log" aria-live="polite" aria-relevant="additions" aria-busy="false">
         <!-- Initial Tutor Welcome Message -->
         <div class="msg-bubble msg-tutor">
           <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Ngữ cảnh: Slide trang <span class="welcome-page">1</span></div>
@@ -175,9 +175,9 @@
 
       <!-- Chat Input Footer -->
       <div class="chat-footer">
-        <div class="input-wrapper">
+        <div class="input-wrapper" id="chatInputWrapper">
           <input type="text" class="chat-input" id="chatInput" placeholder="Nhập câu hỏi hoặc bôi đen tài liệu...">
-          <button class="send-btn" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+          <button type="button" class="send-btn" id="sendBtn" aria-label="Gửi câu hỏi"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
       </div>
     </section>

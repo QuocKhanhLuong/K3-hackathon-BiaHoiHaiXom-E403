@@ -157,7 +157,7 @@ async def legacy_health(request: Request):
     return {
         "status": "ok",
         "ai_core_loaded": service.ai_core.available,
-        "openai_key_configured": bool(os.environ.get("OPENAI_API_KEY")),
+        "openai_key_configured": service.ai_core.configured,
         "slide_count": len(_slides(request).slides),
     }
 

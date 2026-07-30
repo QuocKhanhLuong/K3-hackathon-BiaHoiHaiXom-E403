@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, NoReturn, Protocol
 
 from backend.app.errors import AIServiceError, ConflictError
 from backend.app.models import CoreInvocation
+
+logger = logging.getLogger("vlearn.backend.ai_core")
 
 
 class AICorePort(Protocol):
@@ -25,6 +28,9 @@ class AICorePort(Protocol):
     @property
     def available(self) -> bool: ...
 
+    @property
+    def configured(self) -> bool: ...
+
 
 class VLearnAICoreAdapter:
     """Lazy real adapter so health endpoints remain available on bad config."""
@@ -35,9 +41,21 @@ class VLearnAICoreAdapter:
         try:
             from vlearn_ai import VLearnAICore
 
-            self._core = VLearnAICore(model=model, checkpointer=checkpointer)
+            init_kwargs: dict[str, Any] = {}
+            if model is not None:
+                init_kwargs["model"] = model
+            # Older ai_core releases accepted a facade-level checkpointer;
+            # the hardened public facade now owns graph construction itself.
+            # Never pass an unsupported optional keyword when it is unused.
+            if checkpointer is not None:
+                init_kwargs["checkpointer"] = checkpointer
+            self._core = VLearnAICore(**init_kwargs)
         except Exception as exc:  # noqa: BLE001 - availability boundary
             self._init_error = exc
+            logger.error(
+                "AI core initialization failed error_type=%s",
+                type(exc).__name__,
+            )
 
     @property
     def available(self) -> bool:
@@ -53,6 +71,17 @@ class VLearnAICoreAdapter:
             and getattr(self._core, "custom_model", None) is None
             and not settings.OPENAI_API_KEY
         )
+
+    @property
+    def configured(self) -> bool:
+        if not self.available:
+            return False
+        try:
+            from vlearn_ai.config import get_settings
+
+            return bool(get_settings().OPENAI_API_KEY)
+        except Exception:  # noqa: BLE001 - readiness must remain safe
+            return False
 
     def _require_core(self):
         if not self.available:
@@ -98,6 +127,7 @@ class VLearnAICoreAdapter:
 
     @staticmethod
     def _raise_mapped(exc: Exception) -> NoReturn:
+        logger.error("AI core invocation failed error_type=%s", type(exc).__name__)
         if exc.__class__.__name__ == "InvalidResumeStateError":
             raise ConflictError() from exc
         raise AIServiceError() from exc

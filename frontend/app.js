@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedTextOnSlide = "";
   let chatHistory = [];
   let currentThreadId = null;
+  let isSending = false;
 
   // DOM Elements
   const leftPane = document.getElementById('leftPane');
@@ -68,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const chatMessages = document.getElementById('chatMessages');
   const chatInput = document.getElementById('chatInput');
+  const chatInputWrapper = document.getElementById('chatInputWrapper');
   const sendBtn = document.getElementById('sendBtn');
   const activeNodeBadge = document.getElementById('activeNodeBadge');
 
@@ -164,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function applyZoom(nextZoom) {
     currentZoom = Math.min(maxZoom, Math.max(minZoom, nextZoom));
     zoomVal.textContent = `${currentZoom}%`;
-    bookStage.style.width = `${Math.round(slideBaseWidth * currentZoom / 100)}px`;
+    bookStage.style.setProperty('--slide-target-width', `${Math.round(slideBaseWidth * currentZoom / 100)}px`);
     zoomOutBtn.disabled = currentZoom <= minZoom;
     zoomInBtn.disabled = currentZoom >= maxZoom;
     zoomOutBtn.setAttribute('aria-label', `Thu nhỏ slide, hiện tại ${currentZoom}%`);
@@ -235,8 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     annotationCanvas.width = Math.round(rect.width * ratio);
     annotationCanvas.height = Math.round(rect.height * ratio);
-    annotationCanvas.style.width = `${rect.width}px`;
-    annotationCanvas.style.height = `${rect.height}px`;
     annotationCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
     annotationCtx.lineCap = 'round';
     annotationCtx.lineJoin = 'round';
@@ -333,9 +333,23 @@ document.addEventListener('DOMContentLoaded', () => {
   annotationCanvas.addEventListener('pointerup', stopDrawing);
   annotationCanvas.addEventListener('pointercancel', stopDrawing);
   window.addEventListener('resize', () => {
+    if (window.matchMedia('(max-width: 780px)').matches) {
+      leftPane.style.removeProperty('width');
+      leftPane.style.removeProperty('flex');
+      rightPane.style.removeProperty('width');
+      rightPane.style.removeProperty('flex');
+    }
     clearTimeout(annotationResizeTimer);
     annotationResizeTimer = setTimeout(() => resizeAnnotationCanvas(false), 120);
   });
+
+  if ('ResizeObserver' in window) {
+    const slideResizeObserver = new ResizeObserver(() => {
+      clearTimeout(annotationResizeTimer);
+      annotationResizeTimer = setTimeout(() => resizeAnnotationCanvas(false), 80);
+    });
+    slideResizeObserver.observe(slideCard);
+  }
 
   function turnPage(targetPage, direction) {
     const slideCard = document.getElementById('slideCard');
@@ -408,16 +422,30 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 5. Chat Messaging & Multi-Agent API Engine
+  function setComposerProcessing(processing) {
+    chatInput.disabled = processing;
+    sendBtn.disabled = processing;
+    chatMessages.setAttribute('aria-busy', String(processing));
+    chatInputWrapper.classList.toggle('is-processing', processing);
+    sendBtn.classList.toggle('is-processing', processing);
+    sendBtn.setAttribute('aria-label', processing ? 'VLearn đang xử lý câu hỏi' : 'Gửi câu hỏi');
+    sendBtn.innerHTML = processing
+      ? '<i class="fa-solid fa-circle-notch fa-spin"></i>'
+      : '<i class="fa-solid fa-paper-plane"></i>';
+  }
+
   async function sendMessage(textOverride = null) {
     const text = textOverride || chatInput.value.trim();
-    if (!text) return;
+    if (!text || isSending) return;
+    isSending = true;
+    setComposerProcessing(true);
 
     appendMessage('student', text);
     if (!textOverride) chatInput.value = '';
 
     activeNodeBadge.textContent = "⚙️ Đang suy nghĩ...";
     activeNodeBadge.style.background = "#fef08a";
-    const thinkingTrace = createThinkingTrace();
+    const thinkingTrace = createThinkingTrace(text);
 
     try {
       const data = await requestTutorStream({
@@ -462,12 +490,19 @@ document.addEventListener('DOMContentLoaded', () => {
       failThinkingTrace(thinkingTrace);
       activeNodeBadge.textContent = "⚠️ Không thể xử lý";
       activeNodeBadge.style.background = "#fee2e2";
+      const backendMessage = (err && err.message && !/failed to fetch/i.test(err.message))
+        ? err.message
+        : "Không thể kết nối tới VLearn. Bạn vui lòng kiểm tra backend và thử lại.";
       const fallbackAnswer = appendTutorAnswer(
-        "VLearn chưa thể xử lý yêu cầu lúc này. Bạn vui lòng thử lại sau.",
+        backendMessage,
         [],
-        { title: "Lỗi kết nối" }
+        { title: "Không thể xử lý" }
       );
       attachTraceControl(fallbackAnswer, thinkingTrace);
+    } finally {
+      isSending = false;
+      setComposerProcessing(false);
+      chatInput.focus();
     }
   }
 
@@ -507,19 +542,36 @@ document.addEventListener('DOMContentLoaded', () => {
     return finalData;
   }
 
-  function createThinkingTrace() {
+  function createThinkingTrace(question = '') {
     const trace = document.createElement('div');
     trace.className = 'thinking-trace';
+    trace.setAttribute('role', 'status');
+    trace.setAttribute('aria-live', 'polite');
     trace.innerHTML = `
       <button type="button" class="thinking-trace-toggle" aria-expanded="true">
-        <span class="thinking-trace-title"><span class="thinking-pulse"></span> VLearn đang xử lý</span>
-        <span class="thinking-trace-meta">0 bước <i class="fa-solid fa-chevron-up"></i></span>
+        <span class="thinking-trace-title"><span class="thinking-pulse"></span> VLearn đang suy nghĩ...</span>
+        <span class="thinking-trace-meta">2 bước <i class="fa-solid fa-chevron-up"></i></span>
       </button>
       <div class="thinking-trace-body">
-        <div class="thinking-trace-intro">Tiến trình công cụ theo thời gian thực</div>
-        <div class="thinking-trace-steps"></div>
+        <div class="thinking-trace-intro"></div>
+        <div class="thinking-trace-steps">
+          <div class="thinking-step completed" data-tool="request_received">
+            <span class="thinking-step-icon"><i class="fa-solid fa-check"></i></span>
+            <span class="thinking-step-copy"><strong>Đã nhận câu hỏi</strong><small>Yêu cầu đã được gửi tới VLearn Tutor</small></span>
+            <span class="thinking-step-status">Đã nhận</span>
+          </div>
+          <div class="thinking-step is-active" data-tool="preparing_context">
+            <span class="thinking-step-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+            <span class="thinking-step-copy"><strong>Đang chuẩn bị ngữ cảnh</strong><small>Đọc slide hiện tại và lịch sử hội thoại</small></span>
+            <span class="thinking-step-status">Đang xử lý</span>
+          </div>
+        </div>
       </div>
     `;
+    const compactQuestion = String(question).replace(/\s+/g, ' ').trim();
+    trace.querySelector('.thinking-trace-intro').textContent = compactQuestion
+      ? `Đang xử lý: “${compactQuestion.slice(0, 90)}${compactQuestion.length > 90 ? '…' : ''}”`
+      : 'VLearn đã nhận yêu cầu và đang chuẩn bị câu trả lời.';
     chatMessages.appendChild(trace);
     trace.dataset.traceId = `trace-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     trace.querySelector('.thinking-trace-toggle').addEventListener('click', () => toggleThinkingTrace(trace));
@@ -529,6 +581,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateThinkingTrace(trace, event) {
     const steps = trace.querySelector('.thinking-trace-steps');
+    const preparingStep = steps.querySelector('[data-tool="preparing_context"]');
+    if (preparingStep && !preparingStep.classList.contains('completed')) {
+      markThinkingStepCompleted(preparingStep);
+    }
     let step = steps.querySelector(`[data-tool="${event.tool}"]`);
     if (!step) {
       step = document.createElement('div');
@@ -544,16 +600,24 @@ document.addEventListener('DOMContentLoaded', () => {
     step.querySelector('strong').textContent = event.title;
     step.querySelector('small').textContent = event.detail || '';
     step.classList.toggle('completed', event.status === 'completed');
+    step.classList.toggle('is-active', event.status !== 'completed');
     if (event.status === 'completed') {
-      step.querySelector('.thinking-step-icon').innerHTML = '<i class="fa-solid fa-check"></i>';
-      step.querySelector('.thinking-step-status').textContent = 'Xong';
+      markThinkingStepCompleted(step);
     }
     const count = steps.children.length;
     trace.querySelector('.thinking-trace-meta').childNodes[0].textContent = `${count} bước `;
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
+  function markThinkingStepCompleted(step) {
+    step.classList.add('completed');
+    step.classList.remove('is-active');
+    step.querySelector('.thinking-step-icon').innerHTML = '<i class="fa-solid fa-check"></i>';
+    step.querySelector('.thinking-step-status').textContent = 'Xong';
+  }
+
   function completeThinkingTrace(trace) {
+    trace.querySelectorAll('.thinking-step:not(.completed)').forEach(markThinkingStepCompleted);
     trace.classList.add('completed');
     trace.querySelector('.thinking-trace-title').innerHTML = '<i class="fa-solid fa-circle-check"></i> Đã hoàn tất tiến trình';
     window.setTimeout(() => {
@@ -566,6 +630,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function failThinkingTrace(trace) {
     trace.classList.add('failed');
     trace.querySelector('.thinking-trace-title').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Không thể tải tiến trình';
+    trace.querySelectorAll('.thinking-step:not(.completed)').forEach(step => {
+      step.classList.remove('is-active');
+      step.querySelector('.thinking-step-icon').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+      step.querySelector('.thinking-step-status').textContent = 'Đã dừng';
+    });
   }
 
   function toggleThinkingTrace(trace, forceExpanded = null) {
@@ -727,15 +796,17 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="quiz-header"><i class="fa-solid fa-circle-question"></i> Hỏi làm rõ</div>
       <div class="quiz-question">${escapePreviewText(clarifyData.clarifying_question || '')}</div>
       <div class="quiz-options">
-        ${suggestions.map(opt => `<button class="quiz-opt-btn clarify-opt-btn">${escapePreviewText(opt)}</button>`).join('')}
+        ${suggestions.map(opt => `<button type="button" class="quiz-opt-btn clarify-opt-btn">${escapePreviewText(opt)}</button>`).join('')}
       </div>
     `;
     chatMessages.appendChild(card);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     card.querySelectorAll('.clarify-opt-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        sendMessage(btn.textContent);
+      btn.addEventListener('click', async () => {
+        if (!lockQuizCard(card, btn, 'Đã ghi nhận lựa chọn · Agent đang xử lý...')) return;
+        await sendMessage(btn.textContent);
+        finishQuizCardProcessing(card, 'Đã gửi lựa chọn');
       });
     });
   }
@@ -753,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="quiz-question">${escapePreviewText(quizData.question || '')}</div>
         <div class="short-answer-wrapper">
           <input type="text" class="short-answer-input" placeholder="Gõ câu trả lời của bạn tại đây...">
-          <button class="short-answer-submit-btn"><i class="fa-solid fa-paper-plane"></i> Gửi câu trả lời</button>
+          <button type="button" class="short-answer-submit-btn"><i class="fa-solid fa-paper-plane"></i> Gửi câu trả lời</button>
         </div>
       `;
       chatMessages.appendChild(card);
@@ -765,8 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const handleShortSubmit = async () => {
         const userText = shortInput.value.trim();
         if (!userText) return;
-        shortInput.disabled = true;
-        submitBtn.disabled = true;
+        if (!lockQuizCard(card, null, 'Đã nhận câu trả lời · Agent đang chấm...')) return;
 
         await submitQuizPayload({
           quiz_id: quizData.quiz_id,
@@ -788,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="quiz-header"><i class="fa-solid fa-square-check"></i> Understanding Check (Trắc nghiệm) — ${escapePreviewText(quizData.concept || '')}</div>
         <div class="quiz-question">${escapePreviewText(quizData.question || '')}</div>
         <div class="quiz-options">
-          ${quizData.options.map((opt, idx) => `<button class="quiz-opt-btn quiz-choice-btn" data-idx="${idx}">${escapePreviewText(opt)}</button>`).join('')}
+          ${quizData.options.map((opt, idx) => `<button type="button" class="quiz-opt-btn quiz-choice-btn" data-idx="${idx}" aria-pressed="false">${escapePreviewText(opt)}</button>`).join('')}
         </div>
       `;
       chatMessages.appendChild(card);
@@ -796,6 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       card.querySelectorAll('.quiz-choice-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
+          if (!lockQuizCard(card, btn, 'Đã ghi nhận đáp án · Agent đang chấm...')) return;
           const selectedIdx = parseInt(btn.getAttribute('data-idx'));
           await submitQuizPayload({
             quiz_id: quizData.quiz_id,
@@ -807,6 +878,73 @@ document.addEventListener('DOMContentLoaded', () => {
           }, card);
         });
       });
+    }
+  }
+
+  function lockQuizCard(cardElement, selectedButton = null, message = 'Agent đang xử lý...') {
+    if (cardElement.dataset.submitting === 'true' || cardElement.classList.contains('is-locked')) {
+      return false;
+    }
+
+    cardElement.dataset.submitting = 'true';
+    cardElement.classList.add('is-processing');
+    cardElement.setAttribute('aria-busy', 'true');
+
+    cardElement.querySelectorAll('.quiz-opt-btn, .short-answer-input, .short-answer-submit-btn').forEach(control => {
+      control.disabled = true;
+    });
+
+    if (selectedButton) {
+      selectedButton.classList.add('is-selected');
+      selectedButton.setAttribute('aria-pressed', 'true');
+    }
+
+    let status = cardElement.querySelector('.quiz-processing-status');
+    if (!status) {
+      status = document.createElement('div');
+      status.className = 'quiz-processing-status';
+      status.setAttribute('role', 'status');
+      status.setAttribute('aria-live', 'polite');
+      cardElement.appendChild(status);
+    }
+    status.className = 'quiz-processing-status';
+    status.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i><span>${escapePreviewText(message)}</span>`;
+
+    activeNodeBadge.textContent = '⚙️ Đang xử lý đáp án...';
+    activeNodeBadge.style.background = '#fef08a';
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return true;
+  }
+
+  function finishQuizCardProcessing(cardElement, message = 'Đã xử lý đáp án') {
+    cardElement.dataset.submitting = 'false';
+    cardElement.classList.remove('is-processing');
+    cardElement.classList.add('is-locked');
+    cardElement.setAttribute('aria-busy', 'false');
+
+    const status = cardElement.querySelector('.quiz-processing-status');
+    if (status) {
+      status.className = 'quiz-processing-status is-completed';
+      status.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>${escapePreviewText(message)}</span>`;
+    }
+  }
+
+  function unlockQuizCardAfterError(cardElement, message) {
+    cardElement.dataset.submitting = 'false';
+    cardElement.classList.remove('is-processing', 'is-locked');
+    cardElement.setAttribute('aria-busy', 'false');
+    cardElement.querySelectorAll('.quiz-opt-btn, .short-answer-input, .short-answer-submit-btn').forEach(control => {
+      control.disabled = false;
+      control.classList.remove('is-selected');
+      if (control.classList.contains('quiz-opt-btn')) {
+        control.setAttribute('aria-pressed', 'false');
+      }
+    });
+
+    const status = cardElement.querySelector('.quiz-processing-status');
+    if (status) {
+      status.className = 'quiz-processing-status is-error';
+      status.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>${escapePreviewText(message)}</span>`;
     }
   }
 
@@ -823,13 +961,14 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(data.error?.message || 'Không thể gửi câu trả lời.');
       }
 
+      finishQuizCardProcessing(cardElement, 'Agent đã chấm xong');
+
       if (data.is_correct) {
         cardElement.style.borderColor = "#10b981";
-        cardElement.innerHTML += `
-          <div style="margin-top:12px; padding:10px; background:#ecfdf5; border-radius:6px; color:#047857; font-weight:600; font-size:13px;">
-            ${data.feedback}
-          </div>
-        `;
+        const feedback = document.createElement('div');
+        feedback.className = 'quiz-feedback is-correct';
+        feedback.textContent = data.feedback || 'Câu trả lời chính xác.';
+        cardElement.appendChild(feedback);
         activeNodeBadge.textContent = "✓ Kết thúc lượt";
         activeNodeBadge.style.background = "#dcfce7";
         if (data.default_suggestions && data.default_suggestions.length > 0) {
@@ -840,8 +979,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.misconception) renderMisconceptionCard(data.misconception);
         if (data.default_suggestions) renderFollowupChips(data.default_suggestions);
       }
+      return true;
     } catch (err) {
       console.error('Quiz submit error:', err);
+      const errorMessage = err?.message || 'Không thể gửi đáp án. Vui lòng thử lại.';
+      unlockQuizCardAfterError(cardElement, errorMessage);
+      activeNodeBadge.textContent = '⚠️ Không thể chấm đáp án';
+      activeNodeBadge.style.background = '#fee2e2';
+      return false;
     }
   }
 
@@ -885,34 +1030,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Listeners
   sendBtn.addEventListener('click', () => sendMessage());
-  chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (e.isComposing || e.keyCode === 229) return;
+      e.preventDefault();
+      sendMessage();
+    }
   });
 
   // 6. Resizer Handle Logic
   let isResizing = false;
-  resizer.addEventListener('mousedown', (e) => {
+  resizer.addEventListener('pointerdown', (e) => {
+    if (window.matchMedia('(max-width: 780px)').matches) return;
     isResizing = true;
+    resizer.setPointerCapture(e.pointerId);
     document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
   });
 
-  document.addEventListener('mousemove', (e) => {
+  document.addEventListener('pointermove', (e) => {
     if (!isResizing) return;
-    const containerWidth = document.querySelector('.app-container').clientWidth;
-    const leftWidth = e.clientX;
-    const rightWidth = containerWidth - leftWidth;
+    const containerRect = document.querySelector('.app-container').getBoundingClientRect();
+    const resizerWidth = resizer.getBoundingClientRect().width;
+    const usableWidth = containerRect.width - resizerWidth;
+    const leftMinWidth = parseFloat(getComputedStyle(leftPane).minWidth) || 350;
+    const rightMinWidth = 350;
+    const leftWidth = Math.min(
+      usableWidth - rightMinWidth,
+      Math.max(leftMinWidth, e.clientX - containerRect.left)
+    );
+    const leftRatio = Math.max(0, Math.min(1, leftWidth / usableWidth));
 
-    if (leftWidth > 350 && rightWidth > 350) {
-      leftPane.style.width = `${leftWidth}px`;
-      leftPane.style.flex = 'none';
-      rightPane.style.width = `${rightWidth}px`;
-    }
+    leftPane.style.width = 'auto';
+    leftPane.style.flex = `0 0 ${leftRatio * 100}%`;
+    rightPane.style.width = 'auto';
+    rightPane.style.flex = '1 1 0';
   });
 
-  document.addEventListener('mouseup', () => {
+  function stopResizing(e) {
+    if (!isResizing) return;
     isResizing = false;
+    if (e?.pointerId !== undefined && resizer.hasPointerCapture(e.pointerId)) {
+      resizer.releasePointerCapture(e.pointerId);
+    }
     document.body.style.cursor = 'default';
-  });
+    document.body.style.userSelect = '';
+    resizeAnnotationCanvas(false);
+  }
+
+  document.addEventListener('pointerup', stopResizing);
+  document.addEventListener('pointercancel', stopResizing);
 
   // 7. Dark/Light Theme Toggle
   themeToggleBtn.addEventListener('click', () => {

@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app.ai.core_adapter import AICorePort
+from backend.app.ai.core_adapter import AICorePort, VLearnAICoreAdapter
 from backend.app.application.turn_service import TurnService
 from backend.app.config import BackendSettings
 from backend.app.main import create_app
@@ -22,6 +22,10 @@ class FakeAICore(AICorePort):
 
     @property
     def available(self) -> bool:
+        return True
+
+    @property
+    def configured(self) -> bool:
         return True
 
     async def start_turn(
@@ -225,6 +229,11 @@ def _create_conversation(client: TestClient) -> str:
     response = client.post("/api/v1/conversations", json={"course_id": "test"})
     assert response.status_code == 201
     return response.json()["conversation_id"]
+
+
+def test_real_adapter_initializes_against_public_ai_core():
+    adapter = VLearnAICoreAdapter()
+    assert adapter.available is True
 
 
 def test_v1_simple_contract_strips_internal_trace_and_reason(client: TestClient):

@@ -163,6 +163,13 @@ class MemoryRepository:
             action.status = "completed"
             action.completed_at = utc_now()
 
+    async def abandon_action(self, action: PendingActionRecord) -> None:
+        async with self._guard:
+            if action.status != "pending":
+                raise ConflictError("Action is not pending.")
+            action.status = "abandoned"
+            action.completed_at = utc_now()
+
     async def save_attempt(
         self,
         action: PendingActionRecord,

@@ -70,9 +70,7 @@ class TurnService:
                 conversation_id, owner_id
             )
             if pending is not None:
-                raise ConflictError(
-                    "Complete the pending clarification/check before a new turn."
-                )
+                await self.repository.abandon_action(pending)
 
             turn = await self.repository.create_turn(
                 conversation, question, page_number, deck_id
