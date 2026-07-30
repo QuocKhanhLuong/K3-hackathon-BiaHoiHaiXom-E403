@@ -1,0 +1,32 @@
+.DS_Store
+node_modules/
+*.env
+.env
+
+
+# Python byte-code and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+logs/*.jsonl
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+ai_core/.venv/
+
+# IDE settings & temporary files
+.vscode/
+.idea/
+*.swp
+*.swo
+.vscode
+.ruff_cache
