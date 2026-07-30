@@ -19,7 +19,7 @@ Mining data và đề xuất sản phẩm AI khác cho khoá — qua đủ 5 ti�
 
 ## Data cấp cho mọi nhóm
 
-Chatlog VLearn tutor × học viên đã ẩn danh + **6 transcript bài giảng bản sạch có mã đoạn để trích dẫn** (xem `data/vlearn-pack/`). Với Trợ lý Học viên: không có data pack riêng — nhóm **tự tìm kiếm và quan sát trực tiếp trong Discord khoá** (đây cũng là một bài tập mining thực tế). **Cả lớp là người dùng thật** — nhóm có thể khảo sát 20 người ngay trong giờ nghỉ.
+Chatlog VLearn tutor × học viên đã ẩn danh + **6 transcript bài giảng bản sạch có mã đoạn để trích dẫn** + **2 bộ slide bài giảng bản hackathon** (xem `data/vlearn-pack/`). Với Trợ lý Học viên: không có data pack riêng — nhóm **tự tìm kiếm và quan sát trực tiếp trong Discord khoá** (đây cũng là một bài tập mining thực tế). **Cả lớp là người dùng thật** — nhóm có thể khảo sát 20 người ngay trong giờ nghỉ.
 
 ## Lát cắt = MỘT CÂU
 
