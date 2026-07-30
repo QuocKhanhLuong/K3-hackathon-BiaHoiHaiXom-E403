@@ -36,6 +36,7 @@ def load_all_scenarios(
     scenarios_dir: Path,
     tags_filter: list[str] | None = None,
     scenario_id_filter: str | None = None,
+    mode: str | None = None,
 ) -> list[ScenarioDefinition]:
     """Load and validate all JSON scenario definitions from scenarios directory."""
     scenarios: list[ScenarioDefinition] = []
@@ -62,6 +63,9 @@ def load_all_scenarios(
         scenarios = [
             s for s in scenarios if any(tag.lower() in filter_set for tag in s.tags)
         ]
+
+    if mode:
+        scenarios = [s for s in scenarios if s.mode in {mode, "both"}]
 
     return scenarios
 
@@ -105,7 +109,7 @@ async def main():
     )
 
     tags_filter = [t.strip() for t in args.tags.split(",")] if args.tags else None
-    scenarios = load_all_scenarios(SCENARIOS_DIR, tags_filter=tags_filter, scenario_id_filter=args.scenario)
+    scenarios = load_all_scenarios(SCENARIOS_DIR, tags_filter=tags_filter, scenario_id_filter=args.scenario, mode=mode)
 
     if not scenarios:
         print("[Eval Error] No scenarios found matching filters.")
@@ -123,6 +127,7 @@ async def main():
     print(f"  Run ID: {run_id}")
     print(f"  Mode: {mode.upper()} ({model_name})")
     print(f"  Total Scenarios: {total_scenarios}")
+    print(f"  Selected by mode: {len(scenarios)} ({mode} or both)")
     print("========================================================\n")
 
     context_provider = EvalContextProvider()

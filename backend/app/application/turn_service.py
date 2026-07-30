@@ -41,6 +41,7 @@ class TurnService:
         selected_text: str,
         page_number: int,
         conversation_history: list[dict[str, Any]],
+        deck_id: str = "d1",
         idempotency_key: str | None = None,
     ) -> TurnOutcome:
         payload = {
@@ -48,6 +49,7 @@ class TurnService:
             "question": question,
             "selected_text": selected_text,
             "page_number": page_number,
+            "deck_id": deck_id,
         }
         if idempotency_key:
             existing = await self.repository.get_idempotent(
@@ -73,11 +75,12 @@ class TurnService:
                 )
 
             turn = await self.repository.create_turn(
-                conversation, question, page_number
+                conversation, question, page_number, deck_id
             )
             await self.repository.save_message(conversation, turn, "user", question)
             context = self.slides.build_context(
                 page_number=page_number,
+                deck_id=deck_id,
                 selected_text=selected_text,
                 query=question,
                 recent_history=conversation_history,
@@ -93,6 +96,7 @@ class TurnService:
                 turn=turn,
                 invocation=invocation,
                 page_number=page_number,
+                deck_id=deck_id,
             )
             if idempotency_key:
                 await self.repository.save_idempotent(
@@ -151,6 +155,7 @@ class TurnService:
                 turn=turn,
                 invocation=invocation,
                 page_number=turn.page_number,
+                deck_id=turn.deck_id,
                 previous_action=action,
                 check_attempt=check_attempt,
             )
@@ -168,6 +173,7 @@ class TurnService:
         selected_text: str,
         page_number: int,
         chat_history: list[dict[str, Any]],
+        deck_id: str = "d1",
     ) -> TurnOutcome:
         if conversation_id is None:
             conversation = await self.create_conversation(owner_id)
@@ -194,6 +200,7 @@ class TurnService:
             question=question,
             selected_text=selected_text,
             page_number=page_number,
+            deck_id=deck_id,
             conversation_history=chat_history,
         )
 
@@ -204,6 +211,7 @@ class TurnService:
         turn: TurnRecord,
         invocation: CoreInvocation,
         page_number: int,
+        deck_id: str = "d1",
         previous_action=None,
         check_attempt=None,
     ) -> TurnOutcome:
@@ -233,6 +241,7 @@ class TurnService:
             result=result,
             action=action,
             page_number=page_number,
+            deck_id=deck_id,
             check_attempt=check_attempt,
             previous_action=previous_action,
         )

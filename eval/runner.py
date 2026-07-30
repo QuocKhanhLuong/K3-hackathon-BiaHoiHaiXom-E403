@@ -95,6 +95,7 @@ class ScenarioRunner:
 
             error_msg: str | None = None
             res: dict[str, Any] = {}
+            blocked_by_previous_turn = False
 
             try:
                 if turn_def.type == "user_turn":
@@ -105,10 +106,22 @@ class ScenarioRunner:
                         conversation_history=conversation_history,
                     )
                 else:  # action_response (clarification answer or check option)
-                    res = await core.resume_turn(
-                        thread_id=thread_id,
-                        student_input=turn_def.input,
-                    )
+                    previous_status = prev_turn_res.status if prev_turn_res else None
+                    if previous_status not in {"awaiting_clarification", "awaiting_check"}:
+                        blocked_by_previous_turn = True
+                        res = {
+                            "status": "blocked",
+                            "assistant_message": None,
+                            "route": None,
+                            "citations": [],
+                            "followups": [],
+                            "tool_trace": [],
+                        }
+                    else:
+                        res = await core.resume_turn(
+                            thread_id=thread_id,
+                            student_input=turn_def.input,
+                        )
             except Exception as exc:
                 error_msg = f"{type(exc).__name__}: {exc}"
                 res = {
@@ -123,6 +136,9 @@ class ScenarioRunner:
 
             latency_ms = int((time.time() - t0) * 1000)
             total_latency_ms += latency_ms
+
+            snapshot = core.app.get_state({"configurable": {"thread_id": thread_id}})
+            internal_state = dict(snapshot.values or {}) if snapshot and snapshot.values else {}
 
             # Extract result & state fields
             status = res.get("status", "unknown")
@@ -148,7 +164,7 @@ class ScenarioRunner:
             ]
 
             followups = res.get("followups") or []
-            tool_traces = res.get("tool_trace") or []
+            tool_traces = internal_state.get("tool_trace") or res.get("tool_trace") or []
             tool_sequence = [
                 str(tr.get("tool")) for tr in tool_traces if isinstance(tr, dict) and tr.get("tool")
             ]
@@ -174,6 +190,18 @@ class ScenarioRunner:
                 "retrieved_sources": retrieved_sources,
                 "faults_triggered": faults_triggered,
                 "error_message": error_msg,
+                "grounding_valid": internal_state.get("grounding_valid"),
+                "grounding_error": internal_state.get("grounding_error"),
+                "grounding_failure_type": internal_state.get("grounding_failure_type"),
+                "grounding_retry_count": internal_state.get("grounding_retry_count", 0),
+                "grounding_invalid_citation_ids": internal_state.get("grounding_invalid_citation_ids", []),
+                "grounding_uncovered_sentences": internal_state.get("grounding_uncovered_sentences", []),
+                "candidate_answer": internal_state.get("candidate_answer"),
+                "candidate_claims": internal_state.get("candidate_claims", []),
+                "candidate_citations": internal_state.get("candidate_citations", []),
+                "failure_code": internal_state.get("failure_code"),
+                "failure_stage": internal_state.get("failure_stage"),
+                "route_source": internal_state.get("route_source"),
             }
 
             response_origin = f"live_{self.model_name}" if self.mode == "live" else "scripted_fixture"
@@ -184,7 +212,7 @@ class ScenarioRunner:
                 input_type=turn_def.type,
                 input_text=turn_def.input,
                 route=route_name,
-                route_source="structured_model",
+                route_source=internal_state.get("route_source"),
                 status=status,
                 assistant_message=assistant_msg,
                 ui_payload=ui_payload,
@@ -205,6 +233,18 @@ class ScenarioRunner:
                 response_origin=response_origin,
                 safe_state_snapshot=safe_state,
                 latency_ms=latency_ms,
+                blocked_by_previous_turn=blocked_by_previous_turn,
+                grounding_valid=internal_state.get("grounding_valid"),
+                grounding_error=internal_state.get("grounding_error"),
+                grounding_failure_type=internal_state.get("grounding_failure_type"),
+                grounding_retry_count=internal_state.get("grounding_retry_count", 0),
+                grounding_invalid_citation_ids=internal_state.get("grounding_invalid_citation_ids", []),
+                grounding_uncovered_sentences=internal_state.get("grounding_uncovered_sentences", []),
+                candidate_answer=internal_state.get("candidate_answer"),
+                candidate_claims=internal_state.get("candidate_claims", []),
+                candidate_citations=internal_state.get("candidate_citations", []),
+                failure_code=internal_state.get("failure_code"),
+                failure_stage=internal_state.get("failure_stage"),
             )
 
             # Evaluate assertions
@@ -213,7 +253,7 @@ class ScenarioRunner:
             )
 
             # Fault verification: check if offline_fixture required a fault that was not triggered
-            if scenario.offline_fixture and scenario.offline_fixture.faults and turn_idx == len(scenario.turns):
+            if self.mode == "offline" and scenario.offline_fixture and scenario.offline_fixture.faults and turn_idx == len(scenario.turns):
                 for f in scenario.offline_fixture.faults:
                     if f.target not in faults_triggered and f.target not in tool_sequence:
                         turn_res.assertions.append(

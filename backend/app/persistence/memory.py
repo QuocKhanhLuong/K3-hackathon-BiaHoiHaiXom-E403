@@ -66,6 +66,7 @@ class MemoryRepository:
         conversation: ConversationRecord,
         user_query: str,
         page_number: int,
+        deck_id: str = "d1",
     ) -> TurnRecord:
         turn = TurnRecord(
             id=_new_id("turn"),
@@ -73,6 +74,7 @@ class MemoryRepository:
             ai_thread_id=_new_id("ai"),
             user_query=user_query,
             page_number=page_number,
+            deck_id=deck_id,
         )
         async with self._guard:
             self.turns[turn.id] = turn

@@ -83,6 +83,7 @@ async def get_conversation(
             "status": turn.status,
             "route": turn.route,
             "page_number": turn.page_number,
+            "deck_id": turn.deck_id,
             "created_at": turn.created_at.isoformat(),
         }
         for turn in snapshot["turns"]
@@ -111,6 +112,7 @@ async def create_turn(
         question=payload.question,
         selected_text=payload.selected_text,
         page_number=payload.page_number,
+        deck_id=payload.deck_id,
         conversation_history=payload.conversation_history,
         idempotency_key=payload.idempotency_key,
     )

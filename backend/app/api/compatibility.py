@@ -94,7 +94,7 @@ def _legacy_orchestrator(outcome: TurnOutcome) -> dict[str, Any]:
 
 
 def _legacy_sources(
-    request: Request, citations: list, fallback_page: int
+    request: Request, citations: list, fallback_page: int, fallback_deck_id: str
 ) -> list[dict[str, Any]]:
     pages = sorted(
         {
@@ -105,8 +105,9 @@ def _legacy_sources(
     )
     output: list[dict[str, Any]] = []
     for page in pages:
-        slide = _slides(request).resolve(page) or {}
         citation = next((item for item in citations if item.page_number == page), None)
+        deck_id = (citation.deck_id if citation else None) or fallback_deck_id
+        slide = _slides(request).resolve(page, deck_id=deck_id) or {}
         output.append(
             {
                 "page": page,
@@ -115,6 +116,7 @@ def _legacy_sources(
                 "source_location": (
                     citation.source_location if citation else f"trang {page}"
                 ),
+                "deck_id": deck_id,
             }
         )
     return output
@@ -122,7 +124,7 @@ def _legacy_sources(
 
 def to_legacy_tutor_response(request: Request, outcome: TurnOutcome) -> dict[str, Any]:
     citations = public_citations(
-        outcome.result.get("citations") or [], outcome.page_number
+        outcome.result.get("citations") or [], outcome.page_number, outcome.deck_id
     )
     pages = sorted(
         {
@@ -138,11 +140,12 @@ def to_legacy_tutor_response(request: Request, outcome: TurnOutcome) -> dict[str
         "answer": outcome.result.get("assistant_message") or "",
         "citations": pages,
         "citation_objects": [item.model_dump() for item in citations],
-        "sources": _legacy_sources(request, citations, outcome.page_number),
+        "sources": _legacy_sources(request, citations, outcome.page_number, outcome.deck_id),
         "orchestrator": _legacy_orchestrator(outcome),
         "tool_data": _legacy_tool_data(outcome),
         "default_suggestions": suggestions(outcome.result),
         "page": outcome.page_number,
+        "deck_id": outcome.deck_id,
         "ai_core_status": outcome.result.get("status"),
         "model_engine": os.environ.get("OPENAI_MODEL", "gpt-5-nano"),
     }
@@ -179,8 +182,8 @@ async def get_slides(request: Request, deck: str | None = None):
 
 
 @router.get("/api/slides/{page_number}/render")
-async def render_slide(page_number: int, request: Request):
-    resolved = _slides(request).pdf_path_for_page(page_number)
+async def render_slide(page_number: int, request: Request, deck_id: str = "d1"):
+    resolved = _slides(request).pdf_path_for_page(page_number, deck_id=deck_id)
     if resolved is None:
         from backend.app.errors import ResourceNotFoundError
 
@@ -213,6 +216,7 @@ async def _run_legacy_ask(payload: LegacyAskRequest, request: Request):
         question=payload.question,
         selected_text=payload.selected_text,
         page_number=payload.page_number,
+        deck_id=payload.deck_id,
         chat_history=payload.chat_history,
     )
 

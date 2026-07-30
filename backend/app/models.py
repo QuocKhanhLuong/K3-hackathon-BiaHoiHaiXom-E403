@@ -30,6 +30,7 @@ class TurnRecord:
     ai_thread_id: str
     user_query: str
     page_number: int
+    deck_id: str = "d1"
     status: str = "processing"
     route: str | None = None
     raw_result: dict[str, Any] = field(default_factory=dict)
@@ -85,5 +86,6 @@ class TurnOutcome:
     result: dict[str, Any]
     action: PendingActionRecord | None
     page_number: int
+    deck_id: str = "d1"
     check_attempt: CheckAttemptRecord | None = None
     previous_action: PendingActionRecord | None = None

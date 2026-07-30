@@ -6,6 +6,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   // App State
   let currentPage = 1;
+  let currentDeckId = 'd1';
   let totalPages = 5;
   let slidesData = [];
   let selectedTextOnSlide = "";
@@ -130,7 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderSlide(pageNum) {
-    const slide = slidesData.find(s => s.page === pageNum) || slidesData[0];
+    const slide = slidesData.find(s => s.page === pageNum && (s.deck_id || 'd1') === currentDeckId) || slidesData[0];
+    currentDeckId = slide.deck_id || currentDeckId;
     slideTitle.textContent = slide.title;
     slideSubtitle.textContent = slide.subtitle || "";
     slideBody.innerHTML = slide.content;
@@ -147,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
       slideImageLoading.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><span>Không thể tải ảnh slide gốc. Đang hiển thị bản nội dung dự phòng.</span>';
       window.requestAnimationFrame(() => resizeAnnotationCanvas(true));
     };
-    originalSlideImage.src = `/api/slides/${pageNum}/render`;
+    originalSlideImage.src = `/api/slides/${pageNum}/render?deck_id=${encodeURIComponent(currentDeckId)}`;
 
     currentPageNum.textContent = pageNum;
     tutorSlideBadge.textContent = pageNum;
@@ -422,6 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
         question: text,
         selected_text: selectedTextOnSlide,
         page_number: currentPage,
+        deck_id: currentDeckId,
         chat_history: chatHistory,
         thread_id: currentThreadId
       }, thinkingTrace);
@@ -433,8 +436,9 @@ document.addEventListener('DOMContentLoaded', () => {
       completeThinkingTrace(thinkingTrace);
 
       // Render Grounded Answer (contains Deep-dive Expansion if branch == 'followup')
-      const answerMessage = appendTutorAnswer(data.answer, data.citations, data.orchestrator);
-      attachTraceControl(answerMessage, thinkingTrace);
+      const hasAnswer = Boolean(data.answer && String(data.answer).trim());
+      const answerMessage = hasAnswer ? appendTutorAnswer(data.answer, data.citation_objects || data.citations, data.orchestrator) : null;
+      if (answerMessage) attachTraceControl(answerMessage, thinkingTrace);
 
       // Render Tool Card based on Orchestrator decision
       if (data.tool_data) {
@@ -612,33 +616,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'msg-bubble msg-tutor';
 
-    let citationHTML = "";
-    if (citations && citations.length > 0) {
-      citationHTML = citations.map(c => {
-        const page = parseInt(String(c).match(/\d+/)?.[0], 10);
-        if (!Number.isFinite(page)) return '';
-        return `<button type="button" class="citation-tag" data-page="${page}" title="Mở slide trang ${page}"><i class="fa-solid fa-link"></i> Trang ${page}</button>`;
-      }).join('');
-    }
-
-    msgDiv.innerHTML = `
-      <div style="font-size:11px; color:#64748b; margin-bottom:4px;">
-        <i class="fa-solid fa-diagram-project"></i> ${orchestrator.title || "Tutor trả lời"}
-      </div>
-      <div>${text} ${citationHTML}</div>
-    `;
+    const meta = document.createElement('div');
+    meta.style.cssText = 'font-size:11px; color:#64748b; margin-bottom:4px;';
+    meta.textContent = `Tutor trả lời · ${orchestrator.title || 'VLearn'}`;
+    const body = document.createElement('div');
+    body.textContent = String(text || '');
+    msgDiv.append(meta, body);
+    if (citations && citations.length > 0) citations.forEach(c => {
+      const page = parseInt(String(typeof c === 'object' ? c.page_number : c).match(/\d+/)?.[0], 10);
+      if (!Number.isFinite(page)) return;
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'citation-tag'; button.dataset.page = String(page);
+      button.dataset.deckId = typeof c === 'object' ? (c.deck_id || currentDeckId) : currentDeckId;
+      button.title = `Mở slide trang ${page}`; button.textContent = `Trang ${page}`;
+      body.append(' ', button);
+    });
     chatMessages.appendChild(msgDiv);
     msgDiv.querySelectorAll('.citation-tag').forEach(citation => {
       citation.addEventListener('click', () => {
         const page = parseInt(citation.dataset.page, 10);
-        openCitation(page, msgDiv);
+        openCitation(page, msgDiv, citation.dataset.deckId || currentDeckId);
       });
     });
     chatMessages.scrollTop = chatMessages.scrollHeight;
     return msgDiv;
   }
 
-  function openCitation(page, messageElement) {
+  function openCitation(page, messageElement, deckId = currentDeckId) {
+    currentDeckId = deckId;
     if (!Number.isFinite(page) || page < 1 || page > totalPages) return;
 
     if (page !== currentPage) {

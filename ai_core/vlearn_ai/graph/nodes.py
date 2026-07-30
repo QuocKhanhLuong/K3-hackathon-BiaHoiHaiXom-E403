@@ -31,7 +31,7 @@ from vlearn_ai.schemas import (
     RouteOutput,
 )
 from vlearn_ai.tools.give_direct_answer import execute_give_direct_answer
-from vlearn_ai.tools.give_example import execute_give_example
+from vlearn_ai.tools.repair_grounded_answer import execute_repair_grounded_answer
 from vlearn_ai.tools.review_concept import execute_review_concept
 from vlearn_ai.workflows.ask_clarification import run_ask_clarification
 from vlearn_ai.workflows.check_understanding import run_check_understanding
@@ -357,18 +357,6 @@ def grounded_answer_node(
     citations_list = [c.model_dump() for c in ans_obj.citations]
     claims_list = [cl.model_dump() for cl in ans_obj.claims]
 
-    if route == "check":
-        ex_obj = _run_async(execute_give_example(query, context, llm))
-        trace.append(
-            {
-                "tool": "give_example",
-                "status": "success",
-                "prompt_version": "1.0.0",
-                "model": _get_model_name(llm),
-                "details": {"example_length": len(ex_obj.example)},
-            }
-        )
-
     return {
         "grounded_answer": ans_obj.answer,
         "grounded_claims": claims_list,
@@ -445,6 +433,48 @@ def grounding_failure_node(state: LearningLoopState) -> dict[str, Any]:
             "grounding_failure",
             "failed",
             {"reason": state.get("grounding_error")},
+        ),
+    }
+
+
+@_safe_node("grounding_repair")
+def grounding_repair_node(
+    state: LearningLoopState, model: BaseChatModel | None = None
+) -> dict[str, Any]:
+    """Attempt exactly one structured repair after factual grounding failure."""
+    llm = model or get_generation_model()
+    started = time.time()
+    repaired = _run_async(
+        execute_repair_grounded_answer(
+            candidate_answer=state.get("candidate_answer"),
+            candidate_claims=list(state.get("candidate_claims", [])),
+            candidate_citations=list(state.get("candidate_citations", [])),
+            grounding_error=state.get("grounding_error"),
+            grounding_failure_type=state.get("grounding_failure_type"),
+            grounding_invalid_citation_ids=list(state.get("grounding_invalid_citation_ids", [])),
+            grounding_uncovered_sentences=list(state.get("grounding_uncovered_sentences", [])),
+            context=state.get("selected_context", ""),
+            model=llm,
+        )
+    )
+    citations = [citation.model_dump() for citation in repaired.citations]
+    claims = [claim.model_dump() for claim in repaired.claims]
+    retry_count = state.get("grounding_retry_count", 0) + 1
+    return {
+        "grounded_answer": repaired.answer,
+        "grounded_claims": claims,
+        "citations": citations,
+        "candidate_answer": repaired.answer,
+        "candidate_claims": claims,
+        "candidate_citations": citations,
+        "grounding_retry_count": retry_count,
+        "tool_trace": _record_trace(
+            state,
+            "grounding_repair",
+            "success",
+            {"failure_type": state.get("grounding_failure_type"), "retry_count": retry_count},
+            llm,
+            latency_ms=int((time.time() - started) * 1000),
         ),
     }
 
