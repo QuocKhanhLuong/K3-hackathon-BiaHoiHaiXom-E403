@@ -1,20 +1,66 @@
-# 📚 VLearn Frontend API Integration Specification & Documentation
+# 📚 VLearn Frontend API Integration Specification & Demo Setup Guide
 
-Tài liệu hướng dẫn kết nối **Frontend UI VLearn** với bất kỳ hệ thống **Backend REST API** bên ngoài (Node.js, Python, Java, Go, C#, v.v.).
+Tài liệu hướng dẫn kết nối **Frontend UI VLearn** với hệ thống Backend REST API, bao gồm hướng dẫn thiết lập & chạy Demo chi tiết.
 
 ---
 
-## 🌐 1. Base URL & CORS Settings
+## 🚀 1. Hướng dẫn Thiết lập & Khởi chạy Demo (Quick Start Demo Guide)
 
-- **Default Base URL:** `http://localhost:8000` (hoặc domain backend của bạn)
+### 1.1. Yêu cầu Môi trường (Prerequisites)
+- **Python:** phiên bản `3.10` trở lên.
+- **Thư viện phụ thuộc:** Đã cài đặt `fastapi`, `uvicorn`, `google-generativeai`, `pydantic`.
+  ```powershell
+  pip install fastapi uvicorn google-generativeai pydantic
+  ```
+
+---
+
+### 1.2. Cấu hình Gemini API Key (3 Phương án)
+
+Bạn có thể cấu hình API Key từ **Google AI Studio** (`https://aistudio.google.com/app/apikey`) theo 1 trong 3 cách:
+
+- **Phương án A (Nhập trên Giao diện Web - Khuyên dùng):**
+  - Mở web demo ➔ Bấm nút **🔑 BYOK** màu vàng ở góc trên bên phải khung chat ➔ Dán API Key vào.
+- **Phương án B (Đặt biến môi trường Terminal):**
+  ```powershell
+  $env:GEMINI_API_KEY="AIzaSy_Key_Cua_Ban"
+  ```
+- **Phương án C (Chạy Demo Fallback tự động):**
+  - Nếu không nạp API Key, hệ thống tự động kích hoạt bộ **Fallback sư phạm chuẩn** giúp buổi Demo mượt mà 100% không bao giờ gặp sự cố gián đoạn hay nghẽn mạng.
+
+---
+
+### 1.3. Lệnh Khởi chạy Server Demo
+Chạy lệnh uvicorn từ thư mục gốc của dự án:
+```powershell
+python -m uvicorn backend.main:app --port 8000
+```
+> 📍 **Địa chỉ truy cập Web Demo:** `http://localhost:8000`
+
+---
+
+### 🎭 1.4. Kịch bản Trải nghiệm Demo Gợi ý (Demo Test Scenarios)
+
+| Kịch bản Demo | Thao tác trên Web UI | Phản hồi của Hệ thống Multi-Agent |
+|---|---|---|
+| **1. Hỏi khái niệm phức tạp** | Gõ câu hỏi: *"Function Calling là gì"* | Tutor trả lời có trích dẫn `[trang 4]` ➔ Kích hoạt Tool **Understanding Check** (Bài Quiz kiểm tra hiểu). |
+| **2. Thử nghiệm Quiz Tự luận** | Gõ câu trả lời vào ô text input của bài Quiz | Gemini LLM chấm bài tự luận ➔ Nếu đúng: Kết thúc lượt + 3 gợi ý đào sâu. Nếu sai: Chuyển sang Misconception Alert. |
+| **3. Phát hiện nhầm lẫn (Misconception)** | Chọn sai đáp án bài Quiz | Kích hoạt Tool **Misconception Detection** ➔ Giải thích lại trúng điểm sai + ví dụ mới + Quiz phụ. |
+| **4. Đào sâu tri thức** | Gõ: *"Cho ví dụ ứng dụng thực tế"* | Tutor trả lời tích hợp mục **🚀 Mở rộng tri thức** ➔ Tự động trỏ tiếp sang **Understanding Check**. |
+| **5. Hỏi thiếu thông tin** | Gõ câu hỏi ngắn: *"là sao"* | Kích hoạt Tool **Hỏi làm rõ** (Clarification Tool) với 3 phương án bấm nhanh. |
+| **6. Trải nghiệm bôi đen trên Slide** | Bôi đen một đoạn chữ trên Slide ➔ Bấm *"Hỏi VLearn Tutor đoạn này"* | Tutor trả lời chuẩn xác ngữ cảnh đoạn văn được chọn trên Slide. |
+
+---
+
+## 🌐 2. Base URL & CORS Settings
+
+- **Default Base URL:** `http://localhost:8000`
 - **Header:** `Content-Type: application/json`
-- **CORS Requirement:** Backend cần bật CORS (`Access-Control-Allow-Origin: *` hoặc origin của Frontend).
+- **CORS:** Backend đã bật CORS (`Access-Control-Allow-Origin: *`).
 
 ---
 
-## 📌 2. Danh sách Các Endpoints Cần Hỗ Trợ
-
-Frontend UI tương tác với Backend qua 3 endpoints chính:
+## 📌 3. Danh sách Các REST Endpoints
 
 | HTTP Method | Endpoint Path | Chức năng chính |
 |---|---|---|
@@ -24,15 +70,12 @@ Frontend UI tương tác với Backend qua 3 endpoints chính:
 
 ---
 
-## 📑 3. Chi tiết API Specs
+## 📑 4. Chi tiết API Specs
 
-### 3.1. `GET /api/slides`
+### 4.1. `GET /api/slides`
 Lấy dữ liệu toàn bộ các trang Slide hiển thị ở cột bên trái.
 
-#### 📥 Query Parameters:
-*(Không có)*
-
-#### 📤 Successful Response (`200 OK`):
+#### 📤 Response (`200 OK`):
 ```json
 {
   "total_pages": 5,
@@ -41,14 +84,7 @@ Lấy dữ liệu toàn bộ các trang Slide hiển thị ở cột bên trái.
       "page": 1,
       "title": "AI Product Thinking & Requirements",
       "subtitle": "AICB-P1 · Ngày 5 · Build agent xong, nhưng sản phẩm cho ai?",
-      "content": "<p><b>Tên Giảng Viên:</b> VinUniversity Phase 1 Tuần 1 2026.</p><p>Giới thiệu tổng quan về tư duy thiết kế sản phẩm AI cho người dùng thật.</p>",
-      "code": "Lecture_material_ms204v3b_r9mo78"
-    },
-    {
-      "page": 2,
-      "title": "HÃY SUY NGHĨ: Bạn đã build xong Agent chưa?",
-      "subtitle": "Vấn đề của người dùng vs Prototype kỹ thuật",
-      "content": "<p>Nhiều đội nhóm tập trung 90% thời gian gọi API và chỉnh prompt...</p>",
+      "content": "<p><b>Tên Giảng Viên:</b> VinUniversity Phase 1 Tuần 1 2026.</p><p>Giới thiệu tổng quan về tư tư duy thiết kế sản phẩm AI cho người dùng thật.</p>",
       "code": "Lecture_material_ms204v3b_r9mo78"
     }
   ]
@@ -57,33 +93,25 @@ Lấy dữ liệu toàn bộ các trang Slide hiển thị ở cột bên trái.
 
 ---
 
-### 3.2. `POST /api/tutor/ask`
+### 4.2. `POST /api/tutor/ask`
 Endpoint chính xử lý khi học viên nhập câu hỏi hoặc bôi đen văn bản trên slide.
 
-#### 📥 Request Body Schema (JSON):
+#### 📥 Request Body (JSON):
 ```json
 {
   "question": "Function Calling là gì",
   "selected_text": "Text-based ReAct vs Structured Function Calling",
   "page_number": 4,
   "chat_history": [],
-  "api_key": "AIzaSy..." // Optional (Nếu người dùng bật BYOK)
+  "api_key": "AIzaSy..." // Optional (BYOK)
 }
 ```
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `question` | `string` | **Yes** | Câu hỏi của học viên |
-| `selected_text` | `string` | No | Đoạn văn bản bôi đen trên Slide (nếu có) |
-| `page_number` | `integer` | No | Số trang Slide hiện tại (Mặc định: `1`) |
-| `chat_history` | `array` | No | Lịch sử hội thoại gần đây |
-| `api_key` | `string` | No | Gemini API Key truyền từ BYOK |
 
 #### 📤 Response Schema (JSON):
 ```json
 {
   "status": "success",
-  "answer": "Dựa trên trang slide 4, Function Calling cung cấp một 'Hợp đồng' rõ ràng dạng JSON Schema cho Agent [trang 4].\n\n🚀 **Mở rộng tri thức (Deep-dive Expansion):** Phân tích chi tiết ứng dụng...",
+  "answer": "Dựa trên trang slide 4, Function Calling cung cấp một 'Hợp đồng' rõ ràng dạng JSON Schema cho Agent [trang 4].\n\n🚀 **Mở rộng tri thức (Deep-dive Expansion):** Phân tích chi tiết...",
   "citations": [4],
   "orchestrator": {
     "branch": "followup",
@@ -103,7 +131,7 @@ Endpoint chính xử lý khi học viên nhập câu hỏi hoặc bôi đen văn
       "Function Calling không cần định nghĩa công cụ trước khi gọi"
     ],
     "correct_index": 1,
-    "expected_keywords": ["schema", "hợp đồng", "json"], // Dành cho short_answer
+    "expected_keywords": ["schema", "hợp đồng", "json"],
     "explanation": "Chính xác! Function Calling giúp định nghĩa 'hợp đồng' dữ liệu rõ ràng..."
   },
   "default_suggestions": [
@@ -116,20 +144,12 @@ Endpoint chính xử lý khi học viên nhập câu hỏi hoặc bôi đen văn
 }
 ```
 
-#### 💡 Lưu ý giá trị `orchestrator.branch`:
-1. `"simple_end"` ➔ Trả về `answer` + `default_suggestions` ➔ Kết thúc lượt.
-2. `"clarify"` ➔ Trả về `tool_data` dạng Hỏi làm rõ (`clarifying_question`, `suggested_inputs`).
-3. `"understanding_check"` ➔ Trả về `tool_data` dạng Bài Quiz kiểm tra hiểu (`quiz_type`: `"multiple_choice"` hoặc `"short_answer"`).
-4. `"followup"` ➔ Trả về `answer` có phần "Mở rộng tri thức" + `tool_data` dạng Quiz kiểm tra ngay sau đó.
-
 ---
 
-### 3.3. `POST /api/quiz/submit`
-Endpoint nộp và chấm bài Quiz (Trắc nghiệm 4 lựa chọn hoặc Tự luận ngắn).
+### 4.3. `POST /api/quiz/submit`
+Endpoint nộp và chấm bài Quiz (Trắc nghiệm hoặc Tự luận ngắn).
 
-#### 📥 Request Body Schema (JSON):
-
-**Trường hợp 1: Nộp Bài Trắc nghiệm (`multiple_choice`)**
+#### 📥 Request Body (Trắc nghiệm):
 ```json
 {
   "quiz_id": "q_1785389600",
@@ -141,7 +161,7 @@ Endpoint nộp và chấm bài Quiz (Trắc nghiệm 4 lựa chọn hoặc Tự 
 }
 ```
 
-**Trường hợp 2: Nộp Bài Tự luận Ngắn (`short_answer`)**
+#### 📥 Request Body (Tự luận ngắn):
 ```json
 {
   "quiz_id": "q_1785389600",
@@ -153,9 +173,7 @@ Endpoint nộp và chấm bài Quiz (Trắc nghiệm 4 lựa chọn hoặc Tự 
 }
 ```
 
-#### 📤 Response Schema (JSON):
-
-**Khi trả lời ĐÚNG (`is_correct: true`):**
+#### 📤 Response Schema (`is_correct: true`):
 ```json
 {
   "is_correct": true,
@@ -169,66 +187,13 @@ Endpoint nộp và chấm bài Quiz (Trắc nghiệm 4 lựa chọn hoặc Tự 
 }
 ```
 
-**Khi trả lời SAI (`is_correct: false`):**
-```json
-{
-  "is_correct": false,
-  "feedback": "⚠️ Chưa chính xác. AI Tutor đã phân tích nguyên nhân nhầm lẫn bên dưới:",
-  "next_step": "misconception_explanation",
-  "misconception": {
-    "misconception_point": "Học viên đang nhầm lẫn giữa dữ liệu trong Context Window và Weights của LLM.",
-    "re_explanation": "💡 **Điểm cần lưu ý:** Context Window chỉ chứa dữ liệu nạp tạm thời khi gửi API request.",
-    "new_example": "📌 **Ví dụ mới:** Giống như khi bạn đi thi được mang tài liệu vào phòng thi.",
-    "recheck_question": {
-      "quiz_id": "rq_101",
-      "quiz_type": "multiple_choice",
-      "concept": "Kiểm tra lại qua ví dụ mới",
-      "question": "Nếu slide cập nhật trang mới, làm sao AI nắm được ngay?",
-      "options": [
-        "Huấn luyện lại AI",
-        "Nạp trang slide mới vào Context Window khi gửi request",
-        "Thay đổi System Policy",
-        "Không thể"
-      ],
-      "correct_index": 1,
-      "explanation": "Rất xuất sắc!"
-    }
-  },
-  "default_suggestions": [
-    "Ví dụ JSON Schema chuẩn khi định nghĩa 1 tool tra cứu tài liệu?",
-    "Khi mô hình gọi sai tên Tool thì xử lý fallback ra sao?",
-    "Cách test nghiệm thu Function Calling trong bài Hackathon?"
-  ]
-}
-```
-
 ---
 
-## 🛠️ 4. Hướng dẫn Tích hợp với Backend Khác (C# / Node.js / Java / Go)
+## 🛠️ 5. Hướng dẫn Tích hợp với Backend Khác
 
-Nếu hệ thống backend mới viết bằng framework khác:
-
-1. **Khởi chạy Frontend:**
-   - Frontend tĩnh nằm ở thư mục `frontend/` (bao gồm `index.html`, `styles.css`, `app.js`).
-   - Có thể host tĩnh bằng Nginx, Express.js static, IIS, hoặc Live Server.
-
-2. **Chỉnh cấu hình API Endpoint trong `frontend/app.js` (nếu khác port/domain):**
+Nếu hệ thống backend mới viết bằng ngôn ngữ khác (C# / Node.js / Java / Go):
+1. Đảm bảo Backend thực thi đúng các REST Endpoints đã mô tả ở Mục 4.
+2. Nếu backend host ở khác port/domain, cập nhật `BASE_URL` trong `frontend/app.js`:
    ```javascript
-   // Trong frontend/app.js, mặc định gọi endpoint tương đối:
-   fetch('/api/slides')
-   fetch('/api/tutor/ask')
-   fetch('/api/quiz/submit')
-   
-   // Nếu backend host trên domain khác (ví dụ: http://my-backend.com:5000):
-   const BASE_URL = "http://my-backend.com:5000";
-   fetch(`${BASE_URL}/api/tutor/ask`, ...)
+   const BASE_URL = "http://your-backend-domain.com:5000";
    ```
-
----
-
-## ✅ 5. Checklist Kiểm thử Kết nối Backend
-
-- [x] Backend phản hồi `GET /api/slides` trả ra mảng các trang slide.
-- [x] Backend phản hồi `POST /api/tutor/ask` trả ra định dạng JSON khớp schema ở Mục 3.2.
-- [x] Backend phản hồi `POST /api/quiz/submit` chấm đúng cả bài trắc nghiệm lẫn bài gõ tự luận ngắn.
-- [x] `default_suggestions` trả về danh sách 3 từ/câu gợi ý ngắn để hiển thị thành dạng thẻ chip bấm nhanh.
