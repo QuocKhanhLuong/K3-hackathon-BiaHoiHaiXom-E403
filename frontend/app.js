@@ -422,7 +422,8 @@ document.addEventListener('DOMContentLoaded', () => {
         question: text,
         selected_text: selectedTextOnSlide,
         page_number: currentPage,
-        chat_history: chatHistory
+        chat_history: chatHistory,
+        thread_id: currentThreadId
       }, thinkingTrace);
       
       if (data.thread_id) currentThreadId = data.thread_id;
@@ -455,16 +456,14 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error('API Error:', err);
       failThinkingTrace(thinkingTrace);
-      activeNodeBadge.textContent = "📍 Cần kiểm tra hiểu";
-      const fallbackAnswer = appendTutorAnswer(`Dựa trên slide trang ${currentPage}, mình đã cập nhật câu trả lời có căn cứ cho bạn [trang ${currentPage}].`, [currentPage], { title: "Cần kiểm tra hiểu" });
+      activeNodeBadge.textContent = "⚠️ Không thể xử lý";
+      activeNodeBadge.style.background = "#fee2e2";
+      const fallbackAnswer = appendTutorAnswer(
+        "VLearn chưa thể xử lý yêu cầu lúc này. Bạn vui lòng thử lại sau.",
+        [],
+        { title: "Lỗi kết nối" }
+      );
       attachTraceControl(fallbackAnswer, thinkingTrace);
-      renderQuizCard({
-        quiz_id: "q_demo",
-        quiz_type: "short_answer",
-        concept: "Vận dụng Cốt lõi",
-        question: "Theo bạn, tại sao Function Calling lại được gọi là 'Hợp đồng' giữa Agent và hệ thống? (Gõ 1-2 câu trả lời vào ô dưới):",
-        expected_keywords: ["schema", "hợp đồng", "cấu trúc", "json"]
-      });
     }
   }
 
@@ -493,7 +492,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const event = JSON.parse(dataLine.slice(6));
         if (event.type === 'trace') updateThinkingTrace(traceElement, event);
         if (event.type === 'result') finalData = event.data;
-        if (event.type === 'error') throw new Error(event.message || 'Tutor stream failed');
+        if (event.type === 'error') {
+          throw new Error(event.error?.message || event.message || 'Tutor stream failed');
+        }
       });
       if (done) break;
     }
@@ -712,13 +713,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Tool Render 1: Clarification Options
   function renderClarificationCard(clarifyData) {
+    const suggestions = Array.isArray(clarifyData.suggested_inputs)
+      ? clarifyData.suggested_inputs
+      : [];
     const card = document.createElement('div');
     card.className = 'quiz-card';
     card.innerHTML = `
       <div class="quiz-header"><i class="fa-solid fa-circle-question"></i> Hỏi làm rõ</div>
-      <div class="quiz-question">${clarifyData.clarifying_question}</div>
+      <div class="quiz-question">${escapePreviewText(clarifyData.clarifying_question || '')}</div>
       <div class="quiz-options">
-        ${clarifyData.suggested_inputs.map(opt => `<button class="quiz-opt-btn clarify-opt-btn">${opt}</button>`).join('')}
+        ${suggestions.map(opt => `<button class="quiz-opt-btn clarify-opt-btn">${escapePreviewText(opt)}</button>`).join('')}
       </div>
     `;
     chatMessages.appendChild(card);
@@ -740,8 +744,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isShortAnswer) {
       card.innerHTML = `
-        <div class="quiz-header"><i class="fa-solid fa-pen-to-square"></i> Understanding Check (Tự luận ngắn) — ${quizData.concept}</div>
-        <div class="quiz-question">${quizData.question}</div>
+        <div class="quiz-header"><i class="fa-solid fa-pen-to-square"></i> Understanding Check (Tự luận ngắn) — ${escapePreviewText(quizData.concept || '')}</div>
+        <div class="quiz-question">${escapePreviewText(quizData.question || '')}</div>
         <div class="short-answer-wrapper">
           <input type="text" class="short-answer-input" placeholder="Gõ câu trả lời của bạn tại đây...">
           <button class="short-answer-submit-btn"><i class="fa-solid fa-paper-plane"></i> Gửi câu trả lời</button>
@@ -764,7 +768,6 @@ document.addEventListener('DOMContentLoaded', () => {
           thread_id: currentThreadId,
           quiz_type: "short_answer",
           user_text_answer: userText,
-          expected_keywords: quizData.expected_keywords || [],
           question_text: quizData.question,
           page_number: currentPage
         }, card);
@@ -777,10 +780,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } else {
       card.innerHTML = `
-        <div class="quiz-header"><i class="fa-solid fa-square-check"></i> Understanding Check (Trắc nghiệm) — ${quizData.concept}</div>
-        <div class="quiz-question">${quizData.question}</div>
+        <div class="quiz-header"><i class="fa-solid fa-square-check"></i> Understanding Check (Trắc nghiệm) — ${escapePreviewText(quizData.concept || '')}</div>
+        <div class="quiz-question">${escapePreviewText(quizData.question || '')}</div>
         <div class="quiz-options">
-          ${quizData.options.map((opt, idx) => `<button class="quiz-opt-btn quiz-choice-btn" data-idx="${idx}">${opt}</button>`).join('')}
+          ${quizData.options.map((opt, idx) => `<button class="quiz-opt-btn quiz-choice-btn" data-idx="${idx}">${escapePreviewText(opt)}</button>`).join('')}
         </div>
       `;
       chatMessages.appendChild(card);
@@ -794,7 +797,6 @@ document.addEventListener('DOMContentLoaded', () => {
             thread_id: currentThreadId,
             quiz_type: "multiple_choice",
             selected_option: selectedIdx,
-            correct_option: quizData.correct_index,
             question_text: quizData.question,
             page_number: currentPage
           }, card);
@@ -812,6 +814,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || 'Không thể gửi câu trả lời.');
+      }
 
       if (data.is_correct) {
         cardElement.style.borderColor = "#10b981";
@@ -827,7 +832,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         cardElement.style.borderColor = "#f43f5e";
-        renderMisconceptionCard(data.misconception);
+        if (data.misconception) renderMisconceptionCard(data.misconception);
         if (data.default_suggestions) renderFollowupChips(data.default_suggestions);
       }
     } catch (err) {

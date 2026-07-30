@@ -15,6 +15,15 @@ def route_after_input_guard(
     return "context_guard"
 
 
+def route_after_context_guard(
+    state: LearningLoopState,
+) -> Literal["router", "output_guard"]:
+    """Stop before model invocation when course context contains injection."""
+    if state.get("status") == "blocked":
+        return "output_guard"
+    return "router"
+
+
 def route_after_router(
     state: LearningLoopState,
 ) -> Literal["generate_clarification", "grounded_answer"]:

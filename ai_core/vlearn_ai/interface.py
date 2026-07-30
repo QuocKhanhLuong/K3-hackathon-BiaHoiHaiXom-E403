@@ -126,7 +126,7 @@ class VLearnAICore:
         thread_id: str,
         question: str,
         selected_context: str,
-        conversation_history: list[dict[str, Any]] | None = None,
+        conversation_history: list[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """Start a new turn in the learning loop for a given thread_id."""
         if not thread_id or not thread_id.strip():
@@ -146,7 +146,7 @@ class VLearnAICore:
             "thread_id": thread_id,
             "user_query": question.strip(),
             "selected_context": selected_context.strip(),
-            "conversation_history": safe_history,
+            "conversation_history": conversation_history or [],
             "status": "running",
         }
 
