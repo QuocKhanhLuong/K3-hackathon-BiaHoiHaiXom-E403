@@ -1,0 +1,13 @@
+{
+  "run_id": "20260730-204353-live",
+  "timestamp": "2026-07-30T13:56:57Z",
+  "git_sha": "dd58a04b3c161a236c89cffdeb139e925ede3321",
+  "git_branch": "update-eval",
+  "mode": "live",
+  "model": "gpt-5-nano",
+  "seed": 42,
+  "repeat": 1,
+  "scenario_count": 15,
+  "judge_enabled": false,
+  "live_api_called": true
+}
