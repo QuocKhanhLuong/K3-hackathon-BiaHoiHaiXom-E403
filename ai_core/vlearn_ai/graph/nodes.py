@@ -550,11 +550,17 @@ def evaluate_check_node(
         )
     )
 
+    grounded_msg = (
+        eval_res.error_explanation
+        if eval_res.is_correct
+        else state.get("grounded_answer", "")
+    )
     return {
         "check_result": eval_res.model_dump(),
+        "grounded_answer": grounded_msg,
         "status": "running",
         "tool_trace": _record_trace(
-            state, "validate_understanding", "success", model=llm
+            state, "evaluate_check", "success", model=llm
         ),
     }
 

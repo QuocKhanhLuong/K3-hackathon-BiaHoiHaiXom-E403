@@ -20,6 +20,14 @@ GENERIC_FOLLOWUP_PATTERNS = [
     "bạn có thắc mắc gì không",
 ]
 
+# Infrastructure tools excluded from allowed_tools strict check
+INFRASTRUCTURE_TOOLS = [
+    "input_guard",
+    "context_guard",
+    "output_guard",
+    "grounding_guard",
+]
+
 # Standard categories for failure grouping
 FAILURE_CATEGORIES = [
     "routing",

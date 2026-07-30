@@ -1,165 +1,59 @@
 [
   {
-    "id": "CROSS-SLIDE-001",
+    "id": "CROSS-GOLD-001",
     "name": "Neighboring slides context retrieval",
-    "description": "Question references concept from neighboring slide (±2 pages)",
-    "tags": ["cross_slide", "retrieval"],
+    "description": "Question references concept from neighboring slide (±2 pages) in deck d1",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["cross_slide", "retrieval", "gold"],
     "mode": "both",
     "deck_id": "d1",
-    "start_page": 3,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Liên hệ giữa thông tin ở slide 3 và slide 1 là gì?",
-        "expected": {
-          "statuses": ["completed"],
-          "assistant_message_required": true
+    "start_page": 2,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "simple",
+            "confidence": 0.95,
+            "reason": "Hỏi thông tin giữa các slide"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Slide 1 và slide 2 cùng nằm trong chương trình Day 1 với phần Agenda giới thiệu nội dung.",
+            "claims": [
+              {
+                "claim": "Slide 1 và slide 2 cùng nằm trong chương trình Day 1 với phần Agenda giới thiệu nội dung.",
+                "citation_ids": ["d1-p1", "d1-p2"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              },
+              {
+                "citation_id": "d1-p2",
+                "snippet": "AI IN ACTION - Day 1 Agenda"
+              }
+            ]
+          }
         }
-      }
-    ]
-  },
-  {
-    "id": "CROSS-SLIDE-002",
-    "name": "No cross deck context leakage",
-    "description": "Retrieval on deck d1 must not retrieve slides from deck d2",
-    "tags": ["cross_slide", "retrieval"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Tóm tắt thông tin bài học Day 1.",
-        "expected": {
-          "statuses": ["completed"],
-          "assistant_message_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "CROSS-SLIDE-003",
-    "name": "Selected text overrides weak slide retrieval",
-    "description": "Selected text is given top priority in context bundle",
-    "tags": ["cross_slide", "retrieval"],
-    "setup": {
-      "selected_text": "Key dùng để so khớp với Query trong cơ chế Self-Attention."
+      ]
     },
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 5,
     "turns": [
       {
         "type": "user_turn",
-        "input": "Giải thích nội dung tôi vừa chọn.",
+        "input": "Liên hệ giữa thông tin ở slide 2 và slide 1 là gì?",
         "expected": {
+          "routes": ["simple"],
           "statuses": ["completed"],
-          "response_contains_any": ["Key", "Query"]
-        }
-      }
-    ]
-  },
-  {
-    "id": "CROSS-SLIDE-004",
-    "name": "Multi-slide answer citations",
-    "description": "Answer covering multiple topics cites valid slide sources",
-    "tags": ["cross_slide", "citation"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 2,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Trình bày tổng quan về Key, Query và Value.",
-        "expected": {
-          "statuses": ["completed", "awaiting_check"],
-          "min_citations": 1
-        }
-      }
-    ]
-  },
-  {
-    "id": "CROSS-SLIDE-005",
-    "name": "Full deck summary query",
-    "description": "User asks to summarize the entire course deck",
-    "tags": ["cross_slide", "retrieval"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Tóm tắt các điểm chính của toàn bộ bài học này.",
-        "expected": {
-          "statuses": ["completed"],
-          "assistant_message_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "CROSS-SLIDE-006",
-    "name": "Previous slide pronoun reference",
-    "description": "User references 'slide trước'",
-    "tags": ["cross_slide", "multi_turn"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 4,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Nội dung slide 4 là gì?",
-        "expected": {"statuses": ["completed"]}
-      },
-      {
-        "type": "user_turn",
-        "input": "So sánh nó với slide trước.",
-        "expected": {
-          "statuses": ["completed"],
-          "assistant_message_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "CROSS-SLIDE-007",
-    "name": "Next slide pronoun reference",
-    "description": "User references 'phần tiếp theo'",
-    "tags": ["cross_slide", "multi_turn"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 2,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Slide 2 nói về gì?",
-        "expected": {"statuses": ["completed"]}
-      },
-      {
-        "type": "user_turn",
-        "input": "Phần tiếp theo giới thiệu những gì?",
-        "expected": {
-          "statuses": ["completed"],
-          "assistant_message_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "CROSS-SLIDE-008",
-    "name": "Citation page mapping from structured source ID",
-    "description": "Verifies public citations preserve correct slide page number",
-    "tags": ["cross_slide", "citation"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 3,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Transformer Key có tác dụng gì?",
-        "expected": {
-          "statuses": ["completed"],
-          "min_citations": 1
+          "required_source_ids": ["d1-p1", "d1-p2"],
+          "required_deck_ids": ["d1"],
+          "grounding_required": true,
+          "min_citations": 2
         }
       }
     ]

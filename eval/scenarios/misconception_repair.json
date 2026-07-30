@@ -1,260 +1,126 @@
 [
   {
-    "id": "REPAIR-001",
+    "id": "REPAIR-GOLD-001",
     "name": "Concept confusion repair and new check",
     "description": "Student answers check wrong, system repairs misconception and issues new check",
-    "tags": ["misconception_repair", "repair", "route_check"],
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["misconception_repair", "repair", "gold"],
     "mode": "both",
     "deck_id": "d1",
     "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "check",
+            "confidence": 0.95,
+            "reason": "Yêu cầu kiểm tra"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Xem xét câu hỏi về AI IN ACTION dưới đây.",
+            "claims": [{"claim": "Xem xét câu hỏi về AI IN ACTION dưới đây.", "citation_ids": ["d1-p1"]}],
+            "citations": [{"citation_id": "d1-p1", "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"}]
+          }
+        },
+        {
+          "schema": "GiveExampleOutput",
+          "output": {"example": "Ví dụ 1", "relevance_explanation": "Minh họa"}
+        },
+        {
+          "schema": "MicroCheck",
+          "output": {
+            "question": "Câu hỏi kiểm tra 1: AI IN ACTION là gì?",
+            "question_type": "multiple_choice",
+            "target_concept": "AI IN ACTION",
+            "expected_answer": "Chủ đề slide 1",
+            "correct_option_id": "opt_a",
+            "options": [
+              {"option_id": "opt_a", "text": "Chủ đề slide 1"},
+              {"option_id": "opt_b", "text": "Hardware"},
+              {"option_id": "opt_c", "text": "Networking"}
+            ],
+            "explanation": "Chủ đề slide 1.",
+            "evidence": ["AI IN ACTION - Day 1 AI & LLM Foundation"]
+          }
+        },
+        {
+          "schema": "CheckEvaluation",
+          "output": {
+            "is_correct": false,
+            "score": 0.0,
+            "misconception_code": "topic_confusion",
+            "error_explanation": "Học viên nhầm lẫn chủ đề slide 1 với Hardware.",
+            "answer_evidence": "opt_b",
+            "recommended_repair_strategy": "review_concept_and_example"
+          }
+        },
+        {
+          "schema": "RepairPlan",
+          "output": {
+            "misconception_code": "topic_confusion",
+            "recommended_strategy": "review_concept_and_example",
+            "planned_tools": ["review_concept", "give_example"]
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Giải thích lại: Slide 1 tập trung vào AI IN ACTION và AI & LLM Foundation, không phải Hardware.",
+            "claims": [
+              {
+                "claim": "Slide 1 tập trung vào AI IN ACTION và AI & LLM Foundation, không phải Hardware.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [{"citation_id": "d1-p1", "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"}]
+          }
+        },
+        {
+          "schema": "GiveExampleOutput",
+          "output": {"example": "Ví dụ minh họa sửa sai 2", "relevance_explanation": "Giúp phân biệt"}
+        },
+        {
+          "schema": "MicroCheck",
+          "output": {
+            "question": "Câu hỏi mới sau khi giải thích: Slide 1 KHÔNG nói về điều gì?",
+            "question_type": "multiple_choice",
+            "target_concept": "AI IN ACTION",
+            "expected_answer": "Hardware",
+            "correct_option_id": "opt_b",
+            "options": [
+              {"option_id": "opt_a", "text": "AI IN ACTION"},
+              {"option_id": "opt_b", "text": "Hardware"},
+              {"option_id": "opt_c", "text": "Networking"}
+            ],
+            "explanation": "Slide 1 không nói về Hardware.",
+            "evidence": ["AI IN ACTION - Day 1 AI & LLM Foundation"]
+          }
+        }
+      ]
+    },
     "turns": [
       {
         "type": "user_turn",
-        "input": "Key và Value khác nhau như thế nào?",
+        "input": "Hãy kiểm tra kiến thức của tôi.",
         "expected": {
           "routes": ["check"],
           "statuses": ["awaiting_check"],
-          "required_tools": ["generate_check"]
+          "required_tools": ["router", "validate_understanding"]
         }
-      },
-      {
-        "type": "action_response",
-        "input": "Key và Value là một.",
-        "expected": {
-          "statuses": ["awaiting_check"],
-          "required_tools": ["detect_misconception", "review_concept", "grounding_guard", "validate_understanding"],
-          "new_check_required": true,
-          "no_stale_citations": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "REPAIR-002",
-    "name": "Repeated misconception hits retry limit",
-    "description": "Student answers wrong 3 times in a row, hits max retry limit (safe_end)",
-    "tags": ["misconception_repair", "repair", "route_check"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Key và Value khác nhau thế nào?",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Lần 1 sai.",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Lần 2 vẫn sai.",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Lần 3 lại sai tiếp.",
-        "expected": {
-          "statuses": ["completed"],
-          "required_tools": ["safe_end"],
-          "assistant_message_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "REPAIR-003",
-    "name": "Repair followed by correct student answer",
-    "description": "Student answers wrong, gets repaired, answers new check correctly",
-    "tags": ["misconception_repair", "repair", "route_check"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "So sánh Key và Value.",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Key để lưu dữ liệu.",
-        "expected": {"statuses": ["awaiting_check"], "new_check_required": true}
-      },
-      {
-        "type": "action_response",
-        "input": "opt_a",
-        "expected": {"statuses": ["completed"], "assistant_message_required": true}
-      }
-    ]
-  },
-  {
-    "id": "REPAIR-004",
-    "name": "Inverse relation misconception",
-    "description": "Student believes Key is Value and Value is Key",
-    "tags": ["misconception_repair", "repair"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Key và Value có chức năng gì?",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Key chứa nội dung còn Value dùng để so khớp.",
-        "expected": {
-          "statuses": ["awaiting_check"],
-          "required_tools": ["detect_misconception", "review_concept"]
-        }
-      }
-    ]
-  },
-  {
-    "id": "REPAIR-005",
-    "name": "Repair text passes grounding guard",
-    "description": "Verify repair response has valid citations and claims passing grounding guard",
-    "tags": ["misconception_repair", "repair", "grounding"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Khái niệm Key là gì?",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Nó là bộ nhớ cache RAM.",
-        "expected": {
-          "statuses": ["awaiting_check"],
-          "required_tools": ["grounding_guard"],
-          "no_stale_citations": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "REPAIR-006",
-    "name": "Misconception with hint and example",
-    "description": "Repair plan executes review_concept and give_example",
-    "tags": ["misconception_repair", "repair"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "So sánh Key và Value.",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Chẳng có gì khác nhau cả.",
-        "expected": {
-          "statuses": ["awaiting_check"],
-          "required_tools": ["review_concept", "give_example"]
-        }
-      }
-    ]
-  },
-  {
-    "id": "REPAIR-007",
-    "name": "Partially correct answer repair",
-    "description": "Student answer is partially correct but incomplete",
-    "tags": ["misconception_repair", "repair"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "So sánh Key và Value.",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Key dùng để so khớp nhưng không rõ Value làm gì.",
-        "expected": {
-          "statuses": ["awaiting_check"],
-          "required_tools": ["detect_misconception"]
-        }
-      }
-    ]
-  },
-  {
-    "id": "REPAIR-008",
-    "name": "Repair generates new non-duplicate question",
-    "description": "Check question generated after repair is different from original question",
-    "tags": ["misconception_repair", "repair"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Key và Value khác nhau như thế nào?",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Là một thứ duy nhất.",
-        "expected": {
-          "statuses": ["awaiting_check"],
-          "new_check_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "REPAIR-009",
-    "name": "Wrong option with incorrect natural explanation",
-    "description": "Student chooses wrong option B and adds wrong text",
-    "tags": ["misconception_repair", "repair"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "So sánh Key và Value.",
-        "expected": {"statuses": ["awaiting_check"]}
       },
       {
         "type": "action_response",
         "input": "opt_b",
         "expected": {
           "statuses": ["awaiting_check"],
-          "required_tools": ["detect_misconception"]
-        }
-      }
-    ]
-  },
-  {
-    "id": "REPAIR-010",
-    "name": "Correct repair trace recording",
-    "description": "Verifies tools executed during repair are properly traced",
-    "tags": ["misconception_repair", "repair"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Key và Value là gì?",
-        "expected": {"statuses": ["awaiting_check"]}
-      },
-      {
-        "type": "action_response",
-        "input": "Tôi chưa hiểu rõ.",
-        "expected": {
-          "statuses": ["awaiting_check"],
-          "required_tools": ["review_concept", "validate_understanding"]
+          "required_tools": ["evaluate_check", "review_concept", "validate_understanding"],
+          "new_check_required": true,
+          "no_stale_citations": true
         }
       }
     ]

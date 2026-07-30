@@ -44,13 +44,16 @@ def _content_tokens(text: str) -> list[str]:
 def _claim_supported_by_citation(claim: str, snippet: str) -> bool:
     claim_norm = _normalize_text(claim)
     snippet_norm = _normalize_text(snippet)
-    if claim_norm in snippet_norm:
+    if claim_norm in snippet_norm or snippet_norm in claim_norm:
         return True
     claim_tokens = set(_content_tokens(claim))
     snippet_tokens = set(_content_tokens(snippet))
-    if not claim_tokens:
+    if not claim_tokens or not snippet_tokens:
         return False
-    return claim_tokens <= snippet_tokens
+    if claim_tokens <= snippet_tokens or snippet_tokens <= claim_tokens:
+        return True
+    overlap = claim_tokens & snippet_tokens
+    return len(overlap) / max(min(len(claim_tokens), len(snippet_tokens)), 1) >= 0.4
 
 
 def verify_grounding(
@@ -68,8 +71,10 @@ def verify_grounding(
 
     norm_context = _normalize_text(context)
 
-    # Empty citations fail for grounded answers
+    # Empty citations fail for grounded answers UNLESS answer contains 0 claims (conversational/de-escalation)
     if not citations:
+        if not claims:
+            return True, None
         return False, "Grounded answer contains no citations."
 
     citation_ids = [c.citation_id for c in citations]

@@ -1,100 +1,320 @@
 [
   {
-    "id": "ROUTE-BASIC-001",
+    "id": "ROUTE-GOLD-001",
     "name": "Simple factual query",
-    "description": "Verify basic factual question routes to simple",
-    "tags": ["routing_basic", "simple"],
+    "description": "Verify basic factual question routes to simple and returns grounded answer",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["routing_basic", "simple", "gold"],
     "mode": "both",
     "deck_id": "d1",
     "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "simple",
+            "confidence": 0.98,
+            "reason": "Câu hỏi định nghĩa cơ bản"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Day 1 giới thiệu tổng quan về AI & LLM Foundation.",
+            "claims": [
+              {
+                "claim": "Day 1 giới thiệu tổng quan về AI & LLM Foundation.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI & LLM Foundation"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "turns": [
       {
         "type": "user_turn",
-        "input": "Transformer là gì?",
+        "input": "Day 1 giới thiệu nội dung gì?",
         "expected": {
-          "routes": ["simple", "grounded_answer"],
+          "routes": ["simple"],
           "statuses": ["completed"],
           "required_tools": ["router", "give_direct_answer"],
+          "allowed_tools": [],
+          "grounding_required": true,
+          "min_citations": 1,
           "assistant_message_required": true
         }
       }
     ]
   },
   {
-    "id": "ROUTE-BASIC-002",
-    "name": "Deep dive query",
+    "id": "ROUTE-GOLD-002",
+    "name": "Deep dive query with history",
     "description": "Verify deep why question routes to deep and generates followups",
-    "tags": ["routing_basic", "deep"],
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["routing_basic", "deep", "gold"],
     "mode": "both",
     "deck_id": "d1",
     "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "deep",
+            "confidence": 0.95,
+            "reason": "Yêu cầu giải thích chi tiết nguyên nhân"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Nội dung AI IN ACTION được chú trọng trong Day 1 để học viên hiểu bản chất ứng dụng AI.",
+            "claims": [
+              {
+                "claim": "Nội dung AI IN ACTION được chú trọng trong Day 1 để học viên hiểu bản chất ứng dụng AI.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              }
+            ]
+          }
+        },
+        {
+          "schema": "FollowUpSuggestions",
+          "output": {
+            "followups": [
+              {
+                "label": "Chi tiết",
+                "question": "Ứng dụng thực tế của AI IN ACTION là gì?"
+              },
+              {
+                "label": "So sánh",
+                "question": "So sánh AI Foundation với LLM Foundation?"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "turns": [
       {
         "type": "user_turn",
-        "input": "Tại sao cơ chế Attention lại hiệu quả hơn RNN trong xử lý song song?",
+        "input": "Tại sao AI IN ACTION lại được chú trọng trong Day 1?",
         "expected": {
           "routes": ["deep"],
           "statuses": ["completed"],
           "required_tools": ["router", "review_concept", "suggest_followups"],
-          "assistant_message_required": true,
-          "min_followups": 1
-        }
-      }
-    ]
-  },
-  {
-    "id": "ROUTE-BASIC-003",
-    "name": "Comparison query",
-    "description": "Verify comparison query triggers check route and example",
-    "tags": ["routing_basic", "check"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Key và Value khác nhau như thế nào?",
-        "expected": {
-          "routes": ["check"],
-          "statuses": ["awaiting_check"],
-          "required_tools": ["router", "review_concept", "give_example"],
+          "allowed_tools": [],
+          "min_followups": 2,
+          "followups_unique": true,
+          "generic_followups_forbidden": true,
           "assistant_message_required": true
         }
       }
     ]
   },
   {
-    "id": "ROUTE-BASIC-004",
-    "name": "Ambiguous query needing clarification",
-    "description": "Verify ambiguous query routes to clarify and pauses",
-    "tags": ["routing_basic", "route_clarify"],
+    "id": "ROUTE-GOLD-003",
+    "name": "Comparison query triggers check",
+    "description": "Verify comparison query triggers check route and quiz generation",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["routing_basic", "check", "gold"],
     "mode": "both",
     "deck_id": "d1",
     "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "check",
+            "confidence": 0.94,
+            "reason": "Yêu cầu so sánh và kiểm tra thấu hiểu"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Day 1 bao gồm tổng quan bài học AI & LLM Foundation.",
+            "claims": [
+              {
+                "claim": "Day 1 bao gồm tổng quan bài học AI & LLM Foundation.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              }
+            ]
+          }
+        },
+        {
+          "schema": "GiveExampleOutput",
+          "output": {
+            "example": "Ví dụ về AI IN ACTION trong thực tế",
+            "relevance_explanation": "Minh họa nội dung bài học"
+          }
+        },
+        {
+          "schema": "MicroCheck",
+          "output": {
+            "question": "Nội dung chính của Day 1 là gì?",
+            "question_type": "multiple_choice",
+            "target_concept": "AI Foundation",
+            "expected_answer": "AI & LLM Foundation",
+            "correct_option_id": "opt_a",
+            "options": [
+              {"option_id": "opt_a", "text": "AI & LLM Foundation"},
+              {"option_id": "opt_b", "text": "Lập trình Web"},
+              {"option_id": "opt_c", "text": "Quản trị cơ sở dữ liệu"}
+            ],
+            "explanation": "Day 1 tập trung vào AI & LLM Foundation.",
+            "evidence": ["AI IN ACTION - Day 1 AI & LLM Foundation"]
+          }
+        }
+      ]
+    },
     "turns": [
       {
         "type": "user_turn",
-        "input": "Cái này hoạt động như thế nào?",
+        "input": "Hãy so sánh nội dung Day 1 với các chủ đề khác.",
         "expected": {
-          "routes": ["clarify"],
-          "statuses": ["awaiting_clarification"],
-          "required_tools": ["router", "ask_clarification"]
+          "routes": ["check"],
+          "statuses": ["awaiting_check"],
+          "required_tools": ["router", "review_concept", "give_example", "validate_understanding"],
+          "allowed_tools": [],
+          "assistant_message_required": true
         }
       }
     ]
   },
   {
-    "id": "ROUTE-BASIC-005",
-    "name": "Explicit check request",
-    "description": "User requests to be tested",
-    "tags": ["routing_basic", "check"],
+    "id": "ROUTE-GOLD-004",
+    "name": "Ambiguous query needing clarification",
+    "description": "Verify ambiguous query routes to clarify and pauses for student input",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["routing_basic", "clarify", "gold"],
     "mode": "both",
     "deck_id": "d1",
-    "start_page": 2,
+    "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "clarify",
+            "confidence": 0.99,
+            "reason": "Thiếu chủ ngữ và ngữ cảnh rõ ràng"
+          }
+        },
+        {
+          "schema": "ClarificationRequest",
+          "output": {
+            "clarification_question": "Bạn muốn tìm hiểu thêm về khía cạnh nào trong bài học?",
+            "reason": "Câu hỏi quá mơ hồ"
+          }
+        }
+      ]
+    },
     "turns": [
       {
         "type": "user_turn",
-        "input": "Hãy kiểm tra xem tôi đã hiểu kiến thức slide này chưa.",
+        "input": "Cái này là sao?",
+        "expected": {
+          "routes": ["clarify"],
+          "statuses": ["awaiting_clarification"],
+          "required_tools": ["router", "ask_clarification"],
+          "allowed_tools": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-GOLD-005",
+    "name": "Explicit check request",
+    "description": "User explicit check request routes to check",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["routing_basic", "check", "gold"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "check",
+            "confidence": 0.99,
+            "reason": "Người dùng trực tiếp yêu cầu làm bài kiểm tra"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "Dưới đây là câu hỏi kiểm tra về AI IN ACTION cho bạn.",
+            "claims": [
+              {
+                "claim": "Dưới đây là câu hỏi kiểm tra về AI IN ACTION cho bạn.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1 AI & LLM Foundation"
+              }
+            ]
+          }
+        },
+        {
+          "schema": "GiveExampleOutput",
+          "output": {
+            "example": "Ví dụ về AI IN ACTION",
+            "relevance_explanation": "Minh họa"
+          }
+        },
+        {
+          "schema": "MicroCheck",
+          "output": {
+            "question": "Day 1 nói về chủ đề gì?",
+            "question_type": "multiple_choice",
+            "target_concept": "AI Foundation",
+            "expected_answer": "AI Foundation",
+            "correct_option_id": "opt_a",
+            "options": [
+              {"option_id": "opt_a", "text": "AI Foundation"},
+              {"option_id": "opt_b", "text": "Hardware"},
+              {"option_id": "opt_c", "text": "Networking"}
+            ],
+            "explanation": "Day 1 nói về AI Foundation.",
+            "evidence": ["AI IN ACTION - Day 1 AI & LLM Foundation"]
+          }
+        }
+      ]
+    },
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Hãy kiểm tra xem tôi đã hiểu slide này chưa.",
         "expected": {
           "routes": ["check"],
           "statuses": ["awaiting_check"],
@@ -104,138 +324,55 @@
     ]
   },
   {
-    "id": "ROUTE-BASIC-006",
+    "id": "ROUTE-GOLD-006",
     "name": "Short factual question",
-    "description": "Short factual definition",
-    "tags": ["routing_basic", "simple"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 3,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Key là gì?",
-        "expected": {
-          "routes": ["simple", "grounded_answer"],
-          "statuses": ["completed"],
-          "assistant_message_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "ROUTE-BASIC-007",
-    "name": "User asks for example",
-    "description": "User explicitly asks for an example",
-    "tags": ["routing_basic", "simple"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 3,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Cho tôi ví dụ về ứng dụng Transformer.",
-        "expected": {
-          "statuses": ["completed"],
-          "assistant_message_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "ROUTE-BASIC-008",
-    "name": "User asks for summary",
-    "description": "User asks to summarize slide",
-    "tags": ["routing_basic", "simple"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 4,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Tóm tắt nội dung chính slide này.",
-        "expected": {
-          "statuses": ["completed"],
-          "assistant_message_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "ROUTE-BASIC-009",
-    "name": "Out of scope question",
-    "description": "Question outside course context",
-    "tags": ["routing_basic", "simple"],
+    "description": "Short definition routes to simple",
+    "tier": "gold",
+    "evaluation_type": "hard",
+    "tags": ["routing_basic", "simple", "gold"],
     "mode": "both",
     "deck_id": "d1",
     "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Cách nấu món phở bò ngon như thế nào?",
-        "expected": {
-          "statuses": ["completed", "failed"],
-          "assistant_message_required": true
+    "offline_fixture": {
+      "model_script": [
+        {
+          "schema": "RouteOutput",
+          "output": {
+            "route": "simple",
+            "confidence": 0.97,
+            "reason": "Hỏi định nghĩa ngắn"
+          }
+        },
+        {
+          "schema": "GroundedAnswer",
+          "output": {
+            "answer": "AI IN ACTION là tiêu đề bài học slide 1.",
+            "claims": [
+              {
+                "claim": "AI IN ACTION là tiêu đề bài học slide 1.",
+                "citation_ids": ["d1-p1"]
+              }
+            ],
+            "citations": [
+              {
+                "citation_id": "d1-p1",
+                "snippet": "AI IN ACTION - Day 1"
+              }
+            ]
+          }
         }
-      }
-    ]
-  },
-  {
-    "id": "ROUTE-BASIC-010",
-    "name": "Multilingual mixed query",
-    "description": "Vietnamese and English mixed terms",
-    "tags": ["routing_basic", "simple"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 5,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "Self-attention mechanism làm nhiệm vụ gì trong Transformer network?",
-        "expected": {
-          "statuses": ["completed"],
-          "assistant_message_required": true
-        }
-      }
-    ]
-  },
-  {
-    "id": "ROUTE-BASIC-011",
-    "name": "Selected text priority query",
-    "description": "Query with explicit selected text",
-    "tags": ["routing_basic", "simple"],
-    "setup": {
-      "selected_text": "Key dùng để so khớp với Query trong cơ chế Self-Attention."
+      ]
     },
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 5,
     "turns": [
       {
         "type": "user_turn",
-        "input": "Đoạn đã chọn giải thích điều gì?",
+        "input": "Tiêu đề slide 1 là gì?",
         "expected": {
+          "routes": ["simple"],
           "statuses": ["completed"],
-          "assistant_message_required": true,
-          "response_contains_any": ["Key", "Query"]
-        }
-      }
-    ]
-  },
-  {
-    "id": "ROUTE-BASIC-012",
-    "name": "Malformed short query",
-    "description": "Short punctuation query",
-    "tags": ["routing_basic", "route_clarify"],
-    "mode": "both",
-    "deck_id": "d1",
-    "start_page": 1,
-    "turns": [
-      {
-        "type": "user_turn",
-        "input": "???",
-        "expected": {
-          "statuses": ["awaiting_clarification", "completed"]
+          "required_tools": ["router", "give_direct_answer"],
+          "grounding_required": true,
+          "min_citations": 1
         }
       }
     ]

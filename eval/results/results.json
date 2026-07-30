@@ -1,33 +1,108 @@
 {
   "mode": "offline",
-  "total_scenarios": 1,
-  "passed_scenarios": 1,
-  "failed_scenarios": 0,
-  "errored_scenarios": 0,
-  "total_turns": 1,
-  "passed_turns": 1,
-  "scenario_pass_rate": 100.0,
-  "turn_pass_rate": 100.0,
+  "total_scenarios": 15,
+  "evaluated_scenarios_count": 15,
+  "exploratory_scenario_count": 0,
+  "scenario_pass_rate": {
+    "value": 100.0,
+    "evaluated_count": 15,
+    "passed_count": 15,
+    "failed_count": 0,
+    "status": "evaluated"
+  },
+  "gold_scenario_pass_rate": {
+    "value": 100.0,
+    "evaluated_count": 15,
+    "passed_count": 15,
+    "failed_count": 0,
+    "status": "evaluated"
+  },
+  "coverage_scenario_pass_rate": {
+    "value": null,
+    "evaluated_count": 0,
+    "passed_count": 0,
+    "failed_count": 0,
+    "status": "not_evaluated"
+  },
+  "turn_pass_rate": {
+    "value": 100.0,
+    "evaluated_count": 19,
+    "passed_count": 19,
+    "failed_count": 0,
+    "status": "evaluated"
+  },
   "routing": {
-    "route_accuracy": 100.0,
-    "fallback_route_rate": 0.0
+    "route_accuracy": {
+      "value": 100.0,
+      "evaluated_count": 11,
+      "passed_count": 11,
+      "failed_count": 0,
+      "status": "evaluated"
+    }
   },
   "tool_orchestration": {
-    "required_tool_recall": 100.0,
-    "forbidden_tool_violation_rate": 0.0
+    "required_tool_recall": {
+      "value": 100.0,
+      "evaluated_count": 13,
+      "passed_count": 13,
+      "failed_count": 0,
+      "status": "evaluated"
+    },
+    "forbidden_tool_violation_rate": {
+      "value": 100.0,
+      "evaluated_count": 2,
+      "passed_count": 2,
+      "failed_count": 0,
+      "status": "evaluated"
+    }
   },
   "multi_turn": {
-    "multi_turn_scenarios_count": 0,
-    "multi_turn_completion_rate": 100.0,
-    "stale_citation_rate": 0.0
+    "multi_turn_completion_rate": {
+      "value": 100.0,
+      "evaluated_count": 4,
+      "passed_count": 4,
+      "failed_count": 0,
+      "status": "evaluated"
+    },
+    "stale_citation_rate": {
+      "value": 100.0,
+      "evaluated_count": 2,
+      "passed_count": 2,
+      "failed_count": 0,
+      "status": "evaluated"
+    }
   },
   "followups": {
-    "followup_presence_rate": 0.0
+    "followup_quality_pass_rate": {
+      "value": 100.0,
+      "evaluated_count": 9,
+      "passed_count": 9,
+      "failed_count": 0,
+      "status": "evaluated"
+    }
+  },
+  "grounding": {
+    "grounding_pass_rate": {
+      "value": 100.0,
+      "evaluated_count": 4,
+      "passed_count": 4,
+      "failed_count": 0,
+      "status": "evaluated"
+    }
+  },
+  "repair": {
+    "misconception_repair_pass_rate": {
+      "value": 100.0,
+      "evaluated_count": 1,
+      "passed_count": 1,
+      "failed_count": 0,
+      "status": "evaluated"
+    }
   },
   "performance": {
-    "mean_latency_ms": 13.0,
-    "p50_latency_ms": 13,
-    "p95_latency_ms": 13
+    "mean_latency_ms": 9.37,
+    "p50_latency_ms": 8,
+    "p95_latency_ms": 15
   },
   "failures_by_category": {}
 }

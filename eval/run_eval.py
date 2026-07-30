@@ -189,11 +189,14 @@ async def main():
     metrics = compute_aggregate_metrics(results, mode, total_run_latency_ms)
     write_run_reports(run_id, run_dir, metadata, results, metrics)
 
-    pass_count = metrics.get("passed_scenarios", 0)
-    rate = metrics.get("scenario_pass_rate", 0.0)
+    scen_pass = metrics.get("scenario_pass_rate", {})
+    pass_count = scen_pass.get("passed_count", 0)
+    eval_count = scen_pass.get("evaluated_count", 0)
+    rate_val = scen_pass.get("value")
+    rate_str = f"{rate_val:.1f}%" if rate_val is not None else "NOT EVALUATED"
 
     print("\n========================================================")
-    print(f"  Eval Completed! Result: {pass_count}/{total_scenarios} ({rate:.1f}%)")
+    print(f"  Eval Completed! Passed: {pass_count}/{eval_count} evaluated scenarios ({rate_str})")
     print(f"  Report written to: {run_dir / 'report.md'}")
     print("========================================================\n")
 

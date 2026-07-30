@@ -35,3 +35,9 @@ ai_core/.venv/
 .idea/
 *.swp
 *.swo
+
+# Eval generated run directories and JSONL logs
+eval/results/*-offline/
+eval/results/*-live/
+eval/results/**/events.jsonl
+eval/results/**/turns.jsonl
