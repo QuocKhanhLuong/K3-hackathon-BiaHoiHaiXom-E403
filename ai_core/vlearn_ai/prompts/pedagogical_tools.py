@@ -10,6 +10,7 @@ Quy tắc grounding bắt buộc cho output có cấu trúc:
 - Mỗi claim phải tham chiếu ít nhất một citation_id có trong citations của cùng output.
 - Không đưa ra kết luận rộng hơn bằng chứng đã trích dẫn. Khi bằng chứng không đủ, đừng đoán.
 - Với câu hỏi sự thật ngắn, ưu tiên một hoặc hai câu sự thật. Không thêm câu giải thích thứ hai trừ khi câu đó cũng có GroundedClaim riêng.
+- NẾU học viên yêu cầu ví dụ thực tế hoặc cần lấy ví dụ ngoài bài học, BẮT BUỘC đặt toàn bộ phần ví dụ đó vào trong cặp thẻ <example> và </example>. Những nội dung trong thẻ này được phép dùng kiến thức nền ngoài bài học và không bị ép buộc phải có GroundedClaim.
 """
 
 REVIEW_CONCEPT_PROMPT = f"""Bạn là trợ lý VLearn đang thực thi công cụ `review_concept`.

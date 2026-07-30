@@ -134,6 +134,8 @@ body {
   min-width: 450px;
   display: flex;
   flex-direction: column;
+  container-name: slide-pane;
+  container-type: inline-size;
   background: var(--bg-light);
   border-right: 1px solid var(--border-color);
 }
@@ -859,8 +861,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .color-swatch:hover { transform: scale(1.18); box-shadow: 0 0 0 2px var(--blue-500); }
 @keyframes paletteIn { from { opacity: 0; transform: translate(-50%, -5px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
 
-.slide-viewport { align-items: flex-start; justify-content: flex-start; padding: 28px 26px; perspective: 1600px; overflow: auto; }
-.book-stage { position: relative; flex: 0 0 auto; width: 580px; max-width: none; margin-left: auto; perspective: 1800px; filter: drop-shadow(0 20px 25px rgba(14, 81, 126, .13)); transition: width .18s ease; }
+.slide-viewport { align-items: flex-start; justify-content: flex-start; min-width: 0; padding: 28px 26px; perspective: 1600px; overflow-x: hidden; overflow-y: auto; }
+.book-stage {
+  --slide-target-width: 580px;
+  position: relative;
+  flex: 0 1 var(--slide-target-width);
+  width: var(--slide-target-width);
+  max-width: 100%;
+  min-width: 0;
+  margin-left: auto;
+  perspective: 1800px;
+  filter: drop-shadow(0 20px 25px rgba(14, 81, 126, .13));
+  transition: width .18s ease, flex-basis .18s ease;
+}
 .book-stage::after { content: ""; position: absolute; z-index: -1; left: 6%; right: 6%; bottom: -13px; height: 24px; border-radius: 50%; background: rgba(8,79,126,.18); filter: blur(13px); }
 .slide-card {
   width: 100%; min-height: 440px; overflow: hidden; padding: 26px;
@@ -977,6 +990,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .modal-content { border: 1px solid rgba(109,190,239,.25); }
 .wf-diagram-box { background: #06233a; border: 1px solid rgba(114,199,249,.2); }
 
+@container slide-pane (max-width: 760px) {
+  .note-panel { display: none !important; }
+  .book-stage { margin-right: auto; }
+  .slide-toolbar { justify-content: flex-start; gap: 12px; overflow-x: auto; }
+}
+
 @media (max-width: 1120px) {
   .doc-info { display: none; }
   .right-pane { width: 410px; }
@@ -996,10 +1015,22 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   .slide-toolbar { overflow-x: auto; gap: 12px; }
   .slide-toolbar .tool-group:nth-child(2) { display: none; }
   .slide-viewport { padding: 18px 12px; }
-  .book-stage { margin-left: 0; }
+  .book-stage { flex-basis: min(var(--slide-target-width), 100%); width: min(var(--slide-target-width), 100%); margin-inline: auto; }
   .slide-card { min-height: 400px; padding: 18px; }
   .slide-title-area { padding: 28px 18px; }
   .slide-title-area h2 { font-size: 20px; }
+}
+
+@media (max-width: 480px) {
+  .navbar { padding-inline: 10px; }
+  .nav-right { gap: 6px; }
+  .app-container { margin: 6px; border-radius: 16px; }
+  .left-pane { min-height: 0; }
+  .slide-toolbar { height: 52px; padding-inline: 10px; }
+  .tool-btn { padding-inline: 9px; }
+  .slide-viewport { padding: 12px 8px; }
+  .slide-pagination { position: sticky; bottom: 0; z-index: 100; }
+  .right-pane { height: min(680px, 78vh); }
 }
 
 @media (prefers-reduced-motion: reduce) {

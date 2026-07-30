@@ -85,6 +85,8 @@ def _claim_supported_by_citation(claim: str, snippet: str) -> bool:
 def _answer_sentences(answer: str) -> list[str]:
     """Return factual answer sentences subject to claim-coverage validation."""
     clean_answer = answer
+    # Bỏ qua toàn bộ nội dung trong thẻ <example>...</example> khỏi việc kiểm tra grounding
+    clean_answer = re.sub(r"<example>.*?</example>", "", clean_answer, flags=re.IGNORECASE | re.DOTALL)
     for prefix in ["Ví dụ:", "Lời động viên:", "Gợi ý:"]:
         if prefix in clean_answer:
             clean_answer = clean_answer.split(prefix)[0]

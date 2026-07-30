@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function applyZoom(nextZoom) {
     currentZoom = Math.min(maxZoom, Math.max(minZoom, nextZoom));
     zoomVal.textContent = `${currentZoom}%`;
-    bookStage.style.width = `${Math.round(slideBaseWidth * currentZoom / 100)}px`;
+    bookStage.style.setProperty('--slide-target-width', `${Math.round(slideBaseWidth * currentZoom / 100)}px`);
     zoomOutBtn.disabled = currentZoom <= minZoom;
     zoomInBtn.disabled = currentZoom >= maxZoom;
     zoomOutBtn.setAttribute('aria-label', `Thu nhỏ slide, hiện tại ${currentZoom}%`);
@@ -235,8 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     annotationCanvas.width = Math.round(rect.width * ratio);
     annotationCanvas.height = Math.round(rect.height * ratio);
-    annotationCanvas.style.width = `${rect.width}px`;
-    annotationCanvas.style.height = `${rect.height}px`;
     annotationCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
     annotationCtx.lineCap = 'round';
     annotationCtx.lineJoin = 'round';
@@ -333,9 +331,23 @@ document.addEventListener('DOMContentLoaded', () => {
   annotationCanvas.addEventListener('pointerup', stopDrawing);
   annotationCanvas.addEventListener('pointercancel', stopDrawing);
   window.addEventListener('resize', () => {
+    if (window.matchMedia('(max-width: 780px)').matches) {
+      leftPane.style.removeProperty('width');
+      leftPane.style.removeProperty('flex');
+      rightPane.style.removeProperty('width');
+      rightPane.style.removeProperty('flex');
+    }
     clearTimeout(annotationResizeTimer);
     annotationResizeTimer = setTimeout(() => resizeAnnotationCanvas(false), 120);
   });
+
+  if ('ResizeObserver' in window) {
+    const slideResizeObserver = new ResizeObserver(() => {
+      clearTimeout(annotationResizeTimer);
+      annotationResizeTimer = setTimeout(() => resizeAnnotationCanvas(false), 80);
+    });
+    slideResizeObserver.observe(slideCard);
+  }
 
   function turnPage(targetPage, direction) {
     const slideCard = document.getElementById('slideCard');
@@ -894,28 +906,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 6. Resizer Handle Logic
   let isResizing = false;
-  resizer.addEventListener('mousedown', (e) => {
+  resizer.addEventListener('pointerdown', (e) => {
+    if (window.matchMedia('(max-width: 780px)').matches) return;
     isResizing = true;
+    resizer.setPointerCapture(e.pointerId);
     document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
   });
 
-  document.addEventListener('mousemove', (e) => {
+  document.addEventListener('pointermove', (e) => {
     if (!isResizing) return;
-    const containerWidth = document.querySelector('.app-container').clientWidth;
-    const leftWidth = e.clientX;
-    const rightWidth = containerWidth - leftWidth;
+    const containerRect = document.querySelector('.app-container').getBoundingClientRect();
+    const resizerWidth = resizer.getBoundingClientRect().width;
+    const usableWidth = containerRect.width - resizerWidth;
+    const leftMinWidth = parseFloat(getComputedStyle(leftPane).minWidth) || 350;
+    const rightMinWidth = 350;
+    const leftWidth = Math.min(
+      usableWidth - rightMinWidth,
+      Math.max(leftMinWidth, e.clientX - containerRect.left)
+    );
+    const leftRatio = Math.max(0, Math.min(1, leftWidth / usableWidth));
 
-    if (leftWidth > 350 && rightWidth > 350) {
-      leftPane.style.width = `${leftWidth}px`;
-      leftPane.style.flex = 'none';
-      rightPane.style.width = `${rightWidth}px`;
-    }
+    leftPane.style.width = 'auto';
+    leftPane.style.flex = `0 0 ${leftRatio * 100}%`;
+    rightPane.style.width = 'auto';
+    rightPane.style.flex = '1 1 0';
   });
 
-  document.addEventListener('mouseup', () => {
+  function stopResizing(e) {
+    if (!isResizing) return;
     isResizing = false;
+    if (e?.pointerId !== undefined && resizer.hasPointerCapture(e.pointerId)) {
+      resizer.releasePointerCapture(e.pointerId);
+    }
     document.body.style.cursor = 'default';
-  });
+    document.body.style.userSelect = '';
+    resizeAnnotationCanvas(false);
+  }
+
+  document.addEventListener('pointerup', stopResizing);
+  document.addEventListener('pointercancel', stopResizing);
 
   // 7. Dark/Light Theme Toggle
   themeToggleBtn.addEventListener('click', () => {
