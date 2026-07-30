@@ -86,7 +86,8 @@ async def run_eval():
                 "Question": case["question"].replace('\n', ' '),
                 "Expected": case["expected_route"],
                 "Actual": "ERROR",
-                "Pass": "❌ FAIL"
+                "Pass": "❌ FAIL",
+                "Notes": str(e).replace('\n', ' ')[:100] + '...' # truncate error message
             })
             
         # Thêm sleep để tránh lỗi 429 Rate Limit (Free Tier chỉ cho 15 request/phút)
@@ -99,11 +100,12 @@ async def run_eval():
     with open('eval/eval_results.md', 'w', encoding='utf-8') as f:
         f.write("# Bảng Kết Quả Đánh Giá VLearn Tutor (Native LangGraph Engine)\n\n")
         f.write(f"**Kết quả: {correct_count} / {total} ({(correct_count/total)*100:.1f}%)**\n\n")
-        f.write("| ID | Question | Expected Route | Actual Route | Pass/Fail |\n")
-        f.write("|---|---|---|---|---|\n")
+        f.write("| ID | Question | Expected Route | Actual Route | Pass/Fail | Notes |\n")
+        f.write("|---|---|---|---|---|---|\n")
         
         for r in results:
-            f.write(f"| {r['ID']} | {r['Question']} | {r['Expected']} | {r['Actual']} | {r['Pass']} |\n")
+            notes = r.get("Notes", "")
+            f.write(f"| {r['ID']} | {r['Question']} | {r['Expected']} | {r['Actual']} | {r['Pass']} | {notes} |\n")
             
     print(f"\nEval completed! Result: {correct_count}/{total} ({(correct_count/total)*100:.1f}%).")
 
