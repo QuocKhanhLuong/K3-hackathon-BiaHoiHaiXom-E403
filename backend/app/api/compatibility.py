@@ -106,9 +106,7 @@ def _legacy_sources(
     output: list[dict[str, Any]] = []
     for page in pages:
         slide = _slides(request).resolve(page) or {}
-        citation = next(
-            (item for item in citations if item.page_number == page), None
-        )
+        citation = next((item for item in citations if item.page_number == page), None)
         output.append(
             {
                 "page": page,
@@ -122,9 +120,7 @@ def _legacy_sources(
     return output
 
 
-def to_legacy_tutor_response(
-    request: Request, outcome: TurnOutcome
-) -> dict[str, Any]:
+def to_legacy_tutor_response(request: Request, outcome: TurnOutcome) -> dict[str, Any]:
     citations = public_citations(
         outcome.result.get("citations") or [], outcome.page_number
     )
@@ -136,9 +132,7 @@ def to_legacy_tutor_response(
         }
     )
     return {
-        "status": (
-            "failed" if outcome.result.get("status") == "failed" else "success"
-        ),
+        "status": ("failed" if outcome.result.get("status") == "failed" else "success"),
         "thread_id": outcome.conversation.id,
         "turn_id": outcome.turn.id,
         "answer": outcome.result.get("assistant_message") or "",
@@ -236,7 +230,10 @@ async def tutor_ask_stream(payload: LegacyAskRequest, request: Request):
     def emit(event_type: str, **data: Any) -> str:
         return (
             "data: "
-            + json.dumps({"type": event_type, "request_id": request_id, **data}, ensure_ascii=False)
+            + json.dumps(
+                {"type": event_type, "request_id": request_id, **data},
+                ensure_ascii=False,
+            )
             + "\n\n"
         )
 
@@ -264,9 +261,7 @@ async def tutor_ask_stream(payload: LegacyAskRequest, request: Request):
                 status="completed",
                 detail="Đã hoàn tất bước xử lý hiện tại.",
             )
-            yield emit(
-                "result", data=to_legacy_tutor_response(request, outcome)
-            )
+            yield emit("result", data=to_legacy_tutor_response(request, outcome))
         except BackendError as exc:
             yield emit(
                 "error",
@@ -295,9 +290,7 @@ async def tutor_ask_stream(payload: LegacyAskRequest, request: Request):
 
 
 @router.post("/api/clarification/submit")
-async def submit_clarification(
-    payload: LegacyClarificationRequest, request: Request
-):
+async def submit_clarification(payload: LegacyClarificationRequest, request: Request):
     pending = await _service(request).repository.pending_action_for_conversation(
         payload.thread_id, _owner(request)
     )

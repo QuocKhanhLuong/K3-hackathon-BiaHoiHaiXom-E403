@@ -1,22 +1,23 @@
 """
 Tool: Clarification Tool (Powered by Gemini Flash 3.1 Lite / Gemini 3 Flash)
 """
-from pydantic import BaseModel
-from typing import List, Optional
-import sys
 import os
+import sys
+
+from pydantic import BaseModel
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from backend.gemini_client import call_gemini_json
 
+
 class ClarificationInput(BaseModel):
     question: str
     page_number: int = 1
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 class ClarificationOutput(BaseModel):
     clarifying_question: str
-    suggested_inputs: List[str]
+    suggested_inputs: list[str]
 
 def run_clarification_tool(input_data: ClarificationInput) -> ClarificationOutput:
     system_prompt = (

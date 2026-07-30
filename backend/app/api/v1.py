@@ -42,9 +42,7 @@ async def ready(request: Request):
     }
 
 
-@router.post(
-    "/conversations", response_model=ConversationResponse, status_code=201
-)
+@router.post("/conversations", response_model=ConversationResponse, status_code=201)
 async def create_conversation(
     payload: ConversationCreateRequest, request: Request
 ) -> ConversationResponse:

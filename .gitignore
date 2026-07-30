@@ -1,10 +1,18 @@
+# Environment files
+.env
+.env.*
+*.env
+!.env.example
+!**/.env.example
+
+# Temporary and build artifacts
+.backup_tmp/
 .DS_Store
 node_modules/
-*.env
-.env
 
 # Python byte-code and caches
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -22,10 +30,8 @@ venv/
 ENV/
 ai_core/.venv/
 
-# IDE settings & temporary files
+# IDE settings
 .vscode/
 .idea/
 *.swp
 *.swo
-.vscode
-.ruff_cache

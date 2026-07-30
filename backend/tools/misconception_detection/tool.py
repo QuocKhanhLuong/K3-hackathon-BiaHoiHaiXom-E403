@@ -1,27 +1,28 @@
 """
 Tool: Misconception Detection & Re-explanation (Powered by Gemini Flash 3.1 Lite / Gemini 3 Flash)
 """
-import time
-from pydantic import BaseModel
-from typing import Optional, List
-import sys
 import os
+import sys
+import time
+
+from pydantic import BaseModel
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from backend.gemini_client import call_gemini_json
+
 
 class MisconceptionInput(BaseModel):
     question_text: str
     selected_option: int
     correct_option: int
     page_number: int = 1
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 class RecheckQuiz(BaseModel):
     quiz_id: str
     concept: str
     question: str
-    options: List[str]
+    options: list[str]
     correct_index: int
     explanation: str
 

@@ -33,7 +33,6 @@ _STOPWORDS = {
     "is",
     "a",
     "an",
-    "the",
 }
 
 
@@ -43,14 +42,15 @@ def _content_tokens(text: str) -> list[str]:
 
 
 def _claim_supported_by_citation(claim: str, snippet: str) -> bool:
+    claim_norm = _normalize_text(claim)
+    snippet_norm = _normalize_text(snippet)
+    if claim_norm in snippet_norm:
+        return True
     claim_tokens = set(_content_tokens(claim))
     snippet_tokens = set(_content_tokens(snippet))
     if not claim_tokens:
         return False
-    if claim_tokens <= snippet_tokens:
-        return True
-    overlap = claim_tokens & snippet_tokens
-    return len(overlap) / max(len(claim_tokens), 1) >= 0.75
+    return claim_tokens <= snippet_tokens
 
 
 def verify_grounding(
@@ -59,7 +59,7 @@ def verify_grounding(
     context: str,
     claims: list[GroundedClaim] | None = None,
 ) -> tuple[bool, str | None]:
-    """Strictly verify that citations and claims are valid, non-empty, unique, and present in context."""
+    """Strictly verify that citations and claims are valid, non-empty, unique, present in context, and cover the answer."""
     if not context or not context.strip():
         return False, "Course context is empty or missing."
 
@@ -121,6 +121,35 @@ def verify_grounding(
             return (
                 False,
                 f"Claim '{claim_obj.claim[:40]}' is not supported by its cited evidence.",
+            )
+
+    # Answer sentence coverage check
+    clean_ans = answer
+    for prefix in ["Ví dụ:", "Lời động viên:", "Gợi ý:"]:
+        if prefix in clean_ans:
+            clean_ans = clean_ans.split(prefix)[0]
+
+    sentences = [s.strip() for s in re.split(r"[.!?]\s+|\n+", clean_ans) if s.strip()]
+    claim_texts = [cl.claim for cl in claims]
+
+    for sentence in sentences:
+        s_tokens = set(_content_tokens(sentence))
+        if len(s_tokens) < 3:
+            continue
+        covered = False
+        for c_text in claim_texts:
+            c_tokens = set(_content_tokens(c_text))
+            if (
+                s_tokens <= c_tokens
+                or c_tokens <= s_tokens
+                or (len(s_tokens & c_tokens) / max(len(s_tokens), 1) >= 0.7)
+            ):
+                covered = True
+                break
+        if not covered:
+            return (
+                False,
+                f"Factual sentence '{sentence[:40]}...' is not covered by any grounded claim.",
             )
 
     return True, None

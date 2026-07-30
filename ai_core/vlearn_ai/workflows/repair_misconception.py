@@ -8,7 +8,14 @@ from vlearn_ai.prompts.repair import (
     REPAIR_SYSTEM_PROMPT,
     REPAIR_USER_PROMPT_TEMPLATE,
 )
-from vlearn_ai.schemas import AIStructuredOutputError, CheckEvaluation, GroundedAnswer, RepairPlan
+from vlearn_ai.schemas import (
+    AIStructuredOutputError,
+    CheckEvaluation,
+    Citation,
+    GroundedAnswer,
+    GroundedClaim,
+    RepairPlan,
+)
 from vlearn_ai.tools.give_example import execute_give_example
 from vlearn_ai.tools.give_hint import execute_give_hint
 from vlearn_ai.tools.motivate import execute_motivate
@@ -50,19 +57,24 @@ async def run_repair_misconception(
     validate_plan_tools(plan.planned_tools, retry_count=retry_count)
 
     repair_responses: list[str] = []
-    grounded_claims = []
-    grounded_citations = []
+    grounded_claims: list[GroundedClaim] = []
+    grounded_citations: list[Citation] = []
     executed_tools: list[str] = []
 
-    for tool_name in plan.planned_tools:
+    planned = list(plan.planned_tools)
+    if "review_concept" not in planned:
+        planned.insert(0, "review_concept")
+
+    for tool_name in planned:
         if tool_name == "review_concept":
             r_obj = await execute_review_concept(target_concept, context, model)
             repair_responses.append(r_obj.answer)
-            grounded_claims.extend([claim.model_dump() for claim in r_obj.claims])
-            grounded_citations.extend([citation.model_dump() for citation in r_obj.citations])
+            grounded_claims.extend(r_obj.claims)
+            grounded_citations.extend(r_obj.citations)
             executed_tools.append("review_concept")
         elif tool_name == "give_example":
             ex_obj = await execute_give_example(target_concept, context, model)
+            repair_responses.append(f"Ví dụ: {ex_obj.example}")
             executed_tools.append("give_example")
         elif tool_name == "give_hint":
             h_obj = await execute_give_hint(
@@ -80,11 +92,7 @@ async def run_repair_misconception(
     combined_repair_text = "\n\n".join(repair_responses)
     grounded_repair = GroundedAnswer(
         answer=combined_repair_text or "Cần xem lại khái niệm đã học.",
-        claims=[],
-        citations=[],
+        claims=grounded_claims,
+        citations=grounded_citations,
     )
-    if grounded_claims:
-        grounded_repair.claims = grounded_claims
-    if grounded_citations:
-        grounded_repair.citations = grounded_citations
     return plan, grounded_repair, executed_tools

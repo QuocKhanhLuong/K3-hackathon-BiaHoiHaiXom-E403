@@ -54,7 +54,9 @@ def route_after_guard_clarification_input(
 
 def route_after_grounding_guard(
     state: LearningLoopState,
-) -> Literal["output_guard", "suggest_followups", "generate_check", "grounding_failure"]:
+) -> Literal[
+    "output_guard", "suggest_followups", "generate_check", "grounding_failure"
+]:
     """Route after grounding guard.
 
     - simple  → output_guard (no follow-ups automatically)

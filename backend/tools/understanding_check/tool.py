@@ -1,29 +1,30 @@
 """
 Tool: Understanding Check (Quiz Generator - Supports Multiple Choice & Short Answer Text Input)
 """
-import time
-from pydantic import BaseModel
-from typing import List, Optional
-import sys
 import os
+import sys
+import time
+
+from pydantic import BaseModel
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from backend.gemini_client import call_gemini_json
+
 
 class UnderstandingCheckInput(BaseModel):
     question: str
     tutor_answer: str
     page_number: int = 1
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 class UnderstandingCheckOutput(BaseModel):
     quiz_id: str
     quiz_type: str  # "multiple_choice" | "short_answer"
     concept: str
     question: str
-    options: Optional[List[str]] = []
-    correct_index: Optional[int] = 0
-    expected_keywords: Optional[List[str]] = []
+    options: list[str] | None = []
+    correct_index: int | None = 0
+    expected_keywords: list[str] | None = []
     explanation: str
 
 def run_understanding_check_tool(input_data: UnderstandingCheckInput) -> UnderstandingCheckOutput:

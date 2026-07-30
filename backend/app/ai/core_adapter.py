@@ -41,7 +41,18 @@ class VLearnAICoreAdapter:
 
     @property
     def available(self) -> bool:
-        return self._core is not None and self._init_error is None
+        if self._core is None or self._init_error is not None:
+            return False
+        import os
+
+        from vlearn_ai.config import get_settings
+
+        settings = get_settings()
+        return not (
+            os.environ.get("RUN_LIVE_TESTS") != "1"
+            and getattr(self._core, "custom_model", None) is None
+            and not settings.OPENAI_API_KEY
+        )
 
     def _require_core(self):
         if not self.available:

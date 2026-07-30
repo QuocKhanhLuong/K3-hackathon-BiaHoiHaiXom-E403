@@ -2,38 +2,39 @@
 Tool: Grounded Answer Generator
 Uses actual PDF slide contents from data/vlearn-pack/slides/ (d1-slide-hackathon.pdf & d2-slide-hackathon.pdf)
 """
-from pydantic import BaseModel
-from typing import List, Optional
-import sys
 import os
 import re
+import sys
+
+from pydantic import BaseModel
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from backend.gemini_client import call_gemini
 from backend.slide_loader import ALL_PDF_SLIDES
 
+
 class GroundedAnswerInput(BaseModel):
     question: str
-    selected_text: Optional[str] = ""
+    selected_text: str | None = ""
     page_number: int = 1
     is_deep_dive: bool = False
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 class GroundedAnswerOutput(BaseModel):
     answer: str
-    citations: List[int]
+    citations: list[int]
     page_number: int
     model_used: str
 
 
-def _deck_slides_for_page(page_num: int) -> List[dict]:
+def _deck_slides_for_page(page_num: int) -> list[dict]:
     current = next((s for s in ALL_PDF_SLIDES if s["page"] == page_num), None)
     if not current:
         return ALL_PDF_SLIDES
     return [s for s in ALL_PDF_SLIDES if s.get("deck_id") == current.get("deck_id")]
 
 
-def _slides_for_question(question: str, page_num: int) -> List[dict]:
+def _slides_for_question(question: str, page_num: int) -> list[dict]:
     """Resolve every slide explicitly or relatively requested by the learner."""
     question_lower = question.lower()
     deck_slides = _deck_slides_for_page(page_num)

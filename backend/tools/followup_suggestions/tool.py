@@ -1,21 +1,22 @@
 """
 Tool: Follow-up Suggestions Tool (Mặc định 3 câu hỏi gợi ý đào sâu trước khi kết thúc lượt)
 """
-from pydantic import BaseModel
-from typing import List, Optional
-import sys
 import os
+import sys
+
+from pydantic import BaseModel
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from backend.gemini_client import call_gemini_json
 
+
 class FollowupInput(BaseModel):
     tutor_answer: str
     page_number: int = 1
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 class FollowupOutput(BaseModel):
-    suggestions: List[str]
+    suggestions: list[str]
 
 def run_followup_suggestions_tool(input_data: FollowupInput) -> FollowupOutput:
     system_prompt = (

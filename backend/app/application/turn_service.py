@@ -26,9 +26,7 @@ class TurnService:
         self.ai_core = ai_core
         self.slides = slides
 
-    async def create_conversation(
-        self, owner_id: str, course_id: str = "default"
-    ):
+    async def create_conversation(self, owner_id: str, course_id: str = "default"):
         return await self.repository.create_conversation(owner_id, course_id)
 
     async def conversation_snapshot(self, owner_id: str, conversation_id: str):
@@ -58,9 +56,7 @@ class TurnService:
             if existing:
                 return existing
 
-        conversation = await self.repository.get_conversation(
-            conversation_id, owner_id
-        )
+        conversation = await self.repository.get_conversation(conversation_id, owner_id)
         async with self.repository.conversation_lock(conversation_id):
             if idempotency_key:
                 existing = await self.repository.get_idempotent(
@@ -79,10 +75,13 @@ class TurnService:
             turn = await self.repository.create_turn(
                 conversation, question, page_number
             )
-            await self.repository.save_message(
-                conversation, turn, "user", question
+            await self.repository.save_message(conversation, turn, "user", question)
+            context = self.slides.build_context(
+                page_number=page_number,
+                selected_text=selected_text,
+                query=question,
+                recent_history=conversation_history,
             )
-            context = self.slides.build_context(page_number, selected_text)
             invocation = await self.ai_core.start_turn(
                 thread_id=turn.ai_thread_id,
                 question=question,
@@ -221,15 +220,13 @@ class TurnService:
                 private_payload,
             )
 
-        status = "awaiting_response" if action else str(
-            result.get("status") or "completed"
+        status = (
+            "awaiting_response" if action else str(result.get("status") or "completed")
         )
         await self.repository.update_turn(turn, result, status)
         message = str(result.get("assistant_message") or "")
         if message:
-            await self.repository.save_message(
-                conversation, turn, "assistant", message
-            )
+            await self.repository.save_message(conversation, turn, "assistant", message)
         return TurnOutcome(
             conversation=conversation,
             turn=turn,
