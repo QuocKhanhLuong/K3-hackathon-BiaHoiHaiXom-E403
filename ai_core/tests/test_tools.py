@@ -168,7 +168,7 @@ def test_grounding_unsupported_extra_sentence_fails():
     from vlearn_ai.guardrails.grounding_guard import verify_grounding
     from vlearn_ai.schemas import Citation, GroundedClaim
 
-    ctx = "Key dùng để so khớp với Query trong Transformer."
+    ctx = '[source source_id="c1"]\nKey dùng để so khớp với Query trong Transformer.'
     cits = [
         Citation(
             citation_id="c1", snippet="Key dùng để so khớp với Query trong Transformer."
@@ -187,7 +187,7 @@ def test_grounding_unknown_citation_id_fails():
     from vlearn_ai.guardrails.grounding_guard import verify_grounding
     from vlearn_ai.schemas import Citation, GroundedClaim
 
-    ctx = "Key dùng để so khớp với Query."
+    ctx = '[source source_id="c1"]\nKey dùng để so khớp với Query.'
     cits = [Citation(citation_id="c1", snippet="Key dùng để so khớp với Query.")]
     claims = [
         GroundedClaim(claim="Key dùng để so khớp với Query.", citation_ids=["c99"])
@@ -201,7 +201,7 @@ def test_grounding_claim_not_supported_fails():
     from vlearn_ai.guardrails.grounding_guard import verify_grounding
     from vlearn_ai.schemas import Citation, GroundedClaim
 
-    ctx = "Key dùng để so khớp với Query."
+    ctx = '[source source_id="c1"]\nKey dùng để so khớp với Query.'
     cits = [Citation(citation_id="c1", snippet="Key dùng để so khớp với Query.")]
     claims = [
         GroundedClaim(claim="Value lưu giữ thông tin kết quả.", citation_ids=["c1"])
@@ -215,7 +215,7 @@ def test_grounding_stale_citations_after_repair_fails():
     from vlearn_ai.guardrails.grounding_guard import verify_grounding
     from vlearn_ai.schemas import Citation, GroundedClaim
 
-    ctx = "Key dùng để so khớp với Query."
+    ctx = '[source source_id="c1"]\nKey dùng để so khớp với Query.'
     # Stale citations from previous turn don't match the new claims
     cits = [Citation(citation_id="c1", snippet="Key dùng để so khớp với Query.")]
     claims = [
@@ -229,7 +229,8 @@ def test_grounding_fully_grounded_multi_claim_passes():
     from vlearn_ai.guardrails.grounding_guard import verify_grounding
     from vlearn_ai.schemas import Citation, GroundedClaim
 
-    ctx = "Key dùng để so khớp với Query. Value chứa thông tin nội dung."
+    ctx = ('[source source_id="c1"]\nKey dùng để so khớp với Query.\n'
+           '[source source_id="c2"]\nValue chứa thông tin nội dung.')
     cits = [
         Citation(citation_id="c1", snippet="Key dùng để so khớp với Query."),
         Citation(citation_id="c2", snippet="Value chứa thông tin nội dung."),

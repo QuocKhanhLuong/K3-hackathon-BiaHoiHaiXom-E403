@@ -11,7 +11,7 @@ from langgraph.types import interrupt
 from vlearn_ai.config import get_settings
 from vlearn_ai.graph.state import LearningLoopState
 from vlearn_ai.guardrails.context_guard import check_context_safety
-from vlearn_ai.guardrails.grounding_guard import verify_grounding
+from vlearn_ai.guardrails.grounding_guard import validate_grounding
 from vlearn_ai.guardrails.input_guard import assess_input_injection
 from vlearn_ai.guardrails.output_guard import (
     sanitize_all_output_fields,
@@ -373,6 +373,9 @@ def grounded_answer_node(
         "grounded_answer": ans_obj.answer,
         "grounded_claims": claims_list,
         "citations": citations_list,
+        "candidate_answer": ans_obj.answer,
+        "candidate_claims": claims_list,
+        "candidate_citations": citations_list,
         "tool_trace": trace,
     }
 
@@ -395,6 +398,8 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
             "grounding_valid": False,
             "grounding_error": f"Invalid grounded structure: {exc}",
             "grounding_failure_type": "invalid_grounded_structure",
+            "grounding_invalid_citation_ids": [],
+            "grounding_uncovered_sentences": [],
             "status": "running",
             "tool_trace": _record_trace(
                 state,
@@ -404,17 +409,17 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
             ),
         }
 
-    is_valid, err_msg = verify_grounding(answer, citations, context, claims=claims)
+    result = validate_grounding(answer, citations, context, claims=claims)
 
     return {
-        "grounding_valid": is_valid,
-        "grounding_error": err_msg,
-        "grounding_failure_type": None
-        if is_valid
-        else "unsupported_claim_or_missing_citation",
+        "grounding_valid": result.valid,
+        "grounding_error": result.error,
+        "grounding_failure_type": result.failure_type,
+        "grounding_invalid_citation_ids": result.invalid_citation_ids,
+        "grounding_uncovered_sentences": result.uncovered_sentences,
         "status": "running",
         "tool_trace": _record_trace(
-            state, "grounding_guard", "success" if is_valid else "failed"
+            state, "grounding_guard", "success" if result.valid else "failed"
         ),
     }
 
@@ -431,7 +436,7 @@ def grounding_failure_node(state: LearningLoopState) -> dict[str, Any]:
     return {
         "grounded_answer": msg,
         "abstention_message": msg,
-        "grounding_failure_type": "unsupported_claim_or_missing_citation",
+        "grounding_failure_type": state.get("grounding_failure_type"),
         "citations": [],
         "grounded_claims": [],
         "status": "failed",
