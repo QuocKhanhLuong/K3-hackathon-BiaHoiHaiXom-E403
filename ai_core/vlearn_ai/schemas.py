@@ -1,96 +1,188 @@
-"""Strict Pydantic schemas for VLearn AI Core."""
+"""Strict Pydantic schemas and typed exceptions for VLearn AI Core."""
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+# =====================================================================
+# Typed Exceptions
+# =====================================================================
 
 
-class RouteOutput(BaseModel):
-    """Router decision for workflow classification."""
+class AICoreBaseError(Exception):
+    """Base exception for VLearn AI Core errors."""
+
+
+class AIModelInvocationError(AICoreBaseError):
+    """Raised when an LLM call fails completely."""
+
+
+class AIStructuredOutputError(AICoreBaseError):
+    """Raised when LLM fails to produce valid structured output."""
+
+
+class GroundingValidationError(AICoreBaseError):
+    """Raised when grounding check fails validation."""
+
+
+class InvalidResumeStateError(AICoreBaseError):
+    """Raised when attempting resume_turn on an invalid or un-interrupted thread state."""
+
+
+# =====================================================================
+# Base Model with Forbidden Extra Fields
+# =====================================================================
+
+
+class StrictBaseModel(BaseModel):
+    """Strict base model forbidding extra fields."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+# =====================================================================
+# Domain & Workflow Models
+# =====================================================================
+
+
+class RouteOutput(StrictBaseModel):
+    """Structured classification output from router node."""
 
     route: Literal["simple", "clarify", "check", "deep"]
     confidence: float = Field(..., ge=0.0, le=1.0)
-    reason: str
+    reason: str = Field(..., min_length=1)
 
 
-class Citation(BaseModel):
-    """Citation mapping to course material context."""
+class Citation(StrictBaseModel):
+    """Citation referencing grounded course context."""
 
-    citation_id: str
-    snippet: str
+    citation_id: str = Field(..., min_length=1)
+    snippet: str = Field(..., min_length=1)
     source_location: str | None = None
 
 
-class GroundedAnswer(BaseModel):
-    """Direct grounded answer with evidence and citations."""
+class GroundedAnswer(StrictBaseModel):
+    """Answer with embedded citations."""
 
-    answer: str
-    evidence: list[str] = Field(default_factory=list)
+    answer: str = Field(..., min_length=1)
     citations: list[Citation] = Field(default_factory=list)
 
 
-class ClarificationRequest(BaseModel):
-    """Clarification question when context or query is ambiguous."""
+class ClarificationRequest(StrictBaseModel):
+    """Clarification question request."""
 
-    clarification_question: str
-    reason: str
+    clarification_question: str = Field(..., min_length=1)
+    reason: str = Field(..., min_length=1)
 
 
-class MicroCheck(BaseModel):
-    """Micro-check question to evaluate learner understanding."""
+class CheckOption(StrictBaseModel):
+    """Multiple choice check option."""
 
-    question: str
+    option_id: str = Field(..., min_length=1)
+    text: str = Field(..., min_length=1)
+
+
+class MicroCheck(StrictBaseModel):
+    """Understanding check question format."""
+
+    question: str = Field(..., min_length=1)
     question_type: Literal["multiple_choice", "short_answer"]
-    target_concept: str
-    expected_answer: str
-    options: list[str] | None = None
-    explanation: str
+    target_concept: str = Field(..., min_length=1)
+    expected_answer: str = Field(..., min_length=1)
+    correct_option_id: str | None = None
+    options: list[CheckOption] = Field(default_factory=list)
+    explanation: str = Field(..., min_length=1)
     evidence: list[str] = Field(default_factory=list)
 
+    @field_validator("options")
+    @classmethod
+    def validate_mcq_options(
+        cls, options: list[CheckOption], info: Any
+    ) -> list[CheckOption]:
+        # Validate unique option IDs for multiple choice
+        ids = [opt.option_id for opt in options]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Option IDs must be unique.")
+        return options
 
-class CheckEvaluation(BaseModel):
-    """Evaluation of student answer and misconception detection."""
+
+class CheckEvaluation(StrictBaseModel):
+    """Evaluation of student check answer."""
 
     is_correct: bool
     score: float = Field(..., ge=0.0, le=1.0)
-    misconception_code: str | None = None
-    error_explanation: str | None = None
+    misconception_code: str = Field(..., min_length=1)
+    error_explanation: str = Field(..., min_length=1)
     answer_evidence: str | None = None
-    recommended_repair_strategy: str | None = None
+    recommended_repair_strategy: str = Field(..., min_length=1)
 
 
-class RepairPlan(BaseModel):
-    """Plan for misconception repair using only allowed pedagogical tools."""
+class RepairPlan(StrictBaseModel):
+    """Planned repair steps for misconception."""
 
-    tools: list[Literal["review_concept", "give_example", "give_hint", "motivate"]]
-    reasoning: str
-
-
-class FollowUp(BaseModel):
-    """Suggested follow-up exploration question."""
-
-    label: str
-    question: str
-
-
-class FollowUpSuggestions(BaseModel):
-    """List of 2-3 suggested follow-up questions."""
-
-    followups: list[FollowUp] = Field(default_factory=list)
+    misconception_code: str = Field(..., min_length=1)
+    recommended_strategy: str = Field(..., min_length=1)
+    planned_tools: list[
+        Literal[
+            "review_concept",
+            "give_direct_answer",
+            "give_example",
+            "motivate",
+            "give_hint",
+            "validate_understanding",
+        ]
+    ] = Field(..., min_length=1)
 
 
-class ToolTrace(BaseModel):
-    """Record of pedagogical tool execution."""
+class FollowUp(StrictBaseModel):
+    """Follow-up suggestion item."""
 
-    tool: str
-    status: str
-    prompt_version: str
-    model: str
-    details: dict[str, Any] | None = None
+    label: str = Field(..., min_length=1)
+    question: str = Field(..., min_length=1)
 
 
-class AICoreResult(BaseModel):
-    """Stable JSON-serializable output returned by VLearnAICore public interface."""
+class FollowUpSuggestions(StrictBaseModel):
+    """Suggested follow-up questions."""
+
+    followups: list[FollowUp] = Field(..., min_length=2, max_length=3)
+
+
+class ToolTrace(StrictBaseModel):
+    """Execution trace of a pedagogical tool or workflow node."""
+
+    tool: Literal[
+        "input_guard",
+        "context_guard",
+        "router",
+        "ask_clarification",
+        "review_concept",
+        "give_direct_answer",
+        "give_example",
+        "motivate",
+        "give_hint",
+        "validate_understanding",
+        "detect_misconception",
+        "repair_misconception",
+        "suggest_followups",
+        "output_guard",
+        "grounding_guard",
+    ]
+    status: Literal["success", "blocked", "failed", "awaiting"]
+    prompt_version: str = Field(default="1.0.0")
+    model: str = Field(..., min_length=1)
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class InjectionAssessment(StrictBaseModel):
+    """Prompt injection guard assessment result."""
+
+    injection_detected: bool
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    reason: str = Field(..., min_length=1)
+
+
+class AICoreResult(StrictBaseModel):
+    """Final public result returned by VLearnAICore."""
 
     status: Literal[
         "running",
@@ -107,23 +199,3 @@ class AICoreResult(BaseModel):
     followups: list[dict[str, Any]] = Field(default_factory=list)
     tool_trace: list[dict[str, Any]] = Field(default_factory=list)
     blocked_reason: str | None = None
-
-
-class InjectionAssessment(BaseModel):
-    """LLM Prompt Injection Assessment output."""
-
-    injection_detected: bool
-    confidence: float = Field(..., ge=0.0, le=1.0)
-    attack_types: list[
-        Literal[
-            "instruction_override",
-            "prompt_extraction",
-            "tool_manipulation",
-            "data_exfiltration",
-            "role_impersonation",
-            "context_injection",
-            "none",
-        ]
-    ] = Field(default_factory=lambda: ["none"])
-    reason: str
-    safe_user_intent: str | None = None

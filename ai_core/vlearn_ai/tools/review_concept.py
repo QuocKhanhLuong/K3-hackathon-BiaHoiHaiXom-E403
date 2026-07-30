@@ -1,9 +1,10 @@
 """Pedagogical tool 1: review_concept."""
 
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from vlearn_ai.prompts.pedagogical_tools import REVIEW_CONCEPT_PROMPT
-from vlearn_ai.schemas import Citation, GroundedAnswer
+from vlearn_ai.schemas import AIStructuredOutputError, Citation, GroundedAnswer
 
 
 async def execute_review_concept(
@@ -11,32 +12,41 @@ async def execute_review_concept(
     context: str,
     model: BaseChatModel,
 ) -> GroundedAnswer:
-    """Explain an important concept using only the supplied course context."""
-    prompt = REVIEW_CONCEPT_PROMPT.format(
-        selected_context=context,
-        user_query=query,
-    )
+    """Execute review_concept tool using structured model output."""
+    messages = [
+        SystemMessage(content=REVIEW_CONCEPT_PROMPT),
+        HumanMessage(
+            content=(
+                f"Bối cảnh bài học:\n<untrusted_course_context>\n{context}\n</untrusted_course_context>\n\n"
+                f"Khái niệm cần giải thích/ôn tập:\n<untrusted_student_query>\n{query}\n</untrusted_student_query>"
+            )
+        ),
+    ]
 
     try:
         if hasattr(model, "with_structured_output"):
             structured = model.with_structured_output(GroundedAnswer)
-            res = await structured.ainvoke(prompt)
-            if isinstance(res, GroundedAnswer):
+            res = await structured.ainvoke(messages)
+            if isinstance(res, GroundedAnswer) and res.answer.strip():
                 return res
-    except (AttributeError, ValueError, TypeError, RuntimeError):
-        pass
+    except Exception as exc:
+        raise AIStructuredOutputError(
+            f"review_concept structured output failed: {exc}"
+        ) from exc
 
-    # Fallback/default structure for testing or raw model response
-    res_text = (
-        (await model.ainvoke(prompt)).content
-        if hasattr(model, "ainvoke")
-        else str(model)
-    )
+    # Direct invoke attempt if with_structured_output fails to parse
+    try:
+        raw_res = await model.ainvoke(messages)
+        content = raw_res.content if hasattr(raw_res, "content") else str(raw_res)
+        if isinstance(content, str) and content.strip():
+            snippet = context[:120].strip() if context else "Tài liệu học tập"
+            return GroundedAnswer(
+                answer=content.strip(),
+                citations=[Citation(citation_id="ctx_1", snippet=snippet)],
+            )
+    except Exception as exc:
+        raise AIStructuredOutputError(
+            f"review_concept invocation failed: {exc}"
+        ) from exc
 
-    return GroundedAnswer(
-        answer=str(res_text),
-        evidence=[context[:100]] if context else [],
-        citations=[Citation(citation_id="ctx_1", snippet=context[:100])]
-        if context
-        else [],
-    )
+    raise AIStructuredOutputError("review_concept failed to produce non-empty answer.")

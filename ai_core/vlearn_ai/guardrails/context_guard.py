@@ -1,23 +1,32 @@
-"""Context guardrail to treat course context as untrusted data."""
+"""Context guard verifying length and detecting prompt injection patterns in course context."""
 
+import re
 from typing import Any
 
-from vlearn_ai.guardrails.input_guard import check_input_heuristics
+INJECTION_PATTERNS = [
+    r"ignore\s+(all\s+)?previous\s+instructions",
+    r"system\s+prompt\s+override",
+    r"disregard\s+the\s+above",
+    r"you\s+are\s+now",
+    r"reveal\s+(the\s+)?hidden\s+prompt",
+]
 
 
 def check_context_safety(context: str, max_chars: int = 12000) -> dict[str, Any]:
-    """Check course context length and potential embedded injection patterns.
+    """Check course context length and flag prompt injection patterns."""
+    truncated = False
+    if len(context) > max_chars:
+        context = context[:max_chars]
+        truncated = True
 
-    Course material is untrusted evidence. If it contains prompt injection text,
-    it may be quoted as subject matter, but must not be executed.
-    """
-    truncated_context = context[:max_chars]
-    heuristic = check_input_heuristics(truncated_context)
+    detected_patterns: list[str] = []
+    for pattern in INJECTION_PATTERNS:
+        if re.search(pattern, context, re.IGNORECASE):
+            detected_patterns.append(pattern)
 
     return {
-        "is_safe_reference": True,
-        "is_truncated": len(context) > max_chars,
-        "context": truncated_context,
-        "embedded_injection_detected": heuristic["is_flagged"],
-        "patterns": heuristic["patterns"],
+        "context": context,
+        "context_truncated": truncated,
+        "context_injection_detected": len(detected_patterns) > 0,
+        "context_injection_patterns": detected_patterns,
     }

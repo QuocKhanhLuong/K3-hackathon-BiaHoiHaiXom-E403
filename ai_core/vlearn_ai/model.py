@@ -1,34 +1,55 @@
-"""Model instantiation and factory wrapper for OpenAI API."""
+"""Factory module for OpenAI ChatOpenAI models with reasoning levels."""
 
-from typing import Any
+import os
+from typing import Literal
 
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 
-from vlearn_ai.config import Settings, get_settings
+from vlearn_ai.config import get_settings
+from vlearn_ai.schemas import AIModelInvocationError
 
 
-def get_chat_model(
-    config: Settings | None = None,
-    reasoning_level: str = "minimal",
-    fake_model: BaseChatModel | None = None,
+def _create_chat_model(
+    reasoning_effort: Literal["minimal", "low", "medium", "high"],
 ) -> BaseChatModel:
-    """Return configured ChatOpenAI model or fake model double for testing.
+    """Create ChatOpenAI instance with fixed gpt-5-nano model and given reasoning level."""
+    settings = get_settings()
+    api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
 
-    Runtime model ID is strictly fixed to gpt-5-nano.
-    """
-    if fake_model is not None:
-        return fake_model
+    if not api_key:
+        raise AIModelInvocationError(
+            "OPENAI_API_KEY is not set. A valid OpenAI API key is required to instantiate real model."
+        )
 
-    cfg = config or get_settings()
+    kwargs = {
+        "model": settings.OPENAI_MODEL,
+        "api_key": api_key,
+        "temperature": 0.0,
+    }
 
-    # Create ChatOpenAI instance using the fixed gpt-5-nano model
-    extra_kwargs: dict[str, Any] = {}
-    if cfg.OPENAI_API_KEY:
-        extra_kwargs["api_key"] = cfg.OPENAI_API_KEY
+    try:
+        # Pass reasoning_effort if supported by ChatOpenAI version
+        kwargs["reasoning_effort"] = reasoning_effort
+        return ChatOpenAI(**kwargs)
+    except (TypeError, ValueError):
+        # Fallback without reasoning_effort if parameter is unsupported by installed version
+        kwargs.pop("reasoning_effort", None)
+        return ChatOpenAI(**kwargs)
 
-    return ChatOpenAI(
-        model=cfg.OPENAI_MODEL,
-        temperature=0.0,
-        **extra_kwargs,
-    )
+
+def get_fast_model() -> BaseChatModel:
+    """Get fast/control ChatOpenAI model (minimal reasoning effort)."""
+    settings = get_settings()
+    return _create_chat_model(settings.AI_FAST_REASONING)
+
+
+def get_generation_model() -> BaseChatModel:
+    """Get generation ChatOpenAI model (low reasoning effort)."""
+    settings = get_settings()
+    return _create_chat_model(settings.AI_GENERATION_REASONING)
+
+
+def get_chat_model() -> BaseChatModel:
+    """Default model getter backward-compatibility."""
+    return get_fast_model()

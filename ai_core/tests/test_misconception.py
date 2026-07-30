@@ -1,7 +1,7 @@
-"""Unit tests for misconception detection and repair."""
+"""Unit tests for misconception detection and repair workflows."""
 
 import pytest
-from langchain_core.language_models.fake_chat_models import FakeListChatModel
+from fake_model import DeterministicFakeChatModel
 from vlearn_ai.schemas import CheckEvaluation
 from vlearn_ai.workflows.detect_misconception import run_detect_misconception
 from vlearn_ai.workflows.repair_misconception import run_repair_misconception
@@ -9,50 +9,70 @@ from vlearn_ai.workflows.repair_misconception import run_repair_misconception
 
 @pytest.mark.asyncio
 async def test_detect_misconception_correct():
-    fake_llm = FakeListChatModel(responses=[""])
+    fake_llm = DeterministicFakeChatModel(misconception_to_return=False)
     res = await run_detect_misconception(
-        question="Key làm gì?",
-        expected_answer="So khớp",
-        student_answer="đúng",
-        context="Key dùng để so khớp.",
+        question="Key là gì?",
+        expected_answer="So khớp với Query",
+        student_answer="So khớp với Query",
+        context="Key dùng để so khớp với Query.",
         model=fake_llm,
     )
     assert res.is_correct is True
+    assert res.score == 1.0
 
 
 @pytest.mark.asyncio
 async def test_detect_misconception_incorrect():
-    fake_llm = FakeListChatModel(responses=[""])
+    fake_llm = DeterministicFakeChatModel(misconception_to_return=True)
     res = await run_detect_misconception(
-        question="Key làm gì?",
-        expected_answer="So khớp",
-        student_answer="Key chứa giá trị tổng hợp",
-        context="Key dùng để so khớp.",
+        question="Key là gì?",
+        expected_answer="So khớp với Query",
+        student_answer="Key là chứa nội dung bài học",
+        context="Key dùng để so khớp với Query.",
         model=fake_llm,
     )
     assert res.is_correct is False
-    assert res.misconception_code is not None
+    assert res.misconception_code != ""
 
 
 @pytest.mark.asyncio
-async def test_repair_misconception_plan():
-    fake_llm = FakeListChatModel(responses=["Response..."])
+async def test_repair_misconception_plan_retry_zero_no_motivate():
+    fake_llm = DeterministicFakeChatModel()
     check_eval = CheckEvaluation(
         is_correct=False,
         score=0.0,
-        misconception_code="confuses_key_with_value",
-        error_explanation="Học viên nhầm Key với Value",
-        answer_evidence="Key chứa giá trị tổng hợp",
+        misconception_code="confuses_two_concepts",
+        error_explanation="Học viên nhầm lẫn.",
+        answer_evidence="Bằng chứng",
         recommended_repair_strategy="review_concept_and_example",
     )
-    plan, repair_text = await run_repair_misconception(
+    plan, _text, executed_tools = await run_repair_misconception(
         check_eval=check_eval,
-        context="Key dùng để so khớp.",
-        target_concept="Key vs Value",
+        context="Bối cảnh bài học...",
+        target_concept="Key",
+        retry_count=0,
         model=fake_llm,
     )
-    assert len(plan.tools) > 0
-    # Verify plan tools are exclusively allowed tools
-    for tool in plan.tools:
-        assert tool in {"review_concept", "give_example", "give_hint", "motivate"}
-    assert repair_text != ""
+    assert "motivate" not in plan.planned_tools
+    assert "motivate" not in executed_tools
+
+
+@pytest.mark.asyncio
+async def test_repair_misconception_plan_retry_positive_allows_motivate():
+    fake_llm = DeterministicFakeChatModel()
+    check_eval = CheckEvaluation(
+        is_correct=False,
+        score=0.0,
+        misconception_code="confuses_two_concepts",
+        error_explanation="Học viên nhầm lẫn.",
+        answer_evidence="Bằng chứng",
+        recommended_repair_strategy="review_concept_and_example",
+    )
+    _plan, _text, executed_tools = await run_repair_misconception(
+        check_eval=check_eval,
+        context="Bối cảnh bài học...",
+        target_concept="Key",
+        retry_count=1,
+        model=fake_llm,
+    )
+    assert len(executed_tools) >= 1

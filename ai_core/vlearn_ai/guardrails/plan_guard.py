@@ -1,6 +1,8 @@
-"""Plan guardrail with fixed tool allowlist registry."""
+"""Plan guard validating pedagogical tools against fixed allowlist."""
 
-ALLOWED_TOOLS: set[str] = {
+from vlearn_ai.config import get_settings
+
+ALLOWED_PEDAGOGICAL_TOOLS = {
     "review_concept",
     "give_direct_answer",
     "give_example",
@@ -10,24 +12,21 @@ ALLOWED_TOOLS: set[str] = {
 }
 
 
-def validate_tool_name(tool_name: str) -> bool:
-    """Check if tool_name is in the explicit allowlist."""
-    return tool_name in ALLOWED_TOOLS
+def validate_plan_tools(planned_tools: list[str]) -> tuple[bool, str | None]:
+    """Validate planned tools against central fixed allowlist and step count."""
+    settings = get_settings()
 
-
-def validate_plan_steps(
-    tool_sequence: list[str],
-    max_steps: int = 4,
-) -> tuple[bool, str | None]:
-    """Validate a sequence of tool steps against length limits and allowlist."""
-    if len(tool_sequence) > max_steps:
+    if len(planned_tools) > settings.AI_MAX_TOOL_STEPS:
         return (
             False,
-            f"Plan exceeds maximum tool steps limit ({len(tool_sequence)} > {max_steps})",
+            f"Tool step count ({len(planned_tools)}) exceeds maximum limit ({settings.AI_MAX_TOOL_STEPS}).",
         )
 
-    for tool in tool_sequence:
-        if not validate_tool_name(tool):
-            return False, f"Disallowed or unknown tool requested: '{tool}'"
+    for tool in planned_tools:
+        if tool not in ALLOWED_PEDAGOGICAL_TOOLS:
+            return (
+                False,
+                f"Tool '{tool}' is not in the allowed pedagogical tool registry.",
+            )
 
     return True, None
