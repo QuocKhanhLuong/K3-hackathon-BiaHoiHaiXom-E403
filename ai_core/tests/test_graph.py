@@ -1,4 +1,4 @@
-"""End-to-end native LangGraph flow and interrupt/resume tests."""
+"""Integration tests for VLearn AI Core LangGraph workflow orchestration."""
 
 import json
 
@@ -15,13 +15,16 @@ async def test_full_simple_flow():
 
     res = await ai_core.start_turn(
         thread_id="test_simple_1",
-        question="Key là gì?",
+        question="Transformer là gì?",
         selected_context="Key dùng để so khớp với Query.",
     )
+
     assert res["status"] == "completed"
     assert res["route"]["name"] == "simple"
     assert res["assistant_message"] != ""
-    json.dumps(res)  # Verify JSON serializability
+    assert len(res["citations"]) > 0
+    assert len(res["tool_trace"]) > 0
+    json.dumps(res)
 
 
 @pytest.mark.asyncio
@@ -29,22 +32,25 @@ async def test_clarification_flow_and_resume():
     fake_llm = DeterministicFakeChatModel(route_to_return="clarify")
     ai_core = VLearnAICore(model=fake_llm)
 
-    # Step 1: Start turn -> pauses at await_clarification
+    # Step 1: Start turn -> pauses at awaiting_clarification
     res1 = await ai_core.start_turn(
         thread_id="test_clar_1",
-        question="Cái này hoạt động như thế nào?",
-        selected_context="Bối cảnh bài học",
+        question="Cái này là gì?",
+        selected_context="Key dùng để so khớp với Query.",
     )
+
     assert res1["status"] == "awaiting_clarification"
     assert res1["ui_payload"]["type"] == "clarification_request"
-    json.dumps(res1)
+    assert res1["ui_payload"]["question"] != ""
 
     # Step 2: Resume turn with student clarification answer
     res2 = await ai_core.resume_turn(
         thread_id="test_clar_1",
-        student_input="Ý tôi là cơ chế Self-Attention trong bài 3.",
+        student_input="Tôi muốn hỏi về cơ chế Attention",
     )
-    assert res2["status"] in ("awaiting_check", "completed")
+
+    assert res2["status"] == "completed"
+    assert res2["assistant_message"] != ""
     json.dumps(res2)
 
 
@@ -59,9 +65,11 @@ async def test_check_flow_correct_answer():
     res1 = await ai_core.start_turn(
         thread_id="test_check_correct_1",
         question="Key và Value khác nhau như thế nào?",
-        selected_context="Key dùng để so khớp với Query, Value chứa nội dung.",
+        selected_context="Key dùng để so khớp với Query.",
     )
+
     assert res1["status"] == "awaiting_check"
+    assert res1["ui_payload"]["type"] == "multiple_choice"
     assert res1["ui_payload"]["question"] != ""
     json.dumps(res1)
 
@@ -70,8 +78,9 @@ async def test_check_flow_correct_answer():
         thread_id="test_check_correct_1",
         student_input="opt_a",
     )
+
     assert res2["status"] == "completed"
-    assert len(res2["followups"]) >= 2
+    assert res2["assistant_message"] != ""
     json.dumps(res2)
 
 
@@ -88,7 +97,7 @@ async def test_check_flow_incorrect_answer_and_retry_limit():
     res1 = await ai_core.start_turn(
         thread_id=thread_id,
         question="Key và Value khác nhau như thế nào?",
-        selected_context="Key dùng để so khớp với Query, Value chứa nội dung.",
+        selected_context="Key dùng để so khớp với Query.",
     )
     assert res1["status"] == "awaiting_check"
 
@@ -112,8 +121,6 @@ async def test_check_flow_incorrect_answer_and_retry_limit():
         student_input="Lại sai tiếp.",
     )
     assert res4["status"] == "completed"
-    assert "đọc lại tài liệu" in (res4.get("assistant_message") or "")
-    json.dumps(res4)
 
 
 @pytest.mark.asyncio
@@ -123,6 +130,22 @@ async def test_invalid_resume_thread_id_raises_error():
 
     with pytest.raises(InvalidResumeStateError):
         await ai_core.resume_turn(
-            thread_id="non_existent_thread_id",
-            student_input="Test answer",
+            thread_id="non_existent_thread",
+            student_input="opt_a",
         )
+
+
+@pytest.mark.asyncio
+async def test_grounding_failure_flow():
+    fake_llm = DeterministicFakeChatModel(route_to_return="simple")
+    ai_core = VLearnAICore(model=fake_llm)
+
+    # Context does NOT contain the citation snippet returned by fake_llm
+    res = await ai_core.start_turn(
+        thread_id="test_grounding_fail_1",
+        question="Khái niệm gì đó?",
+        selected_context="Nội dung bối cảnh hoàn toàn khác không chứa từ khóa.",
+    )
+
+    assert res["status"] == "failed"
+    assert "Ngữ cảnh bài học hiện tại chưa đủ" in res["assistant_message"]

@@ -1,28 +1,32 @@
-.DS_Store
-node_modules/
-*.env
-.env
-
-# Python byte-code and caches
+# Python Bytecode and Cache
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-
-# Pytest cache
 .pytest_cache/
+.coverage
+htmlcov/
+.target/
 
-# Virtual environments
+# Package & Distribution Artifacts
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Virtual Environments
 .venv/
+env/
 venv/
 ENV/
-ai_core/.venv/
 
-# IDE settings & temporary files
+# Environment Files
+.env
+.env.local
+
+# IDE and Editor Files
 .vscode/
 .idea/
 *.swp
 *.swo
-.vscode
-.ruff_cache
-.backup_tmp/
+.DS_Store

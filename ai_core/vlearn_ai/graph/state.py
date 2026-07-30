@@ -14,8 +14,12 @@ class LearningLoopState(TypedDict, total=False):
     # Guardrail states
     context_truncated: bool
     context_injection_detected: bool
+    context_injection_patterns: list[str]
     grounding_valid: bool | None
     grounding_error: str | None
+    grounding_retry_count: int
+    grounding_failure_type: str | None
+    abstention_message: str | None
 
     # Router classification
     route: Literal["simple", "clarify", "check", "deep"] | None
@@ -51,4 +55,6 @@ class LearningLoopState(TypedDict, total=False):
         "failed",
     ]
     blocked_reason: str | None
+    failure_code: str | None
+    failure_stage: str | None
     final_output: dict[str, Any] | None

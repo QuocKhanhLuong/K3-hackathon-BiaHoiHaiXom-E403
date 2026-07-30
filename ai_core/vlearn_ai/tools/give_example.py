@@ -1,18 +1,10 @@
 """Pedagogical tool 3: give_example."""
 
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import Field
 
+from vlearn_ai.prompts.messages import build_trusted_messages
 from vlearn_ai.prompts.pedagogical_tools import GIVE_EXAMPLE_PROMPT
-from vlearn_ai.schemas import AIStructuredOutputError, StrictBaseModel
-
-
-class GiveExampleOutput(StrictBaseModel):
-    """Output format for give_example tool."""
-
-    example: str = Field(..., min_length=1)
-    relevance_explanation: str = Field(..., min_length=1)
+from vlearn_ai.schemas import AIStructuredOutputError, GiveExampleOutput
 
 
 async def execute_give_example(
@@ -20,16 +12,12 @@ async def execute_give_example(
     context: str,
     model: BaseChatModel,
 ) -> GiveExampleOutput:
-    """Execute give_example tool using structured model output."""
-    messages = [
-        SystemMessage(content=GIVE_EXAMPLE_PROMPT),
-        HumanMessage(
-            content=(
-                f"Bối cảnh bài học:\n<untrusted_course_context>\n{context}\n</untrusted_course_context>\n\n"
-                f"Khái niệm cần ví dụ minh họa:\n<untrusted_student_query>\n{concept}\n</untrusted_student_query>"
-            )
-        ),
-    ]
+    """Execute give_example tool using structured model output without secondary text fallback."""
+    untrusted_payload = (
+        f"Bối cảnh bài học:\n<untrusted_course_context>\n{context}\n</untrusted_course_context>\n\n"
+        f"Khái niệm cần ví dụ minh họa:\n<untrusted_student_query>\n{concept}\n</untrusted_student_query>"
+    )
+    messages = build_trusted_messages(GIVE_EXAMPLE_PROMPT, untrusted_payload)
 
     try:
         if hasattr(model, "with_structured_output"):
@@ -42,15 +30,6 @@ async def execute_give_example(
             f"give_example structured output failed: {exc}"
         ) from exc
 
-    try:
-        raw_res = await model.ainvoke(messages)
-        content = raw_res.content if hasattr(raw_res, "content") else str(raw_res)
-        if isinstance(content, str) and content.strip():
-            return GiveExampleOutput(
-                example=content.strip(),
-                relevance_explanation="Ví dụ minh họa cho khái niệm trong bối cảnh bài học.",
-            )
-    except Exception as exc:
-        raise AIStructuredOutputError(f"give_example invocation failed: {exc}") from exc
-
-    raise AIStructuredOutputError("give_example failed to produce non-empty example.")
+    raise AIStructuredOutputError(
+        "give_example failed to produce valid GiveExampleOutput."
+    )

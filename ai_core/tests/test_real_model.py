@@ -11,6 +11,9 @@ from vlearn_ai.model import get_fast_model
 @pytest.mark.asyncio
 async def test_real_openai_gpt5_nano_model():
     """Opt-in live test for real OpenAI gpt-5-nano model integration."""
+    if os.getenv("RUN_LIVE_TESTS") != "1":
+        pytest.skip("Set RUN_LIVE_TESTS=1 to enable paid live tests.")
+
     settings = get_settings()
     api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
 
