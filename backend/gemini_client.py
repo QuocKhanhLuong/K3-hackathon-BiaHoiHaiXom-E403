@@ -1,10 +1,27 @@
 """
 Google Gemini AI Integration Helper for VLearn Tutor Tools
 Target Models: gemini-3.1-flash-lite | gemini-3-flash | gemini-2.5-flash
+Supports Automatic .env File Loading
 """
 import os
 import json
 from typing import Optional, Any
+
+# Auto load .env file if present
+def load_env_file():
+    env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.env"))
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    k = k.strip()
+                    v = v.strip().strip("'\"")
+                    if k and v and not os.environ.get(k):
+                        os.environ[k] = v
+
+load_env_file()
 
 # Preferred Gemini models in priority order
 GEMINI_MODELS = [
@@ -23,8 +40,9 @@ def call_gemini(
     """
     Calls Google Gemini Flash model with automatic model fallback and error handling.
     """
+    load_env_file()
     key = api_key or os.environ.get("GEMINI_API_KEY")
-    if not key:
+    if not key or key.startswith("YOUR_"):
         return None
 
     try:
@@ -67,7 +85,6 @@ def call_gemini_json(
         return None
 
     try:
-        # Clean markdown codeblocks if present
         clean = raw_text.strip()
         if clean.startswith("```json"):
             clean = clean[7:]
