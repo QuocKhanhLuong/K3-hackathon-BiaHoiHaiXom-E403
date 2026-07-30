@@ -1,16 +1,21 @@
 """Configuration settings for VLearn AI Core package."""
 
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+AI_CORE_DIR = Path(__file__).resolve().parents[1]
 
 
 class Settings(BaseSettings):
     """Central settings for VLearn AI Core."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Support both a deployment-level .env and the package-local file used
+        # by this repository. Later files take precedence.
+        env_file=(".env", AI_CORE_DIR / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )

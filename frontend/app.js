@@ -458,10 +458,13 @@ document.addEventListener('DOMContentLoaded', () => {
       failThinkingTrace(thinkingTrace);
       activeNodeBadge.textContent = "⚠️ Không thể xử lý";
       activeNodeBadge.style.background = "#fee2e2";
+      const backendMessage = (err && err.message && !/failed to fetch/i.test(err.message))
+        ? err.message
+        : "Không thể kết nối tới VLearn. Bạn vui lòng kiểm tra backend và thử lại.";
       const fallbackAnswer = appendTutorAnswer(
-        "VLearn chưa thể xử lý yêu cầu lúc này. Bạn vui lòng thử lại sau.",
+        backendMessage,
         [],
-        { title: "Lỗi kết nối" }
+        { title: "Không thể xử lý" }
       );
       attachTraceControl(fallbackAnswer, thinkingTrace);
     }

@@ -35,9 +35,11 @@ async def live():
 @router.get("/health/ready")
 async def ready(request: Request):
     service = _service(request)
+    is_ready = service.ai_core.available and service.ai_core.configured
     return {
-        "status": "ready" if service.ai_core.available else "degraded",
+        "status": "ready" if is_ready else "degraded",
         "ai_core_loaded": service.ai_core.available,
+        "model_key_configured": service.ai_core.configured,
         "slide_count": len(request.app.state.slide_repository.slides),
     }
 

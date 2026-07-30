@@ -86,7 +86,7 @@ def _safe_node(node_name: str):
                         state, node_name, "failed", {"error": type(exc).__name__}, model
                     ),
                 }
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - node safety boundary
                 return {
                     "status": "failed",
                     "failure_code": type(exc).__name__,

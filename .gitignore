@@ -1,0 +1,27 @@
+# Secrets and local environment files
+.env
+*.env
+!.env.example
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+ai_core/.venv/
+
+# JavaScript dependencies
+node_modules/
+
+# IDE and OS files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local task artifacts
+.backup_tmp/
+logs/

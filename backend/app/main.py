@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -27,26 +28,8 @@ logger = logging.getLogger("vlearn.backend")
 ROOT_DIR = Path(__file__).resolve().parents[2]
 AI_CORE_DIR = ROOT_DIR / "ai_core"
 
-import sys
 if str(AI_CORE_DIR) not in sys.path:
     sys.path.insert(0, str(AI_CORE_DIR))
-
-def _load_env_file(path: Path) -> None:
-    if not path.exists():
-        return
-    import os
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip("\"'")
-        if key and value and not os.environ.get(key):
-            os.environ[key] = value
-
-_load_env_file(ROOT_DIR / ".env")
-_load_env_file(AI_CORE_DIR / ".env")
 
 
 def create_app(

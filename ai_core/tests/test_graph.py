@@ -49,7 +49,9 @@ async def test_clarification_flow_and_resume():
         student_input="Tôi muốn hỏi về cơ chế Attention",
     )
 
-    assert res2["status"] == "completed"
+    # A clarified conceptual question continues to the understanding-check
+    # interrupt before the learning loop can complete.
+    assert res2["status"] == "awaiting_check"
     assert res2["assistant_message"] != ""
     json.dumps(res2)
 
