@@ -796,15 +796,17 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="quiz-header"><i class="fa-solid fa-circle-question"></i> Hỏi làm rõ</div>
       <div class="quiz-question">${escapePreviewText(clarifyData.clarifying_question || '')}</div>
       <div class="quiz-options">
-        ${suggestions.map(opt => `<button class="quiz-opt-btn clarify-opt-btn">${escapePreviewText(opt)}</button>`).join('')}
+        ${suggestions.map(opt => `<button type="button" class="quiz-opt-btn clarify-opt-btn">${escapePreviewText(opt)}</button>`).join('')}
       </div>
     `;
     chatMessages.appendChild(card);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     card.querySelectorAll('.clarify-opt-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        sendMessage(btn.textContent);
+      btn.addEventListener('click', async () => {
+        if (!lockQuizCard(card, btn, 'Đã ghi nhận lựa chọn · Agent đang xử lý...')) return;
+        await sendMessage(btn.textContent);
+        finishQuizCardProcessing(card, 'Đã gửi lựa chọn');
       });
     });
   }
@@ -822,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="quiz-question">${escapePreviewText(quizData.question || '')}</div>
         <div class="short-answer-wrapper">
           <input type="text" class="short-answer-input" placeholder="Gõ câu trả lời của bạn tại đây...">
-          <button class="short-answer-submit-btn"><i class="fa-solid fa-paper-plane"></i> Gửi câu trả lời</button>
+          <button type="button" class="short-answer-submit-btn"><i class="fa-solid fa-paper-plane"></i> Gửi câu trả lời</button>
         </div>
       `;
       chatMessages.appendChild(card);
@@ -834,8 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const handleShortSubmit = async () => {
         const userText = shortInput.value.trim();
         if (!userText) return;
-        shortInput.disabled = true;
-        submitBtn.disabled = true;
+        if (!lockQuizCard(card, null, 'Đã nhận câu trả lời · Agent đang chấm...')) return;
 
         await submitQuizPayload({
           quiz_id: quizData.quiz_id,
@@ -857,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="quiz-header"><i class="fa-solid fa-square-check"></i> Understanding Check (Trắc nghiệm) — ${escapePreviewText(quizData.concept || '')}</div>
         <div class="quiz-question">${escapePreviewText(quizData.question || '')}</div>
         <div class="quiz-options">
-          ${quizData.options.map((opt, idx) => `<button class="quiz-opt-btn quiz-choice-btn" data-idx="${idx}">${escapePreviewText(opt)}</button>`).join('')}
+          ${quizData.options.map((opt, idx) => `<button type="button" class="quiz-opt-btn quiz-choice-btn" data-idx="${idx}" aria-pressed="false">${escapePreviewText(opt)}</button>`).join('')}
         </div>
       `;
       chatMessages.appendChild(card);
@@ -865,6 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       card.querySelectorAll('.quiz-choice-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
+          if (!lockQuizCard(card, btn, 'Đã ghi nhận đáp án · Agent đang chấm...')) return;
           const selectedIdx = parseInt(btn.getAttribute('data-idx'));
           await submitQuizPayload({
             quiz_id: quizData.quiz_id,
@@ -876,6 +878,73 @@ document.addEventListener('DOMContentLoaded', () => {
           }, card);
         });
       });
+    }
+  }
+
+  function lockQuizCard(cardElement, selectedButton = null, message = 'Agent đang xử lý...') {
+    if (cardElement.dataset.submitting === 'true' || cardElement.classList.contains('is-locked')) {
+      return false;
+    }
+
+    cardElement.dataset.submitting = 'true';
+    cardElement.classList.add('is-processing');
+    cardElement.setAttribute('aria-busy', 'true');
+
+    cardElement.querySelectorAll('.quiz-opt-btn, .short-answer-input, .short-answer-submit-btn').forEach(control => {
+      control.disabled = true;
+    });
+
+    if (selectedButton) {
+      selectedButton.classList.add('is-selected');
+      selectedButton.setAttribute('aria-pressed', 'true');
+    }
+
+    let status = cardElement.querySelector('.quiz-processing-status');
+    if (!status) {
+      status = document.createElement('div');
+      status.className = 'quiz-processing-status';
+      status.setAttribute('role', 'status');
+      status.setAttribute('aria-live', 'polite');
+      cardElement.appendChild(status);
+    }
+    status.className = 'quiz-processing-status';
+    status.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i><span>${escapePreviewText(message)}</span>`;
+
+    activeNodeBadge.textContent = '⚙️ Đang xử lý đáp án...';
+    activeNodeBadge.style.background = '#fef08a';
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return true;
+  }
+
+  function finishQuizCardProcessing(cardElement, message = 'Đã xử lý đáp án') {
+    cardElement.dataset.submitting = 'false';
+    cardElement.classList.remove('is-processing');
+    cardElement.classList.add('is-locked');
+    cardElement.setAttribute('aria-busy', 'false');
+
+    const status = cardElement.querySelector('.quiz-processing-status');
+    if (status) {
+      status.className = 'quiz-processing-status is-completed';
+      status.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>${escapePreviewText(message)}</span>`;
+    }
+  }
+
+  function unlockQuizCardAfterError(cardElement, message) {
+    cardElement.dataset.submitting = 'false';
+    cardElement.classList.remove('is-processing', 'is-locked');
+    cardElement.setAttribute('aria-busy', 'false');
+    cardElement.querySelectorAll('.quiz-opt-btn, .short-answer-input, .short-answer-submit-btn').forEach(control => {
+      control.disabled = false;
+      control.classList.remove('is-selected');
+      if (control.classList.contains('quiz-opt-btn')) {
+        control.setAttribute('aria-pressed', 'false');
+      }
+    });
+
+    const status = cardElement.querySelector('.quiz-processing-status');
+    if (status) {
+      status.className = 'quiz-processing-status is-error';
+      status.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>${escapePreviewText(message)}</span>`;
     }
   }
 
@@ -892,13 +961,14 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(data.error?.message || 'Không thể gửi câu trả lời.');
       }
 
+      finishQuizCardProcessing(cardElement, 'Agent đã chấm xong');
+
       if (data.is_correct) {
         cardElement.style.borderColor = "#10b981";
-        cardElement.innerHTML += `
-          <div style="margin-top:12px; padding:10px; background:#ecfdf5; border-radius:6px; color:#047857; font-weight:600; font-size:13px;">
-            ${data.feedback}
-          </div>
-        `;
+        const feedback = document.createElement('div');
+        feedback.className = 'quiz-feedback is-correct';
+        feedback.textContent = data.feedback || 'Câu trả lời chính xác.';
+        cardElement.appendChild(feedback);
         activeNodeBadge.textContent = "✓ Kết thúc lượt";
         activeNodeBadge.style.background = "#dcfce7";
         if (data.default_suggestions && data.default_suggestions.length > 0) {
@@ -909,8 +979,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.misconception) renderMisconceptionCard(data.misconception);
         if (data.default_suggestions) renderFollowupChips(data.default_suggestions);
       }
+      return true;
     } catch (err) {
       console.error('Quiz submit error:', err);
+      const errorMessage = err?.message || 'Không thể gửi đáp án. Vui lòng thử lại.';
+      unlockQuizCardAfterError(cardElement, errorMessage);
+      activeNodeBadge.textContent = '⚠️ Không thể chấm đáp án';
+      activeNodeBadge.style.background = '#fee2e2';
+      return false;
     }
   }
 
@@ -956,6 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
   sendBtn.addEventListener('click', () => sendMessage());
   chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
+      if (e.isComposing || e.keyCode === 229) return;
       e.preventDefault();
       sendMessage();
     }
