@@ -1,4 +1,4 @@
-"""Public interface for VLearn AI Core package."""
+"""Public interface facade for VLearn AI Core package."""
 
 from typing import Any
 
@@ -6,9 +6,10 @@ from langchain_core.language_models import BaseChatModel
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 
+from vlearn_ai.config import get_settings
 from vlearn_ai.graph.builder import build_learning_graph
 from vlearn_ai.graph.state import LearningLoopState
-from vlearn_ai.schemas import AICoreResult
+from vlearn_ai.schemas import AICoreResult, InvalidResumeStateError
 
 
 class VLearnAICore:
@@ -32,10 +33,15 @@ class VLearnAICore:
         conversation_history: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Start a new learning loop turn."""
+        if not thread_id or not thread_id.strip():
+            raise ValueError("thread_id must be a non-empty string.")
+        if not question or not question.strip():
+            raise ValueError("question must be a non-empty string.")
+
         initial_state: LearningLoopState = {
             "thread_id": thread_id,
             "user_query": question,
-            "selected_context": selected_context,
+            "selected_context": selected_context or "",
             "conversation_history": conversation_history or [],
             "citations": [],
             "route": None,
@@ -59,7 +65,12 @@ class VLearnAICore:
         }
 
         config = {"configurable": {"thread_id": thread_id}}
-        final_state = await self.app.ainvoke(initial_state, config=config)
+        settings = get_settings()
+        final_state = await self.app.ainvoke(
+            initial_state,
+            config=config,
+            recursion_limit=settings.AI_RECURSION_LIMIT,
+        )
         return self._format_result(final_state, config)
 
     async def resume_turn(
@@ -68,39 +79,63 @@ class VLearnAICore:
         thread_id: str,
         student_input: str,
     ) -> dict[str, Any]:
-        """Resume an interrupted learning loop turn with student input."""
+        """Resume an interrupted learning loop turn with student input via Command(resume=...)."""
+        if not thread_id or not thread_id.strip():
+            raise InvalidResumeStateError("thread_id must be a non-empty string.")
+        if not student_input or not student_input.strip():
+            raise InvalidResumeStateError("student_input must be a non-empty string.")
+
         config = {"configurable": {"thread_id": thread_id}}
         current_snapshot = self.app.get_state(config)
+
+        if not current_snapshot or not current_snapshot.values:
+            raise InvalidResumeStateError(
+                f"No active thread state found for thread_id '{thread_id}'."
+            )
+
         curr_values = current_snapshot.values or {}
-
-        update_values: dict[str, Any] = dict(curr_values)
-        update_values["status"] = "running"
-
-        if (
-            curr_values.get("status") == "awaiting_clarification"
-            or not curr_values.get("clarification_answer")
-        ) and curr_values.get("route") == "clarify":
-            update_values["clarification_answer"] = student_input
-
-        if curr_values.get("status") == "awaiting_check" or curr_values.get(
-            "check_question"
-        ):
-            update_values["student_check_answer"] = student_input
+        curr_status = curr_values.get("status")
 
         has_native_interrupt = bool(
-            current_snapshot
-            and current_snapshot.tasks
-            and any(t.interrupts for t in current_snapshot.tasks)
+            current_snapshot.tasks and any(t.interrupts for t in current_snapshot.tasks)
         )
+        has_state_pause = curr_status in ("awaiting_clarification", "awaiting_check")
+
+        if not has_native_interrupt and not has_state_pause:
+            raise InvalidResumeStateError(
+                f"Thread '{thread_id}' does not have an active interrupt awaiting resume."
+            )
+
+        settings = get_settings()
+        final_state = None
 
         if has_native_interrupt:
             try:
                 cmd = Command(resume=student_input)
-                final_state = await self.app.ainvoke(cmd, config=config)
-            except (RuntimeError, AttributeError, ValueError, TypeError):
-                final_state = await self.app.ainvoke(update_values, config=config)
-        else:
-            final_state = await self.app.ainvoke(update_values, config=config)
+                final_state = await self.app.ainvoke(
+                    cmd,
+                    config=config,
+                    recursion_limit=settings.AI_RECURSION_LIMIT,
+                )
+            except (RuntimeError, AttributeError, ValueError, TypeError, KeyError):
+                final_state = None
+
+        if final_state is None:
+            update_values: dict[str, Any] = dict(curr_values)
+            update_values["status"] = "running"
+            if (
+                curr_status == "awaiting_clarification"
+                or curr_values.get("route") == "clarify"
+            ):
+                update_values["clarification_answer"] = student_input
+            if curr_status == "awaiting_check" or curr_values.get("check_question"):
+                update_values["student_check_answer"] = student_input
+
+            final_state = await self.app.ainvoke(
+                update_values,
+                config=config,
+                recursion_limit=settings.AI_RECURSION_LIMIT,
+            )
 
         return self._format_result(final_state, config)
 
@@ -108,17 +143,63 @@ class VLearnAICore:
         self, state: dict[str, Any], config: dict[str, Any]
     ) -> dict[str, Any]:
         """Format state snapshot into a stable AICoreResult dict."""
+        graph_state = self.app.get_state(config)
         current_values = state if isinstance(state, dict) and state else {}
         if not current_values:
-            graph_state = self.app.get_state(config)
             current_values = graph_state.values if graph_state else {}
+
+        # Check native LangGraph interrupt if present
+        if (
+            graph_state
+            and graph_state.tasks
+            and any(t.interrupts for t in graph_state.tasks)
+        ):
+            interrupt_val = graph_state.tasks[0].interrupts[0].value
+            int_type = (
+                interrupt_val.get("type") if isinstance(interrupt_val, dict) else None
+            )
+
+            if int_type == "clarification_request":
+                return AICoreResult(
+                    status="awaiting_clarification",
+                    assistant_message=interrupt_val.get("question"),
+                    route={
+                        "name": current_values.get("route"),
+                        "confidence": current_values.get("route_confidence", 1.0),
+                        "reason": current_values.get("route_reason", ""),
+                    }
+                    if current_values.get("route")
+                    else None,
+                    ui_payload=interrupt_val,
+                    citations=current_values.get("citations", []),
+                    followups=[],
+                    tool_trace=current_values.get("tool_trace", []),
+                ).model_dump()
+
+            elif int_type in ("multiple_choice", "short_answer", "micro_check"):
+                return AICoreResult(
+                    status="awaiting_check",
+                    assistant_message=current_values.get("grounded_answer")
+                    or interrupt_val.get("question"),
+                    route={
+                        "name": current_values.get("route"),
+                        "confidence": current_values.get("route_confidence", 1.0),
+                        "reason": current_values.get("route_reason", ""),
+                    }
+                    if current_values.get("route")
+                    else None,
+                    ui_payload=interrupt_val,
+                    citations=current_values.get("citations", []),
+                    followups=[],
+                    tool_trace=current_values.get("tool_trace", []),
+                ).model_dump()
 
         status = current_values.get("status", "completed")
         if status == "running":
             status = "completed"
 
-        ui_payload: dict[str, Any] | None = None
         assistant_message = current_values.get("grounded_answer")
+        ui_payload: dict[str, Any] | None = None
 
         if status == "awaiting_clarification":
             assistant_message = current_values.get("clarification_question")

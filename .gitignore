@@ -23,3 +23,5 @@ ai_core/.venv/
 .idea/
 *.swp
 *.swo
+.vscode
+.ruff_cache

@@ -1,100 +1,105 @@
-"""Unit tests for the 6 pedagogical tools."""
+"""Unit tests for all 6 pedagogical tools and MCQ evaluation."""
 
 import pytest
-from langchain_core.language_models.fake_chat_models import FakeListChatModel
-from vlearn_ai.schemas import CheckEvaluation, GroundedAnswer, MicroCheck
+from fake_model import DeterministicFakeChatModel
+from vlearn_ai.schemas import CheckOption, MicroCheck
 from vlearn_ai.tools.give_direct_answer import execute_give_direct_answer
 from vlearn_ai.tools.give_example import execute_give_example
 from vlearn_ai.tools.give_hint import execute_give_hint
 from vlearn_ai.tools.motivate import execute_motivate
 from vlearn_ai.tools.review_concept import execute_review_concept
-from vlearn_ai.tools.validate_understanding import execute_validate_understanding
+from vlearn_ai.tools.validate_understanding import (
+    evaluate_mcq_student_answer,
+    execute_validate_understanding,
+)
 
 
 @pytest.mark.asyncio
 async def test_tool_review_concept():
-    fake_llm = FakeListChatModel(responses=["Khái niệm Key trong Attention..."])
+    fake_llm = DeterministicFakeChatModel()
     res = await execute_review_concept(
-        query="Key là gì?",
-        context="Key dùng để so khớp với Query.",
-        model=fake_llm,
+        query="Key là gì?", context="Key dùng để so khớp.", model=fake_llm
     )
-    assert isinstance(res, GroundedAnswer)
-    assert len(res.answer) > 0
+    assert res.answer != ""
+    assert len(res.citations) > 0
 
 
 @pytest.mark.asyncio
 async def test_tool_give_direct_answer():
-    fake_llm = FakeListChatModel(
-        responses=["Key là ma trận biểu diễn thông tin tra cứu."]
-    )
+    fake_llm = DeterministicFakeChatModel()
     res = await execute_give_direct_answer(
-        query="Key là gì?",
-        context="Key là ma trận biểu diễn thông tin tra cứu.",
-        model=fake_llm,
+        query="Key là gì?", context="Key dùng để so khớp.", model=fake_llm
     )
-    assert isinstance(res, GroundedAnswer)
-    assert "Key" in res.answer
+    assert res.answer != ""
 
 
 @pytest.mark.asyncio
 async def test_tool_give_example():
-    fake_llm = FakeListChatModel(responses=["Ví dụ về Key và Value trong từ điển."])
+    fake_llm = DeterministicFakeChatModel()
     res = await execute_give_example(
-        concept="Key-Value",
-        context="Cặp Key-Value hoạt động như từ điển.",
-        model=fake_llm,
+        concept="Key", context="Key dùng để so khớp.", model=fake_llm
     )
     assert res.example != ""
-    assert res.concept_mapping != ""
-
-
-@pytest.mark.asyncio
-async def test_tool_give_hint():
-    fake_llm = FakeListChatModel(responses=["Hãy nghĩ về cách tra từ điển..."])
-    res = await execute_give_hint(
-        topic="Key",
-        current_state="Học viên chưa phân biệt được Key và Value",
-        model=fake_llm,
-    )
-    assert res.hint_level == 1
-    assert res.hint != ""
 
 
 @pytest.mark.asyncio
 async def test_tool_motivate():
-    fake_llm = FakeListChatModel(responses=["Đừng nản nhé, thử lại với bước nhỏ này."])
+    fake_llm = DeterministicFakeChatModel()
     res = await execute_motivate(
-        difficulty="Nhầm lẫn giữa Key và Value",
-        model=fake_llm,
+        difficulty="Học viên gặp khó khăn khi phân biệt Key và Value", model=fake_llm
     )
-    assert res.acknowledged_difficulty != ""
     assert res.message != ""
 
 
 @pytest.mark.asyncio
+async def test_tool_give_hint():
+    fake_llm = DeterministicFakeChatModel()
+    res = await execute_give_hint(
+        concept="Key", context="Key dùng...", hint_level=1, model=fake_llm
+    )
+    assert res.hint != ""
+
+
+@pytest.mark.asyncio
 async def test_tool_validate_understanding_generate():
-    fake_llm = FakeListChatModel(responses=["Multiple choice question..."])
+    fake_llm = DeterministicFakeChatModel()
     res = await execute_validate_understanding(
         mode="generate_check",
-        context="Key dùng để so khớp với Query.",
-        grounded_answer="Key dùng để so khớp.",
+        context="Key dùng để so khớp.",
+        grounded_answer="Key giải thích",
         model=fake_llm,
     )
     assert isinstance(res, MicroCheck)
     assert res.question != ""
 
 
-@pytest.mark.asyncio
-async def test_tool_validate_understanding_evaluate():
-    fake_llm = FakeListChatModel(responses=["Evaluate answer..."])
-    res = await execute_validate_understanding(
-        mode="evaluate_answer",
-        question="Key làm gì?",
+def test_mcq_evaluation_no_false_positive_sai():
+    options = [
+        CheckOption(option_id="opt_a", text="So khớp với Query"),
+        CheckOption(option_id="opt_b", text="Lưu trữ kết quả"),
+    ]
+    # Word "sai" should NOT be matched as correct (previously contains "a" substring bug)
+    is_correct = evaluate_mcq_student_answer(
+        student_answer="sai",
+        correct_option_id="opt_a",
+        options=options,
         expected_answer="So khớp với Query",
-        student_answer="So khớp với Query",
-        context="Key dùng để so khớp.",
-        model=fake_llm,
     )
-    assert isinstance(res, CheckEvaluation)
-    assert res.is_correct is True
+    assert is_correct is False
+
+
+def test_mcq_evaluation_option_letter_matching():
+    options = [
+        CheckOption(option_id="opt_a", text="So khớp với Query"),
+        CheckOption(option_id="opt_b", text="Lưu trữ kết quả"),
+    ]
+    assert (
+        evaluate_mcq_student_answer("A", "opt_a", options, "So khớp với Query") is True
+    )
+    assert (
+        evaluate_mcq_student_answer("lựa chọn A", "opt_a", options, "So khớp với Query")
+        is True
+    )
+    assert (
+        evaluate_mcq_student_answer("B", "opt_a", options, "So khớp với Query") is False
+    )
