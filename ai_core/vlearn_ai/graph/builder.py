@@ -30,6 +30,7 @@ from vlearn_ai.graph.routes import (
     route_after_await_check,
     route_after_await_clarification,
     route_after_check_eval,
+    route_after_context_guard,
     route_after_grounding_guard,
     route_after_guard_check_input,
     route_after_guard_clarification_input,
@@ -125,7 +126,7 @@ def build_learning_loop_graph(
     # Wire Edges
     builder.add_edge(START, "input_guard")
     builder.add_conditional_edges("input_guard", route_after_input_guard)
-    builder.add_edge("context_guard", "router")
+    builder.add_conditional_edges("context_guard", route_after_context_guard)
     builder.add_conditional_edges("router", route_after_router)
 
     builder.add_edge("generate_clarification", "await_clarification")
