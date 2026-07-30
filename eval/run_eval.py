@@ -89,6 +89,10 @@ async def run_eval():
                 "Pass": "❌ FAIL"
             })
             
+        # Thêm sleep để tránh lỗi 429 Rate Limit (Free Tier chỉ cho 15 request/phút)
+        print("Sleeping 4s to avoid rate limit...")
+        await asyncio.sleep(4)
+            
     print("\nWriting results to eval_results.md...")
     with open('eval/eval_results.md', 'w', encoding='utf-8') as f:
         f.write("# Bảng Kết Quả Đánh Giá VLearn Tutor (Native LangGraph Engine)\n\n")
