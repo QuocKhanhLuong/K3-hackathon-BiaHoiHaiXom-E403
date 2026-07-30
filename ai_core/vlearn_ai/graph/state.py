@@ -25,6 +25,7 @@ class LearningLoopState(TypedDict, total=False):
     route: Literal["simple", "clarify", "check", "deep"] | None
     route_confidence: float
     route_reason: str
+    route_source: Literal["structured_model", "deterministic_fallback"] | None
 
     # Workflow outputs & interrupt payload states
     clarification_question: str | None

@@ -92,9 +92,7 @@ def public_action(action: PendingActionRecord | None) -> PublicAction | None:
             PublicOption(id=str(option["id"]), text=str(option["text"]))
             for option in payload.get("options", [])
         ],
-        suggested_inputs=[
-            str(item) for item in payload.get("suggested_inputs", [])
-        ],
+        suggested_inputs=[str(item) for item in payload.get("suggested_inputs", [])],
         target_concept=payload.get("target_concept"),
     )
 
@@ -102,8 +100,13 @@ def public_action(action: PendingActionRecord | None) -> PublicAction | None:
 def _page_from_citation(citation: dict[str, Any]) -> int | None:
     haystack = " ".join(
         str(citation.get(key, ""))
-        for key in ("citation_id", "source_location", "snippet")
+        for key in ("citation_id", "source_id", "source_location", "snippet")
     )
+    match = re.search(
+        r"(?:page[=\s]|page_in_deck[=\s]|p|-p)(\d{1,4})", haystack, re.IGNORECASE
+    )
+    if match:
+        return int(match.group(1))
     match = re.search(r"(?:trang|page|p)\D*(\d{1,4})", haystack, re.IGNORECASE)
     return int(match.group(1)) if match else None
 
@@ -173,8 +176,6 @@ def to_turn_response(
         message=PublicMessage(role="assistant", content=str(message)),
         route=route,
         action=public_action(outcome.action),
-        citations=public_citations(
-            result.get("citations") or [], outcome.page_number
-        ),
+        citations=public_citations(result.get("citations") or [], outcome.page_number),
         suggestions=suggestions(result),
     )

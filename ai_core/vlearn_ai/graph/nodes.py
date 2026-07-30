@@ -1,8 +1,8 @@
 """LangGraph workflow node implementations with pure native interrupt() and strict error handling."""
 
 import asyncio
-import time
 import threading
+import time
 from typing import Any
 
 from langchain_core.language_models import BaseChatModel
@@ -149,8 +149,12 @@ def input_guard_node(
             "status": "blocked",
             "blocked_reason": f"Prompt injection blocked: {assessment.reason}",
             "tool_trace": _record_trace(
-                state, "input_guard", "blocked",
-                {"reason": assessment.reason}, llm, latency_ms=ms,
+                state,
+                "input_guard",
+                "blocked",
+                {"reason": assessment.reason},
+                llm,
+                latency_ms=ms,
             ),
         }
     return {"status": "running"}
@@ -187,7 +191,9 @@ def context_guard_node(state: LearningLoopState) -> dict[str, Any]:
         "context_injection_patterns": res["context_injection_patterns"],
         "status": "running",
         "tool_trace": _record_trace(
-            state, "context_guard", "success",
+            state,
+            "context_guard",
+            "success",
             {"context_injection_detected": res["context_injection_detected"]},
         ),
     }
@@ -212,6 +218,7 @@ def router_node(
     messages = build_trusted_messages(ROUTER_SYSTEM_PROMPT, untrusted_payload)
 
     route_out: RouteOutput | None = None
+    route_src = "structured_model"
     try:
         if hasattr(llm, "with_structured_output"):
             structured = llm.with_structured_output(RouteOutput)
@@ -222,6 +229,7 @@ def router_node(
         route_out = None
 
     if route_out is None:
+        route_src = "deterministic_fallback"
         q_lower = query.lower()
         if "cái này hoạt động" in q_lower or len(context.strip()) < 10:
             r, c, reason = "clarify", 0.9, "Context or query ambiguous"
@@ -238,8 +246,18 @@ def router_node(
         "route": route_out.route,
         "route_confidence": route_out.confidence,
         "route_reason": route_out.reason,
+        "route_source": route_src,
         "tool_trace": _record_trace(
-            state, "router", "success", {"route": route_out.route}, llm, latency_ms=ms,
+            state,
+            "router",
+            "success",
+            {
+                "route": route_out.route,
+                "route_source": route_src,
+                "reason": route_out.reason,
+            },
+            llm,
+            latency_ms=ms,
         ),
     }
 
@@ -301,7 +319,11 @@ def guard_clarification_input_node(
             "status": "blocked",
             "blocked_reason": f"Prompt injection in clarification answer: {assessment.reason}",
             "tool_trace": _record_trace(
-                state, "input_guard", "blocked", {"reason": assessment.reason}, llm,
+                state,
+                "input_guard",
+                "blocked",
+                {"reason": assessment.reason},
+                llm,
             ),
         }
     return {"status": "running"}
@@ -337,13 +359,15 @@ def grounded_answer_node(
 
     if route == "check":
         ex_obj = _run_async(execute_give_example(query, context, llm))
-        trace.append({
-            "tool": "give_example",
-            "status": "success",
-            "prompt_version": "1.0.0",
-            "model": _get_model_name(llm),
-            "details": {"example_length": len(ex_obj.example)},
-        })
+        trace.append(
+            {
+                "tool": "give_example",
+                "status": "success",
+                "prompt_version": "1.0.0",
+                "model": _get_model_name(llm),
+                "details": {"example_length": len(ex_obj.example)},
+            }
+        )
 
     return {
         "grounded_answer": ans_obj.answer,
@@ -385,7 +409,9 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
     return {
         "grounding_valid": is_valid,
         "grounding_error": err_msg,
-        "grounding_failure_type": None if is_valid else "unsupported_claim_or_missing_citation",
+        "grounding_failure_type": None
+        if is_valid
+        else "unsupported_claim_or_missing_citation",
         "status": "running",
         "tool_trace": _record_trace(
             state, "grounding_guard", "success" if is_valid else "failed"
@@ -410,7 +436,9 @@ def grounding_failure_node(state: LearningLoopState) -> dict[str, Any]:
         "grounded_claims": [],
         "status": "failed",
         "tool_trace": _record_trace(
-            state, "grounding_failure", "failed",
+            state,
+            "grounding_failure",
+            "failed",
             {"reason": state.get("grounding_error")},
         ),
     }
@@ -432,16 +460,17 @@ def generate_check_node(
         MicroCheck(**state["check_question"]) if state.get("check_question") else None
     )
     micro_check = _run_async(
-        run_check_understanding(
-        context, grounded_ans, llm, previous_check=prev_check
-    ))
+        run_check_understanding(context, grounded_ans, llm, previous_check=prev_check)
+    )
 
     return {
         "check_question": micro_check.model_dump(),
         "student_check_answer": None,
         "check_result": None,
         "status": "awaiting_check",
-        "tool_trace": _record_trace(state, "validate_understanding", "success", model=llm),
+        "tool_trace": _record_trace(
+            state, "validate_understanding", "success", model=llm
+        ),
     }
 
 
@@ -483,7 +512,11 @@ def guard_check_input_node(
             "status": "blocked",
             "blocked_reason": f"Prompt injection in check answer: {assessment.reason}",
             "tool_trace": _record_trace(
-                state, "input_guard", "blocked", {"reason": assessment.reason}, llm,
+                state,
+                "input_guard",
+                "blocked",
+                {"reason": assessment.reason},
+                llm,
             ),
         }
     return {"status": "running"}
@@ -505,20 +538,24 @@ def evaluate_check_node(
     raw_options = check_q.get("options") or []
     typed_options = [CheckOption(**opt) for opt in raw_options if isinstance(opt, dict)]
 
-    eval_res = _run_async(run_detect_misconception(
-        question=check_q.get("question", ""),
-        expected_answer=check_q.get("expected_answer", ""),
-        student_answer=student_ans,
-        context=context,
-        correct_option_id=check_q.get("correct_option_id"),
-        options=typed_options,
-        model=llm,
-    ))
+    eval_res = _run_async(
+        run_detect_misconception(
+            question=check_q.get("question", ""),
+            expected_answer=check_q.get("expected_answer", ""),
+            student_answer=student_ans,
+            context=context,
+            correct_option_id=check_q.get("correct_option_id"),
+            options=typed_options,
+            model=llm,
+        )
+    )
 
     return {
         "check_result": eval_res.model_dump(),
         "status": "running",
-        "tool_trace": _record_trace(state, "validate_understanding", "success", model=llm),
+        "tool_trace": _record_trace(
+            state, "validate_understanding", "success", model=llm
+        ),
     }
 
 
@@ -548,23 +585,29 @@ def misconception_node(
         )
     )
 
-    plan, grounded_repair, executed_tools = _run_async(run_repair_misconception(
-        check_eval=eval_obj,
-        context=context,
-        target_concept=state.get("check_question", {}).get("target_concept", "khái niệm"),
-        retry_count=retry,
-        model=llm,
-    ))
+    plan, grounded_repair, executed_tools = _run_async(
+        run_repair_misconception(
+            check_eval=eval_obj,
+            context=context,
+            target_concept=state.get("check_question", {}).get(
+                "target_concept", "khái niệm"
+            ),
+            retry_count=retry,
+            model=llm,
+        )
+    )
 
     trace = list(state.get("tool_trace", []))
     for t_name in executed_tools:
-        trace.append({
-            "tool": t_name,
-            "status": "success",
-            "prompt_version": "1.0.0",
-            "model": _get_model_name(llm),
-            "details": {"repair_step": True},
-        })
+        trace.append(
+            {
+                "tool": t_name,
+                "status": "success",
+                "prompt_version": "1.0.0",
+                "model": _get_model_name(llm),
+                "details": {"repair_step": True},
+            }
+        )
 
     return {
         "repair_plan": plan.model_dump(),
@@ -605,8 +648,11 @@ def suggest_followups_node(
     grounded_ans = state.get("grounded_answer", "")
     llm = model or get_fast_model()
 
-    sug = _run_async(run_suggest_followups(query, context, grounded_ans, llm))
-    f_list = [f.model_dump() for f in sug.followups]
+    try:
+        sug = _run_async(run_suggest_followups(query, context, grounded_ans, llm))
+        f_list = [f.model_dump() for f in sug.followups]
+    except Exception:
+        f_list = []
 
     return {
         "followups": f_list,

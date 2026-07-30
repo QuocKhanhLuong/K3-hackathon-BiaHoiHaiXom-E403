@@ -1,19 +1,20 @@
 """
 Tool: Learning Loop Orchestrator Master Agent (Powered by Gemini Flash 3.1 Lite / Gemini 3 Flash)
 """
-from pydantic import BaseModel
-from typing import List, Optional
-import sys
 import os
+import sys
+
+from pydantic import BaseModel
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from backend.gemini_client import call_gemini_json
 
+
 class OrchestratorInput(BaseModel):
     question: str
     tutor_answer: str
-    chat_history: Optional[List[dict]] = []
-    api_key: Optional[str] = None
+    chat_history: list[dict] | None = []
+    api_key: str | None = None
 
 class OrchestratorOutput(BaseModel):
     branch: str  # "simple_end" | "clarify" | "understanding_check" | "followup"

@@ -66,9 +66,7 @@ class TurnResponse(StrictAPIModel):
     request_id: str
     conversation_id: str
     turn_id: str
-    status: Literal[
-        "processing", "awaiting_response", "completed", "blocked", "failed"
-    ]
+    status: Literal["processing", "awaiting_response", "completed", "blocked", "failed"]
     message: PublicMessage
     route: PublicRoute | None = None
     action: PublicAction | None = None

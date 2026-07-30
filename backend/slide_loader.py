@@ -3,6 +3,7 @@ Dynamic Slide Loader for VLearn Tutor
 Reads actual PDF slides from data/vlearn-pack/slides/
 """
 import os
+
 import fitz
 
 SLIDES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/vlearn-pack/slides"))

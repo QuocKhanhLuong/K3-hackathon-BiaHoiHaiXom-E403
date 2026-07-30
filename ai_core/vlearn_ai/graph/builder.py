@@ -41,13 +41,6 @@ from vlearn_ai.graph.routes import (
 from vlearn_ai.graph.state import LearningLoopState
 
 
-def _route_after_failed_status(state: LearningLoopState) -> str:
-    """Route nodes with @_safe_node to failure when status is 'failed'."""
-    if state.get("status") == "failed":
-        return "failure"
-    return "__continue__"
-
-
 def _route_or_failure(route_fn):
     def _wrapped(state: LearningLoopState):
         if state.get("status") == "failed":
@@ -144,7 +137,11 @@ def build_learning_loop_graph(
     builder.add_conditional_edges(
         "input_guard",
         _route_or_failure(route_after_input_guard),
-        {"context_guard": "context_guard", "output_guard": "output_guard", "failure": "failure"},
+        {
+            "context_guard": "context_guard",
+            "output_guard": "output_guard",
+            "failure": "failure",
+        },
     )
     builder.add_conditional_edges(
         "context_guard",
@@ -170,12 +167,20 @@ def build_learning_loop_graph(
     builder.add_conditional_edges(
         "await_clarification",
         _route_or_failure(route_after_await_clarification),
-        {"guard_clarification_input": "guard_clarification_input", "output_guard": "output_guard", "failure": "failure"},
+        {
+            "guard_clarification_input": "guard_clarification_input",
+            "output_guard": "output_guard",
+            "failure": "failure",
+        },
     )
     builder.add_conditional_edges(
         "guard_clarification_input",
         _route_or_failure(route_after_guard_clarification_input),
-        {"grounded_answer": "grounded_answer", "output_guard": "output_guard", "failure": "failure"},
+        {
+            "grounded_answer": "grounded_answer",
+            "output_guard": "output_guard",
+            "failure": "failure",
+        },
     )
 
     # Grounded answer → grounding guard
@@ -206,17 +211,30 @@ def build_learning_loop_graph(
     builder.add_conditional_edges(
         "await_check",
         _route_or_failure(route_after_await_check),
-        {"guard_check_input": "guard_check_input", "output_guard": "output_guard", "failure": "failure"},
+        {
+            "guard_check_input": "guard_check_input",
+            "output_guard": "output_guard",
+            "failure": "failure",
+        },
     )
     builder.add_conditional_edges(
         "guard_check_input",
         _route_or_failure(route_after_guard_check_input),
-        {"evaluate_check": "evaluate_check", "output_guard": "output_guard", "failure": "failure"},
+        {
+            "evaluate_check": "evaluate_check",
+            "output_guard": "output_guard",
+            "failure": "failure",
+        },
     )
     builder.add_conditional_edges(
         "evaluate_check",
         _route_or_failure(route_after_check_eval),
-        {"suggest_followups": "suggest_followups", "misconception": "misconception", "safe_end": "safe_end", "failure": "failure"},
+        {
+            "suggest_followups": "suggest_followups",
+            "misconception": "misconception",
+            "safe_end": "safe_end",
+            "failure": "failure",
+        },
     )
 
     # Misconception → grounding_guard (for repair grounding verification)
