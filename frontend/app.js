@@ -995,10 +995,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.createElement('div');
     card.className = 'misconception-card';
     card.innerHTML = `
-      <div class="misconception-title"><i class="fa-solid fa-triangle-exclamation"></i> Misconception Detection (Phát hiện điểm nhầm lẫn)</div>
-      <p style="font-size:13px; font-weight:600; margin-bottom:8px;">${misconceptionData.misconception_point}</p>
-      <div style="font-size:13px; margin-bottom:8px;">${misconceptionData.re_explanation}</div>
-      <div style="font-size:13px; color:#451a03; background:#fffbe8; padding:8px; border-radius:6px;">${misconceptionData.new_example}</div>
+      <div class="misconception-title"><i class="fa-solid fa-triangle-exclamation"></i> Phát hiện điểm nhầm lẫn (Misconception)</div>
+      <p style="font-size:13.5px; font-weight:700; margin-bottom:8px; color: #7f1d1d;">${misconceptionData.misconception_point}</p>
+      <div style="font-size:13px; margin-bottom:12px; color: #991b1b; line-height: 1.5;">${misconceptionData.re_explanation}</div>
+      <div style="background:#fffbe8; padding:12px; border-radius:8px; border: 1px solid #fef08a; margin-top: 12px;">
+        <div style="font-size:12px; font-weight:700; color:#854d0e; margin-bottom:6px;"><i class="fa-solid fa-lightbulb"></i> Ví dụ minh họa mới:</div>
+        <div style="font-size:13px; color:#451a03; line-height: 1.5;">${misconceptionData.new_example}</div>
+      </div>
     `;
     chatMessages.appendChild(card);
     chatMessages.scrollTop = chatMessages.scrollHeight;
