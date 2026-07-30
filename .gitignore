@@ -1,5 +1,25 @@
 .DS_Store
 node_modules/
 *.env
+.env
 
+# Python byte-code and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Pytest cache
+.pytest_cache/
+
+# Virtual environments
 .venv/
+venv/
+ENV/
+ai_core/.venv/
+
+# IDE settings & temporary files
+.vscode/
+.idea/
+*.swp
+*.swo
