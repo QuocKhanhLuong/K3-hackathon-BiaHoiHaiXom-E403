@@ -1,0 +1,13 @@
+{
+  "run_id": "20260730-193552-offline",
+  "timestamp": "2026-07-30T12:35:54Z",
+  "git_sha": "1f8eed1a82cedb46764668cb5d0755c0d0047f24",
+  "git_branch": "fix/vlearn-ai-core-complete-hardening",
+  "mode": "offline",
+  "model": "deterministic-fake-chat-model",
+  "seed": 42,
+  "repeat": 1,
+  "scenario_count": 72,
+  "judge_enabled": false,
+  "live_api_called": false
+}

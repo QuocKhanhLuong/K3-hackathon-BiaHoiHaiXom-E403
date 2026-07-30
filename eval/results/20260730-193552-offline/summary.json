@@ -1,0 +1,458 @@
+{
+  "mode": "offline",
+  "total_scenarios": 72,
+  "passed_scenarios": 36,
+  "failed_scenarios": 36,
+  "errored_scenarios": 12,
+  "total_turns": 115,
+  "passed_turns": 67,
+  "scenario_pass_rate": 50.0,
+  "turn_pass_rate": 58.26,
+  "routing": {
+    "route_accuracy": 60.0,
+    "fallback_route_rate": 0.0
+  },
+  "tool_orchestration": {
+    "required_tool_recall": 0.0,
+    "forbidden_tool_violation_rate": 0.0
+  },
+  "multi_turn": {
+    "multi_turn_scenarios_count": 36,
+    "multi_turn_completion_rate": 44.44,
+    "stale_citation_rate": 66.67
+  },
+  "followups": {
+    "followup_presence_rate": 6.09
+  },
+  "performance": {
+    "mean_latency_ms": 9.9,
+    "p50_latency_ms": 10,
+    "p95_latency_ms": 13
+  },
+  "failures_by_category": {
+    "multi_turn": [
+      {
+        "scenario_id": "CROSS-SLIDE-003",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "FAIL-RECOVER-002",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_clarification'], got 'completed'"
+      },
+      {
+        "scenario_id": "FOLLOWUP-003",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "FOLLOWUP-003",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      },
+      {
+        "scenario_id": "REPAIR-004",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "REPAIR-004",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "REPAIR-005",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "REPAIR-005",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "REPAIR-006",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "REPAIR-006",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "REPAIR-007",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "REPAIR-007",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "REPAIR-008",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "REPAIR-008",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "REPAIR-009",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "REPAIR-009",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "REPAIR-010",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "REPAIR-010",
+        "turn_index": 2,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'failed'"
+      },
+      {
+        "scenario_id": "MULTI-TURN-006",
+        "turn_index": 3,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed', 'awaiting_check'], got 'awaiting_clarification'"
+      },
+      {
+        "scenario_id": "MULTI-TURN-007",
+        "turn_index": 3,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'awaiting_check'"
+      },
+      {
+        "scenario_id": "RARE-ADV-004",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_clarification'], got 'completed'"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-003",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-005",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['awaiting_check'], got 'completed'"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-011",
+        "turn_index": 1,
+        "assertion_name": "status_check",
+        "message": "Expected status in ['completed'], got 'failed'"
+      }
+    ],
+    "general": [
+      {
+        "scenario_id": "CROSS-SLIDE-003",
+        "turn_index": 1,
+        "assertion_name": "response_contains_any",
+        "message": "Response contains at least one of ['Key', 'Query']"
+      },
+      {
+        "scenario_id": "FAIL-RECOVER-001",
+        "turn_index": 1,
+        "assertion_name": "response_contains_any",
+        "message": "Response contains at least one of ['bài học', 'ngữ cảnh', 'chưa đủ', 'căn cứ']"
+      },
+      {
+        "scenario_id": "MULTI-TURN-006",
+        "turn_index": 3,
+        "assertion_name": "assistant_message_required",
+        "message": "Assistant message is missing or empty"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-011",
+        "turn_index": 1,
+        "assertion_name": "response_contains_any",
+        "message": "Response contains at least one of ['Key', 'Query']"
+      }
+    ],
+    "routing": [
+      {
+        "scenario_id": "FOLLOWUP-001",
+        "turn_index": 1,
+        "assertion_name": "route_check",
+        "message": "Expected route in ['deep'], got 'simple'"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-002",
+        "turn_index": 1,
+        "assertion_name": "route_check",
+        "message": "Expected route in ['deep'], got 'simple'"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-003",
+        "turn_index": 1,
+        "assertion_name": "route_check",
+        "message": "Expected route in ['check'], got 'simple'"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-005",
+        "turn_index": 1,
+        "assertion_name": "route_check",
+        "message": "Expected route in ['check'], got 'simple'"
+      }
+    ],
+    "tool_selection": [
+      {
+        "scenario_id": "FOLLOWUP-001",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['suggest_followups']. Executed: ['context_guard', 'router', 'give_direct_answer', 'grounding_guard']"
+      },
+      {
+        "scenario_id": "REPAIR-001",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['generate_check']. Executed: ['context_guard', 'router', 'review_concept', 'give_example', 'grounding_guard', 'validate_understanding']"
+      },
+      {
+        "scenario_id": "REPAIR-001",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['detect_misconception']. Executed: ['context_guard', 'router', 'review_concept', 'give_example', 'grounding_guard', 'validate_understanding', 'validate_understanding', 'review_concept', 'give_example', 'grounding_guard', 'validate_understanding']"
+      },
+      {
+        "scenario_id": "REPAIR-002",
+        "turn_index": 4,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['safe_end']. Executed: ['context_guard', 'router', 'review_concept', 'give_example', 'grounding_guard', 'validate_understanding', 'validate_understanding', 'review_concept', 'give_example', 'grounding_guard', 'validate_understanding', 'validate_understanding', 'review_concept', 'give_example', 'grounding_guard', 'validate_understanding', 'validate_understanding']"
+      },
+      {
+        "scenario_id": "REPAIR-004",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['detect_misconception', 'review_concept']. Executed: []"
+      },
+      {
+        "scenario_id": "REPAIR-005",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['grounding_guard']. Executed: []"
+      },
+      {
+        "scenario_id": "REPAIR-006",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['review_concept', 'give_example']. Executed: []"
+      },
+      {
+        "scenario_id": "REPAIR-007",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['detect_misconception']. Executed: []"
+      },
+      {
+        "scenario_id": "REPAIR-009",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['detect_misconception']. Executed: []"
+      },
+      {
+        "scenario_id": "REPAIR-010",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['review_concept', 'validate_understanding']. Executed: []"
+      },
+      {
+        "scenario_id": "MULTI-TURN-001",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['generate_clarification']. Executed: ['context_guard', 'router', 'ask_clarification']"
+      },
+      {
+        "scenario_id": "MULTI-TURN-001",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['guard_clarification_input', 'grounded_answer']. Executed: ['context_guard', 'router', 'ask_clarification', 'review_concept', 'grounding_guard', 'validate_understanding']"
+      },
+      {
+        "scenario_id": "MULTI-TURN-002",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['generate_check']. Executed: ['context_guard', 'router', 'review_concept', 'give_example', 'grounding_guard', 'validate_understanding']"
+      },
+      {
+        "scenario_id": "MULTI-TURN-002",
+        "turn_index": 2,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['evaluate_check']. Executed: ['context_guard', 'router', 'review_concept', 'give_example', 'grounding_guard', 'validate_understanding', 'validate_understanding', 'suggest_followups']"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-001",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['input_guard']. Executed: ['context_guard', 'router', 'give_direct_answer', 'grounding_guard']"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-002",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['review_concept', 'suggest_followups']. Executed: ['context_guard', 'router', 'give_direct_answer', 'grounding_guard']"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-003",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['review_concept', 'give_example']. Executed: ['context_guard', 'router', 'give_direct_answer', 'grounding_guard']"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-004",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['generate_clarification']. Executed: ['context_guard', 'router', 'ask_clarification']"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-005",
+        "turn_index": 1,
+        "assertion_name": "required_tools",
+        "message": "Missing required tools: ['validate_understanding']. Executed: ['context_guard', 'router', 'give_direct_answer', 'grounding_guard']"
+      }
+    ],
+    "followup": [
+      {
+        "scenario_id": "FOLLOWUP-001",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 2 followups, got 0"
+      },
+      {
+        "scenario_id": "FOLLOWUP-002",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 2 followups, got 0"
+      },
+      {
+        "scenario_id": "FOLLOWUP-003",
+        "turn_index": 2,
+        "assertion_name": "min_followups",
+        "message": "Expected min 1 followups, got 0"
+      },
+      {
+        "scenario_id": "FOLLOWUP-005",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 1 followups, got 0"
+      },
+      {
+        "scenario_id": "FOLLOWUP-008",
+        "turn_index": 2,
+        "assertion_name": "min_followups",
+        "message": "Expected min 1 followups, got 0"
+      },
+      {
+        "scenario_id": "FOLLOWUP-009",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 1 followups, got 0"
+      },
+      {
+        "scenario_id": "FOLLOWUP-010",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 1 followups, got 0"
+      },
+      {
+        "scenario_id": "MULTI-TURN-014",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 1 followups, got 0"
+      },
+      {
+        "scenario_id": "MULTI-TURN-019",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 1 followups, got 0"
+      },
+      {
+        "scenario_id": "ROUTE-BASIC-002",
+        "turn_index": 1,
+        "assertion_name": "min_followups",
+        "message": "Expected min 1 followups, got 0"
+      }
+    ],
+    "state_leak": [
+      {
+        "scenario_id": "REPAIR-001",
+        "turn_index": 2,
+        "assertion_name": "no_stale_citations",
+        "message": "Stale citations reused from previous turn"
+      },
+      {
+        "scenario_id": "MULTI-TURN-010",
+        "turn_index": 2,
+        "assertion_name": "no_stale_citations",
+        "message": "Stale citations reused from previous turn"
+      }
+    ],
+    "repair": [
+      {
+        "scenario_id": "REPAIR-008",
+        "turn_index": 2,
+        "assertion_name": "new_check_required",
+        "message": "Expected new check question but got none"
+      }
+    ],
+    "reliability": [
+      {
+        "scenario_id": "RARE-ADV-001",
+        "turn_index": 1,
+        "assertion_name": "expected_blocked",
+        "message": "Expected blocked status, got completed"
+      },
+      {
+        "scenario_id": "RARE-ADV-002",
+        "turn_index": 1,
+        "assertion_name": "expected_blocked",
+        "message": "Expected blocked status, got completed"
+      },
+      {
+        "scenario_id": "RARE-ADV-003",
+        "turn_index": 1,
+        "assertion_name": "expected_blocked",
+        "message": "Expected blocked status, got completed"
+      },
+      {
+        "scenario_id": "RARE-ADV-004",
+        "turn_index": 2,
+        "assertion_name": "expected_blocked",
+        "message": "Expected blocked status, got failed"
+      }
+    ]
+  }
+}

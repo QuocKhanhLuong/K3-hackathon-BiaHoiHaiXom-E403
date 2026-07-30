@@ -1,0 +1,119 @@
+[
+  {
+    "id": "FAIL-RECOVER-001",
+    "name": "Grounding failure abstention node",
+    "description": "Context does not support claim, graph routes cleanly to grounding_failure node",
+    "tags": ["failure_recovery", "grounding"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Nói về kiến thức hoàn toàn không có trong bối cảnh slide này.",
+        "expected": {
+          "statuses": ["failed", "completed"],
+          "assistant_message_required": true,
+          "response_contains_any": ["bài học", "ngữ cảnh", "chưa đủ", "căn cứ"]
+        }
+      }
+    ]
+  },
+  {
+    "id": "FAIL-RECOVER-002",
+    "name": "Invalid thread resume error handling",
+    "description": "Resuming a thread with empty student input raises InvalidResumeStateError cleanly",
+    "tags": ["failure_recovery", "multi_turn"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Cái này là gì?",
+        "expected": {"statuses": ["awaiting_clarification"]}
+      },
+      {
+        "type": "action_response",
+        "input": "    ",
+        "expected": {
+          "expected_failure_code": "InvalidResumeStateError"
+        }
+      }
+    ]
+  },
+  {
+    "id": "FAIL-RECOVER-003",
+    "name": "Non-existent thread resume failure",
+    "description": "Resuming an un-started thread ID raises exception cleanly",
+    "tags": ["failure_recovery", "multi_turn"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "action_response",
+        "input": "opt_a",
+        "expected": {
+          "expected_failure_code": "InvalidResumeStateError"
+        }
+      }
+    ]
+  },
+  {
+    "id": "FAIL-RECOVER-004",
+    "name": "Safe node error containment",
+    "description": "Exceptions in node execution are safely caught and contained by @_safe_node",
+    "tags": ["failure_recovery", "reliability"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Transformer Key có tác dụng gì?",
+        "expected": {
+          "statuses": ["completed", "failed"],
+          "forbidden_tools": ["uncaught_exception"]
+        }
+      }
+    ]
+  },
+  {
+    "id": "FAIL-RECOVER-005",
+    "name": "Optional followup failure degradation",
+    "description": "Optional tool failure degrades gracefully to followups=[]",
+    "tags": ["failure_recovery", "followups"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Giải thích tại sao Attention nhanh.",
+        "expected": {
+          "statuses": ["completed"],
+          "assistant_message_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "FAIL-RECOVER-006",
+    "name": "Empty question validation failure",
+    "description": "Empty user question raises ValueError",
+    "tags": ["failure_recovery", "input_guard"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "   ",
+        "expected": {
+          "expected_failure_code": "ValueError"
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,243 @@
+[
+  {
+    "id": "ROUTE-BASIC-001",
+    "name": "Simple factual query",
+    "description": "Verify basic factual question routes to simple",
+    "tags": ["routing_basic", "simple"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Transformer là gì?",
+        "expected": {
+          "routes": ["simple", "grounded_answer"],
+          "statuses": ["completed"],
+          "required_tools": ["router", "give_direct_answer"],
+          "assistant_message_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-002",
+    "name": "Deep dive query",
+    "description": "Verify deep why question routes to deep and generates followups",
+    "tags": ["routing_basic", "deep"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Tại sao cơ chế Attention lại hiệu quả hơn RNN trong xử lý song song?",
+        "expected": {
+          "routes": ["deep"],
+          "statuses": ["completed"],
+          "required_tools": ["router", "review_concept", "suggest_followups"],
+          "assistant_message_required": true,
+          "min_followups": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-003",
+    "name": "Comparison query",
+    "description": "Verify comparison query triggers check route and example",
+    "tags": ["routing_basic", "check"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Key và Value khác nhau như thế nào?",
+        "expected": {
+          "routes": ["check"],
+          "statuses": ["awaiting_check"],
+          "required_tools": ["router", "review_concept", "give_example"],
+          "assistant_message_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-004",
+    "name": "Ambiguous query needing clarification",
+    "description": "Verify ambiguous query routes to clarify and pauses",
+    "tags": ["routing_basic", "route_clarify"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Cái này hoạt động như thế nào?",
+        "expected": {
+          "routes": ["clarify"],
+          "statuses": ["awaiting_clarification"],
+          "required_tools": ["router", "ask_clarification"]
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-005",
+    "name": "Explicit check request",
+    "description": "User requests to be tested",
+    "tags": ["routing_basic", "check"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 2,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Hãy kiểm tra xem tôi đã hiểu kiến thức slide này chưa.",
+        "expected": {
+          "routes": ["check"],
+          "statuses": ["awaiting_check"],
+          "required_tools": ["router", "validate_understanding"]
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-006",
+    "name": "Short factual question",
+    "description": "Short factual definition",
+    "tags": ["routing_basic", "simple"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 3,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Key là gì?",
+        "expected": {
+          "routes": ["simple", "grounded_answer"],
+          "statuses": ["completed"],
+          "assistant_message_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-007",
+    "name": "User asks for example",
+    "description": "User explicitly asks for an example",
+    "tags": ["routing_basic", "simple"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 3,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Cho tôi ví dụ về ứng dụng Transformer.",
+        "expected": {
+          "statuses": ["completed"],
+          "assistant_message_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-008",
+    "name": "User asks for summary",
+    "description": "User asks to summarize slide",
+    "tags": ["routing_basic", "simple"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 4,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Tóm tắt nội dung chính slide này.",
+        "expected": {
+          "statuses": ["completed"],
+          "assistant_message_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-009",
+    "name": "Out of scope question",
+    "description": "Question outside course context",
+    "tags": ["routing_basic", "simple"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Cách nấu món phở bò ngon như thế nào?",
+        "expected": {
+          "statuses": ["completed", "failed"],
+          "assistant_message_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-010",
+    "name": "Multilingual mixed query",
+    "description": "Vietnamese and English mixed terms",
+    "tags": ["routing_basic", "simple"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 5,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Self-attention mechanism làm nhiệm vụ gì trong Transformer network?",
+        "expected": {
+          "statuses": ["completed"],
+          "assistant_message_required": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-011",
+    "name": "Selected text priority query",
+    "description": "Query with explicit selected text",
+    "tags": ["routing_basic", "simple"],
+    "setup": {
+      "selected_text": "Key dùng để so khớp với Query trong cơ chế Self-Attention."
+    },
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 5,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "Đoạn đã chọn giải thích điều gì?",
+        "expected": {
+          "statuses": ["completed"],
+          "assistant_message_required": true,
+          "response_contains_any": ["Key", "Query"]
+        }
+      }
+    ]
+  },
+  {
+    "id": "ROUTE-BASIC-012",
+    "name": "Malformed short query",
+    "description": "Short punctuation query",
+    "tags": ["routing_basic", "route_clarify"],
+    "mode": "both",
+    "deck_id": "d1",
+    "start_page": 1,
+    "turns": [
+      {
+        "type": "user_turn",
+        "input": "???",
+        "expected": {
+          "statuses": ["awaiting_clarification", "completed"]
+        }
+      }
+    ]
+  }
+]
