@@ -33,8 +33,6 @@ class Settings(BaseSettings):
     @field_validator("OPENAI_MODEL")
     @classmethod
     def validate_model(cls, v: str) -> str:
-        if not v.startswith("gpt-5-nano"):
-            raise ValueError("OPENAI_MODEL must start with 'gpt-5-nano'.")
         return v
 
 

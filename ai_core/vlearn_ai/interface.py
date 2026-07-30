@@ -53,6 +53,7 @@ class VLearnAICore:
             "check_question": None,
             "student_check_answer": None,
             "check_result": None,
+            "last_check_result": None,
             "misconception": None,
             "repair_plan": None,
             "retry_count": 0,

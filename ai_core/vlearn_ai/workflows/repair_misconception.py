@@ -3,6 +3,7 @@
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from vlearn_ai.guardrails.plan_guard import validate_plan_tools
 from vlearn_ai.prompts.repair import (
     REPAIR_SYSTEM_PROMPT,
     REPAIR_USER_PROMPT_TEMPLATE,
@@ -63,6 +64,19 @@ async def run_repair_misconception(
         plan.planned_tools = [t for t in plan.planned_tools if t != "motivate"]
         if not plan.planned_tools:
             plan.planned_tools = ["review_concept", "give_example"]
+
+    is_valid, _validation_error = validate_plan_tools(list(plan.planned_tools))
+    if not is_valid:
+        safe_tools = (
+            ["motivate", "review_concept", "give_example"]
+            if retry_count > 0
+            else ["review_concept", "give_example"]
+        )
+        plan = RepairPlan(
+            misconception_code=check_eval.misconception_code,
+            recommended_strategy=check_eval.recommended_repair_strategy,
+            planned_tools=safe_tools,  # type: ignore[arg-type]
+        )
 
     parts: list[str] = []
     executed_tools: list[str] = []

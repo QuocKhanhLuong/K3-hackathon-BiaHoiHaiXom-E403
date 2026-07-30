@@ -32,6 +32,7 @@ class LearningLoopState(TypedDict, total=False):
     check_question: dict[str, Any] | None
     student_check_answer: str | None
     check_result: dict[str, Any] | None
+    last_check_result: dict[str, Any] | None
 
     misconception: dict[str, Any] | None
     repair_plan: dict[str, Any] | None

@@ -27,6 +27,7 @@ from vlearn_ai.graph.routes import (
     route_after_await_check,
     route_after_await_clarification,
     route_after_check_eval,
+    route_after_context_guard,
     route_after_grounding_guard,
     route_after_guard_check_input,
     route_after_guard_clarification_input,
@@ -123,7 +124,14 @@ def build_learning_graph(
             "output_guard": "output_guard",
         },
     )
-    graph.add_edge("context_guard", "router")
+    graph.add_conditional_edges(
+        "context_guard",
+        route_after_context_guard,
+        {
+            "router": "router",
+            "output_guard": "output_guard",
+        },
+    )
 
     graph.add_conditional_edges(
         "router",

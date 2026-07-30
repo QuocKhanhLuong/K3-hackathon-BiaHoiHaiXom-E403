@@ -78,11 +78,26 @@ async def context_guard_node(state: LearningLoopState) -> dict[str, Any]:
     cfg = get_settings()
 
     res = check_context_safety(context, max_chars=cfg.AI_CONTEXT_MAX_CHARS)
+    if res["context_injection_detected"]:
+        return {
+            "selected_context": "",
+            "context_truncated": res["context_truncated"],
+            "context_injection_detected": True,
+            "status": "blocked",
+            "blocked_reason": "Course context failed the safety check.",
+            "tool_trace": _record_trace(
+                state,
+                "context_guard",
+                "blocked",
+                {"reason": "context_injection_detected"},
+            ),
+        }
     return {
         "selected_context": res["context"],
         "context_truncated": res["context_truncated"],
         "context_injection_detected": res["context_injection_detected"],
         "status": "running",
+        "tool_trace": _record_trace(state, "context_guard", "success"),
     }
 
 
@@ -342,6 +357,7 @@ async def evaluate_check_node(
 
     return {
         "check_result": eval_res.model_dump(),
+        "last_check_result": eval_res.model_dump(),
         "status": "running",
         "tool_trace": _record_trace(state, "validate_understanding", "success"),
     }
@@ -392,6 +408,8 @@ async def misconception_node(
         )
 
     return {
+        "misconception": eval_obj.model_dump(),
+        "last_check_result": eval_obj.model_dump(),
         "repair_plan": plan.model_dump(),
         "grounded_answer": repair_text,
         "check_question": None,
