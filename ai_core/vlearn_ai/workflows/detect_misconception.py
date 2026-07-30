@@ -11,9 +11,9 @@ async def run_detect_misconception(
     expected_answer: str,
     student_answer: str,
     context: str,
+    correct_option_id: str | None,
+    options: list[CheckOption] | None,
     model: BaseChatModel,
-    correct_option_id: str | None = None,
-    options: list[CheckOption] | None = None,
 ) -> CheckEvaluation:
     """Run detect misconception workflow in evaluate mode."""
     res = await execute_validate_understanding(

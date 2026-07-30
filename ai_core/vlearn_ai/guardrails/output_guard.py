@@ -1,96 +1,105 @@
-"""Output guard sanitizing all user-visible assistant content."""
+"""Output guard sanitizing all user-facing assistant messages and interrupt payloads."""
 
 import re
 from typing import Any
 
-SENSITIVE_PATTERNS = [
-    r"sk-[a-zA-Z0-9]{20,}",  # API keys
-    r"SYSTEM_PROMPT",
-    r"GLOBAL_SYSTEM_PROMPT",
-    r"ROUTER_SYSTEM_PROMPT",
-    r"OPENAI_API_KEY",
-    r"<untrusted_student_query>",
-    r"<untrusted_course_context>",
-    r"<untrusted_student_answer>",
-]
 
-
-def sanitize_text(text: str | None) -> tuple[str | None, bool]:
-    """Sanitize text string against sensitive patterns and HTML script tags."""
+def sanitize_output(text: str | None) -> tuple[str, bool]:
+    """Sanitize output text by stripping HTML script tags, prompt leak keywords, and internal XML tags."""
     if not text:
-        return text, False
+        return "", False
 
-    leak_detected = False
+    original = text
+    cleaned = text
 
-    # Remove script tags
-    if "<script" in text.lower():
-        text = re.sub(
-            r"<script.*?>.*?</script>", "", text, flags=re.IGNORECASE | re.DOTALL
-        )
-        text = re.sub(r"<script.*?>", "", text, flags=re.IGNORECASE)
-        leak_detected = True
+    # Strip script tags and HTML elements
+    cleaned = re.sub(
+        r"<script.*?>.*?</script>", "", cleaned, flags=re.DOTALL | re.IGNORECASE
+    )
+    cleaned = re.sub(r"</?[a-z1-6]+(?:\s+[^>]*)?>", "", cleaned, flags=re.IGNORECASE)
 
-    # Redact sensitive internal strings
-    for pattern in SENSITIVE_PATTERNS:
-        if re.search(pattern, text, re.IGNORECASE):
-            text = re.sub(pattern, "[REDACTED]", text, flags=re.IGNORECASE)
-            leak_detected = True
+    # Redact untrusted XML tags
+    cleaned = re.sub(r"</?untrusted_[a-z_]+>", "", cleaned, flags=re.IGNORECASE)
 
-    return text, leak_detected
+    # Redact sensitive prompt/API key terms
+    leak_patterns = [
+        r"sk-[a-zA-Z0-9]{20,}",
+        r"GLOBAL_SYSTEM_PROMPT",
+        r"SYSTEM_PROMPT",
+        r"ROUTER_SYSTEM_PROMPT",
+        r"with_structured_output",
+    ]
 
+    has_leak = False
+    for pat in leak_patterns:
+        if re.search(pat, cleaned, flags=re.IGNORECASE):
+            has_leak = True
+            cleaned = re.sub(pat, "[REDACTED]", cleaned, flags=re.IGNORECASE)
 
-def sanitize_output(content: str | None) -> tuple[str, bool]:
-    """Sanitize grounded answer or assistant message."""
-    sanitized, leak = sanitize_text(content or "")
-    return sanitized or "", leak
+    return cleaned.strip(), has_leak or (cleaned != original)
 
 
 def sanitize_all_output_fields(
-    assistant_message: str | None,
-    clarification_question: str | None,
-    check_question: dict[str, Any] | None,
-    followups: list[dict[str, Any]],
-    citations: list[dict[str, Any]],
-    blocked_reason: str | None,
+    assistant_message: str | None = None,
+    clarification_question: str | None = None,
+    check_question: dict[str, Any] | None = None,
+    followups: list[dict[str, Any]] | None = None,
+    citations: list[dict[str, Any]] | None = None,
+    blocked_reason: str | None = None,
 ) -> tuple[
-    str | None,
+    str,
     str | None,
     dict[str, Any] | None,
     list[dict[str, Any]],
     list[dict[str, Any]],
     str | None,
 ]:
-    """Sanitize all user-facing output fields to ensure no sensitive details or scripts leak."""
-    clean_msg, _ = sanitize_text(assistant_message)
-    clean_clar, _ = sanitize_text(clarification_question)
-    clean_blocked, _ = sanitize_text(blocked_reason)
+    """Sanitize all user-facing output fields."""
+    clean_msg, _ = sanitize_output(assistant_message)
+    clean_clar, _ = (
+        sanitize_output(clarification_question)
+        if clarification_question
+        else (None, False)
+    )
 
-    clean_check: dict[str, Any] | None = None
-    if check_question:
+    clean_check = None
+    if check_question and isinstance(check_question, dict):
         clean_check = dict(check_question)
-        clean_check["question"], _ = sanitize_text(clean_check.get("question"))
-        clean_check["explanation"], _ = sanitize_text(clean_check.get("explanation"))
-        if "options" in clean_check and isinstance(clean_check["options"], list):
+        if clean_check.get("question"):
+            clean_check["question"], _ = sanitize_output(str(clean_check["question"]))
+        if clean_check.get("explanation"):
+            clean_check["explanation"], _ = sanitize_output(
+                str(clean_check["explanation"])
+            )
+        if clean_check.get("options") and isinstance(clean_check["options"], list):
             clean_opts = []
             for opt in clean_check["options"]:
                 if isinstance(opt, dict):
-                    opt_copy = dict(opt)
-                    opt_copy["text"], _ = sanitize_text(opt_copy.get("text"))
-                    clean_opts.append(opt_copy)
+                    c_opt = dict(opt)
+                    c_opt["text"], _ = sanitize_output(str(c_opt.get("text", "")))
+                    clean_opts.append(c_opt)
             clean_check["options"] = clean_opts
 
     clean_followups = []
-    for f in followups:
-        f_copy = dict(f)
-        f_copy["label"], _ = sanitize_text(f_copy.get("label"))
-        f_copy["question"], _ = sanitize_text(f_copy.get("question"))
-        clean_followups.append(f_copy)
+    if followups:
+        for f in followups:
+            if isinstance(f, dict):
+                c_f = dict(f)
+                c_f["label"], _ = sanitize_output(str(c_f.get("label", "")))
+                c_f["question"], _ = sanitize_output(str(c_f.get("question", "")))
+                clean_followups.append(c_f)
 
     clean_citations = []
-    for c in citations:
-        c_copy = dict(c)
-        c_copy["snippet"], _ = sanitize_text(c_copy.get("snippet"))
-        clean_citations.append(c_copy)
+    if citations:
+        for c in citations:
+            if isinstance(c, dict):
+                c_c = dict(c)
+                c_c["snippet"], _ = sanitize_output(str(c_c.get("snippet", "")))
+                clean_citations.append(c_c)
+
+    clean_blocked, _ = (
+        sanitize_output(blocked_reason) if blocked_reason else (None, False)
+    )
 
     return (
         clean_msg,
@@ -100,3 +109,19 @@ def sanitize_all_output_fields(
         clean_citations,
         clean_blocked,
     )
+
+
+def sanitize_tool_trace(trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Sanitize tool execution trace to prevent leaking internal prompts or raw tool arguments."""
+    safe_trace = []
+    for item in trace:
+        if isinstance(item, dict):
+            safe_trace.append(
+                {
+                    "tool": item.get("tool", "unknown"),
+                    "status": item.get("status", "success"),
+                    "model": item.get("model", "gpt-5-nano"),
+                    "prompt_version": item.get("prompt_version", "1.0.0"),
+                }
+            )
+    return safe_trace

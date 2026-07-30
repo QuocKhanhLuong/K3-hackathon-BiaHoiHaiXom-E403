@@ -1,4 +1,4 @@
-"""LangGraph workflow node implementations using native interrupt() with Python 3.10 fallback."""
+"""LangGraph workflow node implementations using pure native interrupt() and strict error handling."""
 
 from typing import Any
 
@@ -13,8 +13,10 @@ from vlearn_ai.guardrails.input_guard import assess_input_injection
 from vlearn_ai.guardrails.output_guard import (
     sanitize_all_output_fields,
     sanitize_output,
+    sanitize_tool_trace,
 )
 from vlearn_ai.model import get_fast_model, get_generation_model
+from vlearn_ai.prompts.messages import build_trusted_messages
 from vlearn_ai.prompts.router import ROUTER_SYSTEM_PROMPT, ROUTER_USER_PROMPT_TEMPLATE
 from vlearn_ai.schemas import (
     CheckEvaluation,
@@ -82,7 +84,14 @@ async def context_guard_node(state: LearningLoopState) -> dict[str, Any]:
         "selected_context": res["context"],
         "context_truncated": res["context_truncated"],
         "context_injection_detected": res["context_injection_detected"],
+        "context_injection_patterns": res["context_injection_patterns"],
         "status": "running",
+        "tool_trace": _record_trace(
+            state,
+            "context_guard",
+            "success",
+            {"context_injection_detected": res["context_injection_detected"]},
+        ),
     }
 
 
@@ -94,15 +103,16 @@ async def router_node(
     context = state.get("selected_context", "")
     llm = model or get_fast_model()
 
-    prompt = f"{ROUTER_SYSTEM_PROMPT}\n\n" + ROUTER_USER_PROMPT_TEMPLATE.format(
+    untrusted_payload = ROUTER_USER_PROMPT_TEMPLATE.format(
         selected_context=context, user_query=query
     )
+    messages = build_trusted_messages(ROUTER_SYSTEM_PROMPT, untrusted_payload)
 
     route_out: RouteOutput | None = None
     try:
         if hasattr(llm, "with_structured_output"):
             structured = llm.with_structured_output(RouteOutput)
-            res = await structured.ainvoke(prompt)
+            res = await structured.ainvoke(messages)
             if isinstance(res, RouteOutput):
                 route_out = res
     except (AttributeError, ValueError, TypeError, KeyError):
@@ -142,15 +152,13 @@ async def generate_clarification_node(
     req = await run_ask_clarification(query, context, llm)
     return {
         "clarification_question": req.clarification_question,
-        "status": "awaiting_clarification"
-        if not state.get("clarification_answer")
-        else "running",
+        "status": "awaiting_clarification",
         "tool_trace": _record_trace(state, "ask_clarification", "success"),
     }
 
 
 def await_clarification_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 4B: Native interrupt pausing graph for clarification answer."""
+    """Node 4B: Pure native interrupt pausing graph for clarification answer."""
     question = state.get("clarification_question")
     resumed_input = None
     try:
@@ -246,6 +254,24 @@ async def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
     }
 
 
+async def grounding_failure_node(state: LearningLoopState) -> dict[str, Any]:
+    """Node 6B: Explicit grounding failure abstention node replacing unsupported answer."""
+    msg = "Ngữ cảnh bài học hiện tại chưa đủ để tạo câu trả lời có căn cứ. Bạn hãy chọn thêm nội dung liên quan hoặc làm rõ câu hỏi."
+    return {
+        "grounded_answer": msg,
+        "abstention_message": msg,
+        "grounding_failure_type": "unsupported_claim_or_missing_citation",
+        "citations": [],
+        "status": "failed",
+        "tool_trace": _record_trace(
+            state,
+            "grounding_failure",
+            "failed",
+            {"reason": state.get("grounding_error")},
+        ),
+    }
+
+
 async def generate_check_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
@@ -254,33 +280,32 @@ async def generate_check_node(
     grounded_ans = state.get("grounded_answer", "")
     llm = model or get_generation_model()
 
-    micro_check = (
-        MicroCheck(**state["check_question"])
-        if state.get("check_question")
-        else await run_check_understanding(context, grounded_ans, llm)
+    prev_check = (
+        MicroCheck(**state["check_question"]) if state.get("check_question") else None
+    )
+    micro_check = await run_check_understanding(
+        context, grounded_ans, llm, previous_check=prev_check
     )
 
     return {
         "check_question": micro_check.model_dump(),
-        "student_check_answer": state.get("student_check_answer"),
+        "student_check_answer": None,
         "check_result": None,
-        "status": "awaiting_check"
-        if not state.get("student_check_answer")
-        else "running",
+        "status": "awaiting_check",
         "tool_trace": _record_trace(state, "validate_understanding", "success"),
     }
 
 
 def await_check_node(state: LearningLoopState) -> dict[str, Any]:
-    """Node 7B: Native interrupt pausing graph for student check answer."""
-    check_q = state.get("check_question") or {}
+    """Node 7B: Pure native interrupt pausing graph for student check answer."""
+    check = state.get("check_question") or {}
     resumed_answer = None
     try:
         resumed_answer = interrupt(
             {
-                "type": check_q.get("question_type", "multiple_choice"),
-                "question": check_q.get("question"),
-                "options": check_q.get("options"),
+                "type": check.get("question_type", "multiple_choice"),
+                "question": check.get("question"),
+                "options": check.get("options", []),
             }
         )
     except RuntimeError:
@@ -289,7 +314,7 @@ def await_check_node(state: LearningLoopState) -> dict[str, Any]:
     if not resumed_answer:
         return {
             "status": "awaiting_check",
-            "check_question": check_q,
+            "check_question": check,
         }
 
     return {
@@ -394,9 +419,6 @@ async def misconception_node(
     return {
         "repair_plan": plan.model_dump(),
         "grounded_answer": repair_text,
-        "check_question": None,
-        "student_check_answer": None,
-        "check_result": None,
         "retry_count": retry + 1,
         "tool_trace": trace,
         "status": "running",
@@ -411,7 +433,7 @@ async def safe_end_node(state: LearningLoopState) -> dict[str, Any]:
     )
     return {
         "grounded_answer": msg,
-        "status": "running",
+        "status": "completed",
     }
 
 
@@ -431,6 +453,18 @@ async def suggest_followups_node(
         "followups": f_list,
         "status": "running",
         "tool_trace": _record_trace(state, "suggest_followups", "success"),
+    }
+
+
+async def failure_node(state: LearningLoopState) -> dict[str, Any]:
+    """Node 12: Safe failure node for unhandled exceptions or execution failures."""
+    msg = "Hệ thống chưa thể tạo phản hồi ổn định cho lượt này. Bạn hãy thử lại hoặc chọn lại nội dung bài học."
+    return {
+        "grounded_answer": msg,
+        "status": "failed",
+        "failure_code": state.get("failure_code", "INTERNAL_EXECUTION_ERROR"),
+        "failure_stage": state.get("failure_stage", "workflow"),
+        "tool_trace": _record_trace(state, "failure_node", "failed"),
     }
 
 
@@ -455,12 +489,13 @@ async def output_guard_node(state: LearningLoopState) -> dict[str, Any]:
         blocked_reason=state.get("blocked_reason"),
     )
 
-    curr_status = state.get("status", "completed")
-    final_status = (
-        curr_status
-        if curr_status in ("awaiting_clarification", "awaiting_check", "blocked")
-        else "completed"
-    )
+    curr_status = state.get("status", "running")
+    if curr_status in ("blocked", "failed", "awaiting_clarification", "awaiting_check"):
+        final_status = curr_status
+    else:
+        final_status = "completed"
+
+    clean_trace = sanitize_tool_trace(state.get("tool_trace", []))
 
     return {
         "grounded_answer": clean_msg or "",
@@ -470,4 +505,5 @@ async def output_guard_node(state: LearningLoopState) -> dict[str, Any]:
         "citations": clean_citations,
         "blocked_reason": clean_blocked,
         "status": final_status,
+        "tool_trace": clean_trace,
     }

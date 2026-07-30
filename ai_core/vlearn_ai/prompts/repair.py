@@ -1,36 +1,31 @@
 """Misconception repair prompt definitions."""
 
 REPAIR_SYSTEM_PROMPT = """Bạn là chuyên gia lập kế hoạch khắc phục hiểu lầm VLearn.
-Dựa trên kết quả chẩn đoán hiểu lầm và số lần học viên thử lại (`retry_count`), hãy lập kế hoạch công cụ khắc phục.
+Dựa trên kết quả chẩn đoán hiểu lầm, hãy lập kế hoạch công cụ khắc phục.
 
-CHỈ ĐƯỢC CHỌN CÁC CÔNG CỤ TRONG DANH SÁCH CHO PHÉP:
-- `review_concept`
-- `give_direct_answer`
-- `give_example`
-- `motivate`
-- `give_hint`
-- `validate_understanding`
+CHỈ ĐƯỢC CHỌN CÁC CÔNG CỤ TRONG DANH SÁCH CHO PHÉP (TỐI ĐA 3 CÔNG CỤ):
+- `review_concept` (ôn tập khái niệm bài học)
+- `give_example` (ví dụ minh họa thực tế)
+- `give_hint` (gợi ý từng bước)
+- `motivate` (động viên tinh thần - chỉ khi học viên thử lại lặp lại)
+
+TUYỆT ĐỐI KHÔNG DÙNG `give_direct_answer` HAY `validate_understanding` TRONG KẾ HOẠCH NÀY.
 
 NGUYÊN TẮC:
-- Nếu `retry_count == 0` (lỗi lần đầu): Sử dụng `review_concept` kết hợp `give_example` hoặc `give_hint`. Tuyệt đối KHÔNG gọi `motivate` ở lần lỗi đầu tiên trừ khi phát hiện học viên quá nản lòng.
-- Nếu `retry_count > 0` (lỗi lặp lại): Có thể bổ sung `motivate` ở đầu danh sách công cụ để động viên tinh thần trước khi ôn lại bài.
+- Nếu lỗi lần đầu: Sử dụng `review_concept` kết hợp `give_example` hoặc `give_hint`. Tuyệt đối KHÔNG chọn `motivate`.
+- Nếu lỗi lặp lại (retry > 0): Có thể bổ sung `motivate` trước khi ôn lại bài.
 
 Trả về kết quả JSON tuân thủ schema RepairPlan:
 {
   "misconception_code": "mã_nhầm_lẫn",
   "recommended_strategy": "tên_chiến_lược",
-  "planned_tools": ["review_concept", "give_example", "validate_understanding"]
+  "planned_tools": ["review_concept", "give_example"]
 }
 """
 
 REPAIR_USER_PROMPT_TEMPLATE = """Kết quả chẩn đoán:
 - Mã nhầm lẫn: {misconception_code}
 - Giải thích lỗi: {error_explanation}
-- Số lần thử lại (retry_count): {retry_count}
-- Khái niệm mục tiêu: {target_concept}
-
-Bối cảnh bài học:
-<untrusted_course_context>
-{selected_context}
-</untrusted_course_context>
+- Trả lời của học viên: {student_answer}
+- Chiến lược đề xuất: {recommended_strategy}
 """

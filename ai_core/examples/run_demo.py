@@ -1,7 +1,7 @@
 """CLI Interactive Demo for VLearn AI Core Learning Loop."""
 
-import asyncio
 import argparse
+import asyncio
 import json
 import os
 import sys
@@ -17,7 +17,9 @@ from vlearn_ai import VLearnAICore
 async def run_demo(use_mock: bool = True):
     print("=" * 65)
     print(" 🚀 VLearn AI Core - Interactive Learning Loop Demo")
-    print(f" Mode: {'MOCK (Offline Test Double)' if use_mock else 'REAL (OpenAI gpt-5-nano)'}")
+    print(
+        f" Mode: {'MOCK (Offline Test Double)' if use_mock else 'REAL (OpenAI gpt-5-nano)'}"
+    )
     print("=" * 65)
 
     model = DeterministicFakeChatModel(route_to_return="check") if use_mock else None
@@ -42,7 +44,9 @@ async def run_demo(use_mock: bool = True):
     print(f"Route: {res1['route']}")
     print(f"Assistant Message:\n{res1['assistant_message']}")
     if res1.get("ui_payload"):
-        print(f"UI Payload:\n{json.dumps(res1['ui_payload'], ensure_ascii=False, indent=2)}")
+        print(
+            f"UI Payload:\n{json.dumps(res1['ui_payload'], ensure_ascii=False, indent=2)}"
+        )
 
     if res1["status"] == "awaiting_check":
         print("\n" + "-" * 65)
