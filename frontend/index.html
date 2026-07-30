@@ -9,13 +9,20 @@
 </head>
 <body>
 
+  <div class="ambient-background" aria-hidden="true">
+    <span class="ambient-orb orb-one"></span>
+    <span class="ambient-orb orb-two"></span>
+    <span class="ambient-orb orb-three"></span>
+    <span class="ambient-grid"></span>
+  </div>
+
   <!-- Top Navbar -->
   <header class="navbar">
     <div class="nav-left">
       <button class="nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
       <div class="logo-group">
-        <i class="fa-solid fa-graduation-cap"></i>
-        <span>VLearn</span>
+        <span class="logo-mark"><i class="fa-solid fa-graduation-cap"></i></span>
+        <span class="logo-wordmark">VLearn<small>Learning space</small></span>
       </div>
       <div class="doc-info">
         <i class="fa-solid fa-file-pdf" style="color: #dc2626;"></i>
@@ -41,9 +48,16 @@
       <!-- Toolbar -->
       <div class="slide-toolbar">
         <div class="tool-group">
-          <button class="tool-btn active"><i class="fa-solid fa-mouse-pointer"></i> Đọc</button>
-          <button class="tool-btn"><i class="fa-solid fa-pen"></i> Bút</button>
-          <button class="tool-btn"><i class="fa-solid fa-highlighter"></i> Highlight</button>
+          <button class="tool-btn active" id="readToolBtn"><i class="fa-solid fa-mouse-pointer"></i> Đọc</button>
+          <div class="drawing-tool-wrap">
+            <button class="tool-btn" id="penToolBtn"><i class="fa-solid fa-pen"></i> Bút <span class="tool-color-dot" id="penColorDot"></span></button>
+            <div class="color-popover" id="penColorPopover" aria-label="Chọn màu bút"></div>
+          </div>
+          <div class="drawing-tool-wrap">
+            <button class="tool-btn" id="highlightToolBtn"><i class="fa-solid fa-highlighter"></i> Highlight <span class="tool-color-dot highlight-dot" id="highlightColorDot"></span></button>
+            <div class="color-popover" id="highlightColorPopover" aria-label="Chọn màu highlight"></div>
+          </div>
+          <button class="tool-btn" id="eraserToolBtn"><i class="fa-solid fa-eraser"></i> Tẩy</button>
           <button class="tool-btn"><i class="fa-solid fa-ellipsis"></i></button>
         </div>
 
@@ -66,7 +80,14 @@
       <!-- Slide Viewport -->
       <div class="slide-viewport">
         <!-- Interactive Slide Card -->
+        <div class="book-stage">
         <div class="slide-card" id="slideCard">
+          <canvas class="annotation-canvas" id="annotationCanvas" aria-label="Lớp ghi chú trên slide"></canvas>
+          <img class="original-slide-image" id="originalSlideImage" alt="" draggable="false">
+          <div class="slide-image-loading" id="slideImageLoading" aria-hidden="true">
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
+            <span>Đang tải slide gốc...</span>
+          </div>
           <div class="slide-header-badge">
             <span class="vin-logo"><i class="fa-solid fa-shield-halved"></i> VINUNIVERSITY</span>
             <span class="doc-code" id="slideFileRef">day05-ai-product-thinking-requirements.pdf</span>
@@ -85,6 +106,7 @@
           <div class="selection-tooltip" id="selectionTooltip">
             <i class="fa-solid fa-sparkles"></i> Hỏi VLearn Tutor đoạn này
           </div>
+        </div>
         </div>
 
         <!-- Lined Note Paper Panel -->
