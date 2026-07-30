@@ -1,0 +1,5 @@
+{"timestamp": "2026-07-30T18:07:33Z", "event": "start_turn", "thread_id": "test1", "status": "failed", "route": "check", "tool_count": 7, "latency_ms": 32237}
+{"timestamp": "2026-07-30T18:07:54Z", "event": "start_turn", "thread_id": "test2", "status": "failed", "route": "simple", "tool_count": 7, "latency_ms": 21223}
+{"timestamp": "2026-07-30T18:09:20Z", "event": "start_turn", "thread_id": "test1", "status": "completed", "route": "simple", "tool_count": 4, "latency_ms": 21873}
+{"timestamp": "2026-07-30T18:09:46Z", "event": "start_turn", "thread_id": "test2", "status": "failed", "route": "simple", "tool_count": 7, "latency_ms": 25739}
+{"timestamp": "2026-07-30T18:11:01Z", "event": "start_turn", "thread_id": "test17", "status": "awaiting_check", "route": "check", "tool_count": 7, "latency_ms": 25091}

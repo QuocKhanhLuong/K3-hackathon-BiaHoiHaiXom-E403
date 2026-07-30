@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const leftPane = document.getElementById('leftPane');
   const rightPane = document.getElementById('rightPane');
   const resizer = document.getElementById('resizer');
-  
+
   const slideTitle = document.getElementById('slideTitle');
   const slideSubtitle = document.getElementById('slideSubtitle');
   const slideBody = document.getElementById('slideBody');
@@ -445,9 +445,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     activeNodeBadge.textContent = "⚙️ Đang suy nghĩ...";
     activeNodeBadge.style.background = "#fef08a";
-    const thinkingTrace = createThinkingTrace(text);
+    const thinkingIndicator = createThinkingIndicator();
+    const thinkingStartedAt = Date.now();
 
     try {
+      await waitForThinkingIndicatorPaint();
       const data = await requestTutorStream({
         question: text,
         selected_text: selectedTextOnSlide,
@@ -455,18 +457,19 @@ document.addEventListener('DOMContentLoaded', () => {
         deck_id: currentDeckId,
         chat_history: chatHistory,
         thread_id: currentThreadId
-      }, thinkingTrace);
+      });
+      await keepThinkingIndicatorVisible(thinkingStartedAt);
       
       if (data.thread_id) currentThreadId = data.thread_id;
-      
+
       activeNodeBadge.textContent = `📍 ${data.orchestrator.title}`;
       activeNodeBadge.style.background = "#dcfce7";
-      completeThinkingTrace(thinkingTrace);
 
       // Render Grounded Answer (contains Deep-dive Expansion if branch == 'followup')
       const hasAnswer = Boolean(data.answer && String(data.answer).trim());
-      const answerMessage = hasAnswer ? appendTutorAnswer(data.answer, data.citation_objects || data.citations, data.orchestrator) : null;
-      if (answerMessage) attachTraceControl(answerMessage, thinkingTrace);
+      if (hasAnswer) {
+        appendTutorAnswer(data.answer, data.citation_objects || data.citations, data.orchestrator);
+      }
 
       // Render Tool Card based on Orchestrator decision
       if (data.tool_data) {
@@ -487,26 +490,26 @@ document.addEventListener('DOMContentLoaded', () => {
       selectedTextOnSlide = "";
     } catch (err) {
       console.error('API Error:', err);
-      failThinkingTrace(thinkingTrace);
+      await keepThinkingIndicatorVisible(thinkingStartedAt);
       activeNodeBadge.textContent = "⚠️ Không thể xử lý";
       activeNodeBadge.style.background = "#fee2e2";
       const backendMessage = (err && err.message && !/failed to fetch/i.test(err.message))
         ? err.message
         : "Không thể kết nối tới VLearn. Bạn vui lòng kiểm tra backend và thử lại.";
-      const fallbackAnswer = appendTutorAnswer(
+      appendTutorAnswer(
         backendMessage,
         [],
         { title: "Không thể xử lý" }
       );
-      attachTraceControl(fallbackAnswer, thinkingTrace);
     } finally {
+      removeThinkingIndicator(thinkingIndicator);
       isSending = false;
       setComposerProcessing(false);
       chatInput.focus();
     }
   }
 
-  async function requestTutorStream(payload, traceElement) {
+  async function requestTutorStream(payload) {
     const response = await fetch('/api/tutor/ask/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
@@ -529,7 +532,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataLine = block.split('\n').find(line => line.startsWith('data: '));
         if (!dataLine) return;
         const event = JSON.parse(dataLine.slice(6));
-        if (event.type === 'trace') updateThinkingTrace(traceElement, event);
         if (event.type === 'result') finalData = event.data;
         if (event.type === 'error') {
           throw new Error(event.error?.message || event.message || 'Tutor stream failed');
@@ -542,135 +544,47 @@ document.addEventListener('DOMContentLoaded', () => {
     return finalData;
   }
 
-  function createThinkingTrace(question = '') {
-    const trace = document.createElement('div');
-    trace.className = 'thinking-trace';
-    trace.setAttribute('role', 'status');
-    trace.setAttribute('aria-live', 'polite');
-    trace.innerHTML = `
-      <button type="button" class="thinking-trace-toggle" aria-expanded="true">
-        <span class="thinking-trace-title"><span class="thinking-pulse"></span> VLearn đang suy nghĩ...</span>
-        <span class="thinking-trace-meta">2 bước <i class="fa-solid fa-chevron-up"></i></span>
-      </button>
-      <div class="thinking-trace-body">
-        <div class="thinking-trace-intro"></div>
-        <div class="thinking-trace-steps">
-          <div class="thinking-step completed" data-tool="request_received">
-            <span class="thinking-step-icon"><i class="fa-solid fa-check"></i></span>
-            <span class="thinking-step-copy"><strong>Đã nhận câu hỏi</strong><small>Yêu cầu đã được gửi tới VLearn Tutor</small></span>
-            <span class="thinking-step-status">Đã nhận</span>
-          </div>
-          <div class="thinking-step is-active" data-tool="preparing_context">
-            <span class="thinking-step-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
-            <span class="thinking-step-copy"><strong>Đang chuẩn bị ngữ cảnh</strong><small>Đọc slide hiện tại và lịch sử hội thoại</small></span>
-            <span class="thinking-step-status">Đang xử lý</span>
-          </div>
-        </div>
-      </div>
+  function createThinkingIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'ai-thinking-indicator';
+    indicator.setAttribute('role', 'status');
+    indicator.setAttribute('aria-live', 'polite');
+    indicator.innerHTML = `
+      <span class="ai-thinking-dot" aria-hidden="true"></span>
+      <span>AI đang suy nghĩ...</span>
     `;
-    const compactQuestion = String(question).replace(/\s+/g, ' ').trim();
-    trace.querySelector('.thinking-trace-intro').textContent = compactQuestion
-      ? `Đang xử lý: “${compactQuestion.slice(0, 90)}${compactQuestion.length > 90 ? '…' : ''}”`
-      : 'VLearn đã nhận yêu cầu và đang chuẩn bị câu trả lời.';
-    chatMessages.appendChild(trace);
-    trace.dataset.traceId = `trace-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    trace.querySelector('.thinking-trace-toggle').addEventListener('click', () => toggleThinkingTrace(trace));
+    chatMessages.appendChild(indicator);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    return trace;
+    return indicator;
   }
 
-  function updateThinkingTrace(trace, event) {
-    const steps = trace.querySelector('.thinking-trace-steps');
-    const preparingStep = steps.querySelector('[data-tool="preparing_context"]');
-    if (preparingStep && !preparingStep.classList.contains('completed')) {
-      markThinkingStepCompleted(preparingStep);
-    }
-    let step = steps.querySelector(`[data-tool="${event.tool}"]`);
-    if (!step) {
-      step = document.createElement('div');
-      step.className = 'thinking-step';
-      step.dataset.tool = event.tool;
-      step.innerHTML = `
-        <span class="thinking-step-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
-        <span class="thinking-step-copy"><strong></strong><small></small></span>
-        <span class="thinking-step-status">Đang chạy</span>
-      `;
-      steps.appendChild(step);
-    }
-    step.querySelector('strong').textContent = event.title;
-    step.querySelector('small').textContent = event.detail || '';
-    step.classList.toggle('completed', event.status === 'completed');
-    step.classList.toggle('is-active', event.status !== 'completed');
-    if (event.status === 'completed') {
-      markThinkingStepCompleted(step);
-    }
-    const count = steps.children.length;
-    trace.querySelector('.thinking-trace-meta').childNodes[0].textContent = `${count} bước `;
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  function markThinkingStepCompleted(step) {
-    step.classList.add('completed');
-    step.classList.remove('is-active');
-    step.querySelector('.thinking-step-icon').innerHTML = '<i class="fa-solid fa-check"></i>';
-    step.querySelector('.thinking-step-status').textContent = 'Xong';
-  }
-
-  function completeThinkingTrace(trace) {
-    trace.querySelectorAll('.thinking-step:not(.completed)').forEach(markThinkingStepCompleted);
-    trace.classList.add('completed');
-    trace.querySelector('.thinking-trace-title').innerHTML = '<i class="fa-solid fa-circle-check"></i> Đã hoàn tất tiến trình';
-    window.setTimeout(() => {
-      trace.classList.add('collapsed');
-      trace.querySelector('.thinking-trace-toggle').setAttribute('aria-expanded', 'false');
-      syncTraceControls(trace);
-    }, 900);
-  }
-
-  function failThinkingTrace(trace) {
-    trace.classList.add('failed');
-    trace.querySelector('.thinking-trace-title').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Không thể tải tiến trình';
-    trace.querySelectorAll('.thinking-step:not(.completed)').forEach(step => {
-      step.classList.remove('is-active');
-      step.querySelector('.thinking-step-icon').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
-      step.querySelector('.thinking-step-status').textContent = 'Đã dừng';
+  function waitForThinkingIndicatorPaint() {
+    return new Promise(resolve => {
+      let resolved = false;
+      const finish = () => {
+        if (resolved) return;
+        resolved = true;
+        resolve();
+      };
+      const fallbackTimer = window.setTimeout(finish, 80);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          window.clearTimeout(fallbackTimer);
+          finish();
+        });
+      });
     });
   }
 
-  function toggleThinkingTrace(trace, forceExpanded = null) {
-    const shouldExpand = forceExpanded === null ? trace.classList.contains('collapsed') : forceExpanded;
-    trace.classList.toggle('collapsed', !shouldExpand);
-    trace.querySelector('.thinking-trace-toggle').setAttribute('aria-expanded', String(shouldExpand));
-    syncTraceControls(trace);
-    if (shouldExpand) {
-      window.setTimeout(() => trace.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
-    }
+  function keepThinkingIndicatorVisible(startedAt, minimumDuration = 500) {
+    const remaining = minimumDuration - (Date.now() - startedAt);
+    return remaining > 0
+      ? new Promise(resolve => window.setTimeout(resolve, remaining))
+      : Promise.resolve();
   }
 
-  function syncTraceControls(trace) {
-    const expanded = !trace.classList.contains('collapsed');
-    const stepCount = trace.querySelectorAll('.thinking-step').length;
-    document.querySelectorAll(`[data-controls-trace="${trace.dataset.traceId}"]`).forEach(button => {
-      button.innerHTML = expanded
-        ? '<i class="fa-regular fa-eye-slash"></i> Ẩn tiến trình'
-        : `<i class="fa-regular fa-eye"></i> Xem tiến trình (${stepCount} bước)`;
-      button.setAttribute('aria-expanded', String(expanded));
-    });
-  }
-
-  function attachTraceControl(messageElement, trace) {
-    const controlRow = document.createElement('div');
-    controlRow.className = 'answer-trace-control-row';
-    const control = document.createElement('button');
-    control.type = 'button';
-    control.className = 'answer-trace-toggle';
-    control.dataset.controlsTrace = trace.dataset.traceId;
-    control.setAttribute('aria-expanded', 'true');
-    control.innerHTML = '<i class="fa-regular fa-eye-slash"></i> Ẩn tiến trình';
-    control.addEventListener('click', () => toggleThinkingTrace(trace));
-    controlRow.appendChild(control);
-    messageElement.insertAdjacentElement('beforebegin', controlRow);
-    syncTraceControls(trace);
+  function removeThinkingIndicator(indicator) {
+    indicator?.remove();
   }
 
   function appendMessage(role, text) {
@@ -995,10 +909,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.createElement('div');
     card.className = 'misconception-card';
     card.innerHTML = `
-      <div class="misconception-title"><i class="fa-solid fa-triangle-exclamation"></i> Misconception Detection (Phát hiện điểm nhầm lẫn)</div>
-      <p style="font-size:13px; font-weight:600; margin-bottom:8px;">${misconceptionData.misconception_point}</p>
-      <div style="font-size:13px; margin-bottom:8px;">${misconceptionData.re_explanation}</div>
-      <div style="font-size:13px; color:#451a03; background:#fffbe8; padding:8px; border-radius:6px;">${misconceptionData.new_example}</div>
+      <div class="misconception-title"><i class="fa-solid fa-triangle-exclamation"></i> Phát hiện điểm nhầm lẫn (Misconception)</div>
+      <p style="font-size:13.5px; font-weight:700; margin-bottom:8px; color: #7f1d1d;">${misconceptionData.misconception_point}</p>
+      <div style="font-size:13px; margin-bottom:12px; color: #991b1b; line-height: 1.5;">${misconceptionData.re_explanation}</div>
+      <div style="background:#fffbe8; padding:12px; border-radius:8px; border: 1px solid #fef08a; margin-top: 12px;">
+        <div style="font-size:12px; font-weight:700; color:#854d0e; margin-bottom:6px;"><i class="fa-solid fa-lightbulb"></i> Ví dụ minh họa mới:</div>
+        <div style="font-size:13px; color:#451a03; line-height: 1.5;">${misconceptionData.new_example}</div>
+      </div>
     `;
     chatMessages.appendChild(card);
     chatMessages.scrollTop = chatMessages.scrollHeight;

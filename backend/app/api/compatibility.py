@@ -340,16 +340,32 @@ async def submit_quiz(payload: LegacyQuizRequest, request: Request):
     formatted = to_legacy_tutor_response(request, outcome)
     misconception = None
     if not is_correct:
+        assistant_msg = outcome.result.get("assistant_message") or "Câu trả lời chưa khớp với nội dung bài học."
+        import re
+        
+        # Try to extract <example> tags
+        example_match = re.search(r"<example>(.*?)</example>", assistant_msg, flags=re.IGNORECASE | re.DOTALL)
+        if example_match:
+            new_example = example_match.group(1).strip()
+            re_explanation = re.sub(r"<example>.*?</example>", "", assistant_msg, flags=re.IGNORECASE | re.DOTALL).strip()
+        else:
+            # Fallback to splitting by "Ví dụ minh họa:" or "Ví dụ:"
+            parts = re.split(r"(?i)(?:Ví dụ minh họa mới:|Ví dụ minh họa:|Ví dụ:)", assistant_msg, maxsplit=1)
+            if len(parts) > 1:
+                re_explanation = parts[0].strip()
+                new_example = parts[1].strip()
+            else:
+                re_explanation = assistant_msg
+                new_example = "Bạn hãy ôn tập lại phần lý thuyết trên hoặc đặt thêm câu hỏi để được làm rõ nhé."
+
         misconception = {
             "misconception_point": (
                 outcome.check_attempt.misconception_code
                 if outcome.check_attempt
                 else "concept_confusion"
             ),
-            "re_explanation": outcome.result.get("assistant_message")
-            or "Câu trả lời chưa khớp với nội dung bài học.",
-            "new_example": outcome.result.get("assistant_message")
-            or "Hãy xem lại phần giải thích và thử câu kiểm tra tiếp theo.",
+            "re_explanation": re_explanation,
+            "new_example": new_example,
             "recheck_question": _legacy_tool_data(outcome),
         }
     return {
