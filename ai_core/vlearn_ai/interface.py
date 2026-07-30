@@ -2,11 +2,14 @@
 
 import json
 import logging
+import asyncio
 import time
 from pathlib import Path
+from functools import partial
 from typing import Any
 
 from langchain_core.language_models import BaseChatModel
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.types import Command
 
 from vlearn_ai.config import get_settings
@@ -115,10 +118,17 @@ def _log_interaction(entry: dict[str, Any]) -> None:
 class VLearnAICore:
     """Public facade for VLearn Learning Loop AI Core package."""
 
-    def __init__(self, model: BaseChatModel | None = None) -> None:
-        """Initialize VLearnAICore with optional chat model override for testing."""
+    def __init__(
+        self,
+        model: BaseChatModel | None = None,
+        checkpointer: BaseCheckpointSaver | None = None,
+    ) -> None:
+        """Initialize VLearnAICore with optional chat model and checkpointer overrides."""
         self.custom_model = model
-        self.app = build_learning_loop_graph(model=self.custom_model)
+        self.app = build_learning_loop_graph(
+            model=self.custom_model,
+            checkpointer=checkpointer,
+        )
 
     async def start_turn(
         self,
@@ -146,16 +156,19 @@ class VLearnAICore:
             "thread_id": thread_id,
             "user_query": question.strip(),
             "selected_context": selected_context.strip(),
-            "conversation_history": conversation_history or [],
+            "conversation_history": safe_history,
             "status": "running",
         }
 
         t0 = time.time()
         try:
-            final_state = await self.app.ainvoke(
-                initial_state,
-                config=config,
-                recursion_limit=settings.AI_RECURSION_LIMIT,
+            final_state = await asyncio.to_thread(
+                partial(
+                    self.app.invoke,
+                    initial_state,
+                    config=config,
+                    recursion_limit=settings.AI_RECURSION_LIMIT,
+                )
             )
         except AICoreBaseError:
             raise
@@ -222,10 +235,13 @@ class VLearnAICore:
         # Attempt 1: native Command(resume=...)
         if has_native_interrupt:
             try:
-                final_state = await self.app.ainvoke(
-                    Command(resume=student_input.strip()),
-                    config=config,
-                    recursion_limit=settings.AI_RECURSION_LIMIT,
+                final_state = await asyncio.to_thread(
+                    partial(
+                        self.app.invoke,
+                        Command(resume=student_input.strip()),
+                        config=config,
+                        recursion_limit=settings.AI_RECURSION_LIMIT,
+                    )
                 )
             except (RuntimeError, ValueError, TypeError, AttributeError, KeyError):
                 final_state = None
@@ -246,10 +262,13 @@ class VLearnAICore:
 
             try:
                 self.app.update_state(config, update_values, as_node=as_node)
-                final_state = await self.app.ainvoke(
-                    None,
-                    config=config,
-                    recursion_limit=settings.AI_RECURSION_LIMIT,
+                final_state = await asyncio.to_thread(
+                    partial(
+                        self.app.invoke,
+                        None,
+                        config=config,
+                        recursion_limit=settings.AI_RECURSION_LIMIT,
+                    )
                 )
             except InvalidResumeStateError:
                 raise

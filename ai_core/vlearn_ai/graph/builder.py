@@ -56,59 +56,59 @@ def build_learning_loop_graph(
     builder = StateGraph(LearningLoopState)
 
     # Node wrappers passing optional model override
-    async def n_input_guard(state: LearningLoopState):
-        return await input_guard_node(state, model=model)
+    def n_input_guard(state: LearningLoopState):
+        return input_guard_node(state, model=model)
 
-    async def n_context_guard(state: LearningLoopState):
-        return await context_guard_node(state)
+    def n_context_guard(state: LearningLoopState):
+        return context_guard_node(state)
 
-    async def n_router(state: LearningLoopState):
-        return await router_node(state, model=model)
+    def n_router(state: LearningLoopState):
+        return router_node(state, model=model)
 
-    async def n_generate_clarification(state: LearningLoopState):
-        return await generate_clarification_node(state, model=model)
+    def n_generate_clarification(state: LearningLoopState):
+        return generate_clarification_node(state, model=model)
 
     def n_await_clarification(state: LearningLoopState):
         return await_clarification_node(state)
 
-    async def n_guard_clarification_input(state: LearningLoopState):
-        return await guard_clarification_input_node(state, model=model)
+    def n_guard_clarification_input(state: LearningLoopState):
+        return guard_clarification_input_node(state, model=model)
 
-    async def n_grounded_answer(state: LearningLoopState):
-        return await grounded_answer_node(state, model=model)
+    def n_grounded_answer(state: LearningLoopState):
+        return grounded_answer_node(state, model=model)
 
-    async def n_grounding_guard(state: LearningLoopState):
-        return await grounding_guard_node(state)
+    def n_grounding_guard(state: LearningLoopState):
+        return grounding_guard_node(state)
 
-    async def n_grounding_failure(state: LearningLoopState):
-        return await grounding_failure_node(state)
+    def n_grounding_failure(state: LearningLoopState):
+        return grounding_failure_node(state)
 
-    async def n_generate_check(state: LearningLoopState):
-        return await generate_check_node(state, model=model)
+    def n_generate_check(state: LearningLoopState):
+        return generate_check_node(state, model=model)
 
     def n_await_check(state: LearningLoopState):
         return await_check_node(state)
 
-    async def n_guard_check_input(state: LearningLoopState):
-        return await guard_check_input_node(state, model=model)
+    def n_guard_check_input(state: LearningLoopState):
+        return guard_check_input_node(state, model=model)
 
-    async def n_evaluate_check(state: LearningLoopState):
-        return await evaluate_check_node(state, model=model)
+    def n_evaluate_check(state: LearningLoopState):
+        return evaluate_check_node(state, model=model)
 
-    async def n_misconception(state: LearningLoopState):
-        return await misconception_node(state, model=model)
+    def n_misconception(state: LearningLoopState):
+        return misconception_node(state, model=model)
 
-    async def n_safe_end(state: LearningLoopState):
-        return await safe_end_node(state)
+    def n_safe_end(state: LearningLoopState):
+        return safe_end_node(state)
 
-    async def n_suggest_followups(state: LearningLoopState):
-        return await suggest_followups_node(state, model=model)
+    def n_suggest_followups(state: LearningLoopState):
+        return suggest_followups_node(state, model=model)
 
-    async def n_failure(state: LearningLoopState):
-        return await failure_node(state)
+    def n_failure(state: LearningLoopState):
+        return failure_node(state)
 
-    async def n_output_guard(state: LearningLoopState):
-        return await output_guard_node(state)
+    def n_output_guard(state: LearningLoopState):
+        return output_guard_node(state)
 
     # Add Graph Nodes
     builder.add_node("input_guard", n_input_guard)

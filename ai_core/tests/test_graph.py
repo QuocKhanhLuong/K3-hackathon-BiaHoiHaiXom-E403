@@ -49,9 +49,19 @@ async def test_clarification_flow_and_resume():
         student_input="Tôi muốn hỏi về cơ chế Attention",
     )
 
-    assert res2["status"] == "completed"
-    assert res2["assistant_message"] != ""
+    assert res2["status"] == "awaiting_check"
+    assert res2["ui_payload"]["question"] != ""
     json.dumps(res2)
+
+    # Step 3: Resume the generated check and complete the turn
+    res3 = await ai_core.resume_turn(
+        thread_id="test_clar_1",
+        student_input="opt_a",
+    )
+
+    assert res3["status"] == "completed"
+    assert res3["assistant_message"] != ""
+    json.dumps(res3)
 
 
 @pytest.mark.asyncio
