@@ -26,10 +26,7 @@ def route_after_context_guard(
 
 def route_after_router(
     state: LearningLoopState,
-) -> Literal[
-    "generate_clarification",
-    "grounded_answer",
-]:
+) -> Literal["generate_clarification", "grounded_answer"]:
     """Route after router classification."""
     route = state.get("route")
     if route == "clarify":
@@ -57,19 +54,24 @@ def route_after_guard_clarification_input(
 
 def route_after_grounding_guard(
     state: LearningLoopState,
-) -> Literal[
-    "output_guard", "suggest_followups", "generate_check", "grounding_failure"
-]:
-    """Route after grounding guard."""
+) -> Literal["output_guard", "suggest_followups", "generate_check", "grounding_failure"]:
+    """Route after grounding guard.
+
+    - simple  → output_guard (no follow-ups automatically)
+    - clarify → generate_check (micro-check after clarification)
+    - check   → generate_check
+    - deep    → suggest_followups → output_guard
+    """
     valid = state.get("grounding_valid")
     if valid is False:
         return "grounding_failure"
 
     route = state.get("route")
-    if route == "simple" or route == "clarify":
-        return "suggest_followups"
+    if route == "simple":
+        return "output_guard"
     if route == "deep":
         return "suggest_followups"
+    # clarify and check both go to generate_check
     return "generate_check"
 
 
@@ -109,6 +111,6 @@ def route_after_check_eval(
 
 def route_after_misconception(
     state: LearningLoopState,
-) -> Literal["generate_check"]:
-    """Route after misconception repair back to generate_check."""
-    return "generate_check"
+) -> Literal["grounding_guard"]:
+    """Route after misconception repair → grounding_guard → then generate_check."""
+    return "grounding_guard"

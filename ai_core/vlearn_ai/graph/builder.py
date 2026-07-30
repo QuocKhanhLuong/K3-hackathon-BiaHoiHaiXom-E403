@@ -41,6 +41,13 @@ from vlearn_ai.graph.routes import (
 from vlearn_ai.graph.state import LearningLoopState
 
 
+def _route_after_failed_status(state: LearningLoopState) -> str:
+    """Route nodes with @_safe_node to failure when status is 'failed'."""
+    if state.get("status") == "failed":
+        return "failure"
+    return "__continue__"
+
+
 def build_learning_loop_graph(
     model: BaseChatModel | None = None,
     checkpointer: Any | None = None,
@@ -123,32 +130,36 @@ def build_learning_loop_graph(
     builder.add_node("failure", n_failure)
     builder.add_node("output_guard", n_output_guard)
 
-    # Wire Edges
+    # ───── Wire Edges ─────
     builder.add_edge(START, "input_guard")
     builder.add_conditional_edges("input_guard", route_after_input_guard)
     builder.add_conditional_edges("context_guard", route_after_context_guard)
     builder.add_conditional_edges("router", route_after_router)
 
+    # Clarification path
     builder.add_edge("generate_clarification", "await_clarification")
     builder.add_conditional_edges(
         "await_clarification", route_after_await_clarification
     )
-
     builder.add_conditional_edges(
         "guard_clarification_input", route_after_guard_clarification_input
     )
 
+    # Grounded answer → grounding guard
     builder.add_edge("grounded_answer", "grounding_guard")
     builder.add_conditional_edges("grounding_guard", route_after_grounding_guard)
     builder.add_edge("grounding_failure", "output_guard")
 
+    # Check path
     builder.add_edge("generate_check", "await_check")
     builder.add_conditional_edges("await_check", route_after_await_check)
-
     builder.add_conditional_edges("guard_check_input", route_after_guard_check_input)
-
     builder.add_conditional_edges("evaluate_check", route_after_check_eval)
+
+    # Misconception → grounding_guard (for repair grounding verification)
     builder.add_conditional_edges("misconception", route_after_misconception)
+
+    # Terminal edges
     builder.add_edge("safe_end", "output_guard")
     builder.add_edge("suggest_followups", "output_guard")
     builder.add_edge("failure", "output_guard")

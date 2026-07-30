@@ -29,6 +29,10 @@ class InvalidResumeStateError(AICoreBaseError):
     """Raised when attempting resume_turn on an invalid or un-interrupted thread state."""
 
 
+class InvalidGraphStateError(AICoreBaseError):
+    """Raised when the graph state is in an invalid or unexpected condition."""
+
+
 # =====================================================================
 # Base Model with Forbidden Extra Fields
 # =====================================================================
