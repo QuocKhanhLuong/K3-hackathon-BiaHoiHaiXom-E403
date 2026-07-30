@@ -1,0 +1,235 @@
+{
+  "data_quality": {
+    "raw_rows": 2522,
+    "unique_messages": 2522,
+    "unique_turns": 1261,
+    "complete_turn_pairs": 1261,
+    "incomplete_or_duplicate_turns": 0,
+    "users": 369,
+    "conversations": 585,
+    "day_codes": 21,
+    "role_counts": {
+      "student": 1261,
+      "tutor": 1261
+    },
+    "duplicate_message_ids": 0,
+    "duplicated_turn_role_rows": 0,
+    "missingness_pct": {
+      "conversation_id": 0.0,
+      "user_id": 0.0,
+      "day_code": 0.0,
+      "conversation_mode": 0.0,
+      "turn_id": 0.0,
+      "turn_status": 0.0,
+      "message_id": 0.0,
+      "role": 0.0,
+      "content": 0.0,
+      "move_used": 50.32,
+      "citations": 50.0,
+      "misconceptions": 50.0,
+      "follow_ups": 50.0,
+      "rating": 97.22,
+      "asked_check_question": 0.0,
+      "message_created_at": 0.0,
+      "llm_call_count": 0.0,
+      "models_used": 0.0,
+      "total_input_tokens": 0.0,
+      "total_output_tokens": 0.0,
+      "total_cost_usd": 0.0,
+      "avg_latency_ms": 0.0
+    }
+  },
+  "overview": {
+    "turns": 1261,
+    "users": 369,
+    "conversations": 585,
+    "date_min": "2026-07-22 11:00:41.960055+00:00",
+    "date_max": "2026-07-29 17:01:20.065438+00:00",
+    "turns_per_user_mean": 3.42,
+    "turns_per_conversation_mean": 2.16,
+    "multi_turn_conversations": 276,
+    "multi_turn_conversation_pct": 47.18
+  },
+  "pedagogy": {
+    "move_counts": {
+      "review_concept": 1074,
+      "give_direct_answer": 146,
+      "give_example": 21,
+      "(missing)": 8,
+      "motivate": 7,
+      "give_hint": 4,
+      "validate_understanding": 1
+    },
+    "move_rates_pct": {
+      "review_concept": 85.17,
+      "give_direct_answer": 11.58,
+      "give_example": 1.67,
+      "(missing)": 0.63,
+      "motivate": 0.56,
+      "give_hint": 0.32,
+      "validate_understanding": 0.08
+    },
+    "distinct_moves": 7,
+    "review_concept_count": 1074,
+    "review_concept_pct": 85.17,
+    "repeated_review_concept_count": 526,
+    "repeated_review_concept_pct": 41.71,
+    "conversations_all_review_concept": 457,
+    "conversations_all_review_concept_pct": 78.12
+  },
+  "learning_loop": {
+    "check_question_count": 155,
+    "check_question_pct": 12.29,
+    "check_question_field_true": 3,
+    "misconception_nonempty": 0,
+    "misconception_nonempty_pct": 0.0,
+    "follow_up_nonempty": 0,
+    "follow_up_nonempty_pct": 0.0
+  },
+  "grounding": {
+    "with_citation": 679,
+    "with_citation_pct": 53.85,
+    "without_citation": 582,
+    "without_citation_pct": 46.15,
+    "citation_count_mean": 0.83
+  },
+  "feedback": {
+    "rated_count": 70,
+    "rated_pct": 5.55,
+    "up_count": 33,
+    "down_count": 37,
+    "down_among_rated_pct": 52.86,
+    "slice_citation_present": {
+      "rated_n": 29,
+      "down_n": 8,
+      "down_pct": 27.59
+    },
+    "slice_citation_missing": {
+      "rated_n": 41,
+      "down_n": 29,
+      "down_pct": 70.73
+    },
+    "slice_check_present": {
+      "rated_n": 13,
+      "down_n": 6,
+      "down_pct": 46.15
+    },
+    "slice_check_missing": {
+      "rated_n": 57,
+      "down_n": 31,
+      "down_pct": 54.39
+    },
+    "slice_review_concept": {
+      "rated_n": 60,
+      "down_n": 30,
+      "down_pct": 50.0
+    },
+    "slice_other_moves": {
+      "rated_n": 10,
+      "down_n": 7,
+      "down_pct": 70.0
+    }
+  },
+  "performance": {
+    "latency_ms_mean": 2152.34,
+    "latency_ms_median": 1758.0,
+    "latency_ms_p90": 3686.0,
+    "latency_ms_p95": 4650.0,
+    "latency_ms_max": 23848.0,
+    "llm_call_count_mean": 3.15,
+    "input_tokens_mean": 11203.72,
+    "output_tokens_mean": 188.43,
+    "answer_words_median": 158.0,
+    "answer_words_p90": 268.0
+  },
+  "input_patterns": {
+    "vague_questions": 211,
+    "vague_question_pct": 16.73,
+    "example_requests": 40,
+    "summary_requests": 141,
+    "practice_requests": 6,
+    "logistics_or_ui": 29
+  },
+  "pain_candidates": [
+    {
+      "key": "missing_learning_loop",
+      "title": "Tutor trả lời nhưng chưa đóng vòng kiểm tra hiểu bài",
+      "affected_turns": 1106,
+      "total_turns": 1261,
+      "affected_turn_pct": 87.71,
+      "affected_users": 350,
+      "total_users": 369,
+      "affected_user_pct": 94.85,
+      "affected_conversations": 544,
+      "total_conversations": 585,
+      "affected_conversation_pct": 92.99,
+      "evidence_definition": "Turn không có asked_check_question=True, không khớp mẫu hỏi kiểm tra và không kết thúc bằng câu hỏi.",
+      "likely_consequence": "Học viên khó biết mình đã hiểu đúng; tutor thiếu tín hiệu để điều chỉnh lượt sau.",
+      "caveat": "Heuristic có thể bỏ sót câu kiểm tra được diễn đạt không theo mẫu."
+    },
+    {
+      "key": "low_pedagogy_diversity",
+      "title": "Hành vi sư phạm tập trung quá mạnh vào giải thích lại",
+      "affected_turns": 1074,
+      "total_turns": 1261,
+      "affected_turn_pct": 85.17,
+      "affected_users": 326,
+      "total_users": 369,
+      "affected_user_pct": 88.35,
+      "affected_conversations": 524,
+      "total_conversations": 585,
+      "affected_conversation_pct": 89.57,
+      "evidence_definition": "move_used = review_concept.",
+      "likely_consequence": "Các nhu cầu khác nhau như hint, example, sửa misconception hoặc validation có nguy cơ nhận cùng một kiểu hỗ trợ.",
+      "caveat": "move_used phản ánh label hệ thống; cần đọc mẫu để xác nhận chất lượng thực tế."
+    },
+    {
+      "key": "no_strategy_change",
+      "title": "Tutor tiếp tục dùng review_concept ở các lượt liên tiếp",
+      "affected_turns": 526,
+      "total_turns": 1261,
+      "affected_turn_pct": 41.71,
+      "affected_users": 170,
+      "total_users": 369,
+      "affected_user_pct": 46.07,
+      "affected_conversations": 228,
+      "total_conversations": 585,
+      "affected_conversation_pct": 38.97,
+      "evidence_definition": "Trong cùng conversation, lượt hiện tại và lượt trước đều có move_used=review_concept.",
+      "likely_consequence": "Khi học viên hỏi tiếp, tutor có thể chưa đổi chiến lược dù giải thích trước chưa đủ.",
+      "caveat": "Không phải mọi câu hỏi tiếp theo đều là dấu hiệu chưa hiểu; cần annotation thủ công."
+    },
+    {
+      "key": "missing_grounding",
+      "title": "Câu trả lời không có citation để học viên kiểm chứng",
+      "affected_turns": 582,
+      "total_turns": 1261,
+      "affected_turn_pct": 46.15,
+      "affected_users": 255,
+      "total_users": 369,
+      "affected_user_pct": 69.11,
+      "affected_conversations": 339,
+      "total_conversations": 585,
+      "affected_conversation_pct": 57.95,
+      "evidence_definition": "citations rỗng hoặc không parse được thành danh sách có phần tử.",
+      "likely_consequence": "Học viên khó đối chiếu với tài liệu và khó biết khi nào nên tin câu trả lời.",
+      "caveat": "Một số câu chào hỏi hoặc thao tác UI không nhất thiết cần citation."
+    },
+    {
+      "key": "high_latency",
+      "title": "Một nhóm lượt phản hồi có latency cao",
+      "affected_turns": 127,
+      "total_turns": 1261,
+      "affected_turn_pct": 10.07,
+      "affected_users": 82,
+      "total_users": 369,
+      "affected_user_pct": 22.22,
+      "affected_conversations": 93,
+      "total_conversations": 585,
+      "affected_conversation_pct": 15.9,
+      "evidence_definition": "avg_latency_ms nằm trong 10% cao nhất của dataset.",
+      "likely_consequence": "Làm đứt mạch tự học và giảm khả năng học viên tiếp tục tương tác.",
+      "caveat": "Cần log theo từng node/API call để tìm nguyên nhân; hiện mới có latency trung bình turn."
+    }
+  ]
+}

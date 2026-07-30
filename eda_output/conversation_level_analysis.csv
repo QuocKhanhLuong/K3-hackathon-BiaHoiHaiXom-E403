@@ -1,0 +1,586 @@
+conversation_id,user_id,day_code,turn_count,distinct_moves,review_concept_count,review_concept_rate,all_moves_are_review_concept,has_repeated_review_concept,has_any_check_question,has_any_citation,has_any_misconception,has_any_follow_up,has_down_rating,avg_latency_ms,median_answer_words
+C0001,U0067,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,True,False,False,False,False,1400.0,44.0
+C0002,U0031,Lecture_material_ms4x7dx1_t0qyxg,4,1,4,1.0,True,True,False,True,False,False,False,1583.0,124.5
+C0003,U0242,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,False,True,False,False,False,1489.0,157.0
+C0004,U0100,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,True,False,False,False,False,1442.5,73.0
+C0005,U0326,Lecture_material_ms204v3b_r9mo78,1,1,0,0.0,False,False,False,False,False,False,False,1495.0,94.0
+C0006,U0273,Lecture_material_ms203vsq_ob7vqp,1,1,0,0.0,False,False,False,False,False,False,False,1357.0,62.0
+C0007,U0035,Lecture_material_ms4x7dx1_t0qyxg,2,1,2,1.0,True,True,False,True,False,False,False,1458.5,126.5
+C0008,U0084,Lecture_material_ms4x7dx1_t0qyxg,3,1,3,1.0,True,True,False,True,False,False,False,1531.0,91.0
+C0009,U0270,Lecture_material_ms204i6x_gqwyya,2,1,2,1.0,True,True,True,False,False,False,False,1519.0,39.0
+C0010,U0170,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,True,False,False,False,1730.0,215.0
+C0011,U0251,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,2010.0,207.5
+C0012,U0279,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,True,False,False,False,1926.5,206.5
+C0013,U0189,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,1984.5,193.0
+C0014,U0214,New learning material,2,2,1,0.5,False,False,False,True,False,False,False,1920.0,135.0
+C0015,U0329,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,False,False,False,False,False,1537.5,75.0
+C0016,U0232,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,5029.0,166.0
+C0017,U0332,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,False,True,False,False,False,1844.0,207.0
+C0018,U0221,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,2707.0,207.5
+C0019,U0269,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,4527.0,21.0
+C0020,U0176,New learning material,2,1,0,0.0,False,False,False,True,False,False,False,4693.5,147.5
+C0021,U0355,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,True,False,False,False,True,1436.0,57.0
+C0022,U0317,New learning material,1,1,1,1.0,True,False,True,False,False,False,False,1662.0,30.0
+C0023,U0257,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,6884.0,134.0
+C0024,U0276,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,True,False,False,False,False,1394.0,57.0
+C0025,U0367,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2620.0,163.0
+C0026,U0200,Lecture_material_ms5rpr5o_wgl8wy,4,1,4,1.0,True,True,False,True,False,False,False,1630.25,213.0
+C0027,U0016,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,True,False,False,False,1729.5,217.0
+C0028,U0290,Day 1,1,1,1,1.0,True,False,False,True,False,False,False,6271.0,173.0
+C0029,U0258,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,True,False,False,False,False,1586.5,73.0
+C0030,U0015,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1936.0,275.0
+C0031,U0168,Lecture_material_ms5r18w1_oe5xlz,1,1,1,1.0,True,False,False,False,False,False,True,1667.0,70.0
+C0032,U0294,Lecture_material_ms4x7dx1_t0qyxg,5,1,5,1.0,True,True,True,True,False,False,False,1796.0,255.0
+C0033,U0208,Day1-C401,2,1,2,1.0,True,True,True,False,False,False,False,2026.0,213.5
+C0034,U0118,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,True,True,False,False,False,1544.0,205.0
+C0035,U0147,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1776.0,166.0
+C0036,U0049,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,2097.0,199.0
+C0037,U0128,Lecture_material_ms4x7dx1_t0qyxg,2,2,1,0.5,False,False,True,True,False,False,False,1765.5,146.0
+C0038,U0234,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,False,False,False,False,1640.0,71.0
+C0039,U0229,Lecture_material_ms2lb2ke_c1je8j,3,1,3,1.0,True,True,True,True,False,False,False,2024.0,227.0
+C0040,U0039,Lecture_material_ms204yc9_gxpg9y,1,1,1,1.0,True,False,False,False,False,False,False,1345.0,73.0
+C0041,U0180,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3054.0,98.0
+C0042,U0022,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,2133.0,275.0
+C0043,U0212,Lecture_material_ms2lb2ke_c1je8j,4,1,4,1.0,True,True,False,True,False,False,False,1745.0,190.0
+C0044,U0290,Day 1,3,1,3,1.0,True,True,False,True,False,False,False,5632.33,199.0
+C0045,U0067,New learning material,1,1,1,1.0,True,False,True,False,False,False,False,1694.0,33.0
+C0046,U0180,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,False,False,False,False,1544.0,94.0
+C0047,U0003,Lecture_material_ms4ahenz_7cpqa2,4,2,3,0.75,False,True,False,True,False,False,False,1924.5,224.0
+C0048,U0144,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1635.0,55.0
+C0049,U0108,New learning material,3,1,0,0.0,False,False,False,True,False,False,False,4241.67,110.0
+C0050,U0106,Lecture_material_ms2lb2ke_c1je8j,30,1,30,1.0,True,True,True,True,False,False,False,1965.33,242.5
+C0051,U0050,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1430.0,48.0
+C0052,U0231,New learning material,1,1,1,1.0,True,False,True,False,False,False,False,1584.0,18.0
+C0053,U0254,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,False,False,False,False,1543.0,57.5
+C0054,U0121,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2951.0,171.0
+C0055,U0135,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,1602.0,88.0
+C0056,U0072,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,False,False,False,False,1469.0,88.0
+C0057,U0365,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1610.0,56.0
+C0058,U0128,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1786.0,48.0
+C0059,U0351,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1599.0,185.0
+C0060,U0300,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,2028.5,212.0
+C0061,U0305,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,5120.0,349.0
+C0062,U0329,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,2589.0,353.0
+C0063,U0253,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,True,True,False,False,False,1555.0,95.0
+C0064,U0207,Lecture_material_ms204i6x_gqwyya,4,1,4,1.0,True,True,True,False,False,False,False,1410.5,40.5
+C0065,U0212,Lecture_material_ms204v3b_r9mo78,1,1,1,1.0,True,False,False,True,False,False,False,1705.0,258.0
+C0066,U0360,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1613.0,143.0
+C0067,U0288,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,4650.0,66.0
+C0068,U0114,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2407.0,234.0
+C0069,U0304,Lecture_material_ms204i6x_gqwyya,2,1,2,1.0,True,True,False,False,False,False,False,1617.0,152.0
+C0070,U0092,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,4524.0,305.0
+C0071,U0188,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1853.0,168.0
+C0072,U0132,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1977.0,220.0
+C0073,U0095,Lecture_material_ms204i6x_gqwyya,2,1,2,1.0,True,True,False,False,False,False,False,1765.5,163.0
+C0074,U0219,New learning material,3,1,3,1.0,True,True,True,True,False,False,False,2368.67,233.0
+C0075,U0281,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,False,False,False,False,1388.0,73.0
+C0076,U0056,New learning material,1,1,0,0.0,False,False,True,False,False,False,True,5018.0,82.0
+C0077,U0277,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,True,False,False,False,False,1470.0,41.0
+C0078,U0001,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,False,False,False,False,1608.0,138.0
+C0079,U0298,New learning material,2,2,1,0.5,False,False,False,True,False,False,False,4098.5,170.0
+C0080,U0215,day02-c301,2,1,2,1.0,True,True,False,True,False,False,False,1825.5,168.5
+C0081,U0280,Lecture_material_ms4x7dx1_t0qyxg,3,1,3,1.0,True,True,False,True,False,False,False,1783.67,236.0
+C0082,U0003,Lecture_material_ms2039d0_hnxpxy,1,1,1,1.0,True,False,False,True,False,False,False,1706.0,160.0
+C0083,U0270,Lecture_material_ms204i6x_gqwyya,4,1,4,1.0,True,True,True,True,False,False,False,1519.0,144.0
+C0084,U0122,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,6366.0,380.0
+C0085,U0260,Day1-D302,2,1,2,1.0,True,True,True,False,False,False,False,1526.5,126.0
+C0086,U0201,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,4186.0,170.0
+C0087,U0261,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,False,False,False,False,2032.0,218.0
+C0088,U0270,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1671.0,183.0
+C0089,U0357,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,True,False,False,False,False,1462.0,153.0
+C0090,U0344,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3173.0,205.0
+C0091,U0133,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2095.0,184.0
+C0092,U0014,Day 1,1,1,0,0.0,False,False,False,True,False,False,False,3508.0,82.0
+C0093,U0358,day02-c301,2,2,1,0.5,False,False,True,False,False,False,False,1733.5,52.5
+C0094,U0099,Lecture_material_ms204v3b_r9mo78,2,1,2,1.0,True,True,False,True,False,False,False,1650.5,152.0
+C0095,U0191,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,2084.0,262.0
+C0096,U0274,Lecture_material_ms204v3b_r9mo78,1,1,1,1.0,True,False,False,True,False,False,False,1782.0,229.0
+C0097,U0198,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,True,False,False,False,1837.0,232.0
+C0098,U0324,New learning material,6,2,1,0.16666666666666666,False,False,True,True,False,False,False,3585.67,102.0
+C0099,U0331,Lecture_material_ms2039d0_hnxpxy,1,1,1,1.0,True,False,False,False,False,False,False,1575.0,89.0
+C0100,U0089,New learning material,4,1,4,1.0,True,True,False,True,False,False,False,2377.75,181.0
+C0101,U0123,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,True,True,False,False,False,1740.0,193.0
+C0102,U0234,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,7283.0,69.0
+C0103,U0230,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,1741.0,148.0
+C0104,U0066,New learning material,2,1,0,0.0,False,False,False,True,False,False,False,5092.0,160.5
+C0105,U0306,Lecture_material_ms2lb2ke_c1je8j,2,1,2,1.0,True,True,False,True,False,False,False,1735.0,203.5
+C0106,U0117,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1367.0,61.0
+C0107,U0217,New learning material,3,1,3,1.0,True,True,False,True,False,False,False,1915.0,183.0
+C0108,U0284,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1695.0,83.0
+C0109,U0203,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1585.0,57.0
+C0110,U0078,Lecture_material_ms204i6x_gqwyya,4,1,4,1.0,True,True,False,True,False,False,False,1709.5,173.0
+C0111,U0213,Lecture_material_ms204i6x_gqwyya,2,1,2,1.0,True,True,True,False,False,False,False,1460.0,50.0
+C0112,U0294,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,False,False,False,False,1458.0,79.0
+C0113,U0141,Lecture_material_ms5r18w1_oe5xlz,5,1,5,1.0,True,True,False,True,False,False,True,1673.6,243.0
+C0114,U0067,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,True,False,False,False,1673.0,130.0
+C0115,U0096,New learning material,2,2,1,0.5,False,False,False,False,False,False,False,1767.0,147.5
+C0116,U0066,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3273.0,227.0
+C0117,U0106,day02-c301,2,1,2,1.0,True,True,False,False,False,False,False,2054.0,81.5
+C0118,U0012,New learning material,4,1,0,0.0,False,False,False,True,False,False,False,3785.25,94.0
+C0119,U0039,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3551.0,175.0
+C0120,U0032,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,4116.0,346.0
+C0121,U0034,Day1-C302,4,1,4,1.0,True,True,True,False,False,False,False,1766.75,171.0
+C0122,U0022,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,False,False,False,False,False,1464.5,88.0
+C0123,U0106,Lecture_material_ms204v3b_r9mo78,3,1,3,1.0,True,True,False,True,False,False,False,1743.33,176.0
+C0124,U0254,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,False,False,False,False,1508.0,62.0
+C0125,U0019,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,True,True,False,False,False,1583.0,105.0
+C0126,U0105,Lecture_material_ms2044ey_k6uor3,3,1,3,1.0,True,True,True,True,False,False,False,1831.67,201.0
+C0127,U0011,Day1-C401,1,1,1,1.0,True,False,False,False,False,False,False,1670.0,79.0
+C0128,U0149,Lecture_material_ms2039d0_hnxpxy,13,2,12,0.9230769230769231,False,True,False,False,False,False,False,1486.23,76.0
+C0129,U0016,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,False,False,False,True,1852.0,163.0
+C0130,U0072,New learning material,2,2,1,0.5,False,False,True,True,False,False,False,3660.0,110.0
+C0131,U0200,Lecture_material_ms2044ey_k6uor3,5,1,5,1.0,True,True,False,True,False,False,False,1823.6,239.0
+C0132,U0304,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1474.0,61.0
+C0133,U0151,New learning material,7,3,4,0.5714285714285714,False,True,True,True,False,False,False,2217.57,72.0
+C0134,U0017,day02-c301,2,1,2,1.0,True,True,False,False,False,False,False,1582.5,80.5
+C0135,U0198,New learning material,2,2,1,0.5,False,False,False,True,False,False,False,2055.5,174.5
+C0136,U0130,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,2567.0,324.0
+C0137,U0129,Day1-C302,1,1,1,1.0,True,False,False,True,False,False,False,1435.0,123.0
+C0138,U0339,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,True,False,False,False,1516.0,123.0
+C0139,U0353,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2042.0,216.0
+C0140,U0216,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,False,False,False,False,1567.0,183.0
+C0141,U0023,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1509.0,57.0
+C0142,U0079,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1853.0,209.0
+C0143,U0197,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1689.0,71.0
+C0144,U0334,Lecture_material_ms203vsq_ob7vqp,3,2,2,0.6666666666666666,False,True,True,False,False,False,False,1522.67,73.0
+C0145,U0057,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,False,True,False,False,False,1585.0,107.5
+C0146,U0163,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,True,False,False,False,False,1713.0,187.0
+C0147,U0300,Lecture_material_ms2044ey_k6uor3,5,1,5,1.0,True,True,True,True,False,False,False,1817.8,229.0
+C0148,U0014,New learning material,8,2,6,0.75,False,True,True,False,False,False,False,2270.88,74.0
+C0149,U0022,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,3613.0,152.0
+C0150,U0287,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,23848.0,122.0
+C0151,U0293,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,False,True,False,False,False,1625.0,99.5
+C0152,U0205,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3776.0,252.0
+C0153,U0343,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,False,True,False,False,False,1485.0,204.0
+C0154,U0024,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,False,False,False,False,1441.0,70.0
+C0155,U0142,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,True,False,False,False,1456.0,147.0
+C0156,U0213,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,True,False,False,False,1491.0,111.0
+C0157,U0304,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1489.0,82.0
+C0158,U0060,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,5526.0,107.0
+C0159,U0322,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,3838.0,133.0
+C0160,U0045,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1607.0,214.0
+C0161,U0106,Lecture_material_ms5rpr5o_wgl8wy,6,1,6,1.0,True,True,False,True,False,False,False,1761.83,171.5
+C0162,U0171,New learning material,1,1,0,0.0,False,False,True,False,False,False,False,5387.0,92.0
+C0163,U0318,Day1-C302,2,1,2,1.0,True,True,False,True,False,False,False,1636.0,178.5
+C0164,U0070,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,2116.0,286.0
+C0165,U0306,day02-c301,3,1,3,1.0,True,True,False,False,False,False,True,2049.0,186.0
+C0166,U0020,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,True,False,False,False,False,1881.0,226.0
+C0167,U0340,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1727.0,172.0
+C0168,U0362,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,2033.5,184.0
+C0169,U0240,Lecture_material_ms2044ey_k6uor3,6,1,6,1.0,True,True,False,True,False,False,False,1843.33,181.5
+C0170,U0025,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1949.0,215.0
+C0171,U0141,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,True,1922.0,188.0
+C0172,U0270,Lecture_material_ms2044ey_k6uor3,18,2,15,0.8333333333333334,False,True,True,True,False,False,False,1649.89,97.5
+C0173,U0324,New learning material,3,2,2,0.6666666666666666,False,True,True,True,False,False,False,3053.67,193.0
+C0174,U0308,New learning material,3,2,1,0.3333333333333333,False,False,False,True,False,False,False,5290.0,156.0
+C0175,U0105,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,True,False,False,False,1647.0,107.0
+C0176,U0369,Day1-C302,2,1,2,1.0,True,True,False,True,False,False,False,1552.0,149.0
+C0177,U0152,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,5236.0,90.0
+C0178,U0299,day02-c301,2,1,2,1.0,True,True,False,False,False,False,False,2285.0,266.5
+C0179,U0068,Lecture_material_ms203vsq_ob7vqp,1,1,0,0.0,False,False,True,False,False,False,False,1475.0,68.0
+C0180,U0053,Lecture_material_ms2044ey_k6uor3,1,1,0,0.0,False,False,False,True,False,False,False,1660.0,212.0
+C0181,U0364,Day1-C401,2,1,2,1.0,True,True,False,True,False,False,False,2632.0,137.5
+C0182,U0047,Lecture_material_ms5rpr5o_wgl8wy,2,1,2,1.0,True,True,False,False,False,False,False,1518.5,143.5
+C0183,U0116,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2272.0,269.0
+C0184,U0058,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,1939.0,154.0
+C0185,U0366,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1737.0,128.0
+C0186,U0348,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1919.0,112.0
+C0187,U0354,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,False,False,False,False,1521.0,64.5
+C0188,U0312,Lecture_material_ms4x7dx1_t0qyxg,1,1,0,0.0,False,False,False,False,False,False,False,1529.0,99.0
+C0189,U0098,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,True,True,False,False,False,1651.0,157.0
+C0190,U0323,Lecture_material_ms5r18w1_oe5xlz,1,1,1,1.0,True,False,False,True,False,False,False,2008.0,273.0
+C0191,U0160,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,False,False,False,False,1632.0,171.0
+C0192,U0187,Lecture_material_ms4ahenz_7cpqa2,3,1,3,1.0,True,True,False,True,False,False,False,1703.0,107.0
+C0193,U0062,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1819.0,223.0
+C0194,U0036,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,True,False,False,False,1764.0,162.0
+C0195,U0289,Lecture_material_ms2039d0_hnxpxy,1,1,1,1.0,True,False,False,False,False,False,False,1519.0,58.0
+C0196,U0128,Lecture_material_ms2044ey_k6uor3,2,1,0,0.0,False,False,False,True,False,False,False,1801.0,267.0
+C0197,U0164,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,True,1686.0,129.0
+C0198,U0303,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,True,False,False,True,1627.0,154.0
+C0199,U0249,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1943.0,186.0
+C0200,U0333,Lecture_material_ms204i6x_gqwyya,2,1,2,1.0,True,True,True,False,False,False,False,1485.0,60.5
+C0201,U0260,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,True,False,False,False,True,1397.5,59.5
+C0202,U0027,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,True,False,False,False,1550.0,191.0
+C0203,U0332,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1889.0,139.0
+C0204,U0039,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,4419.0,167.0
+C0205,U0038,Lecture_material_ms203vsq_ob7vqp,3,1,3,1.0,True,True,False,True,False,False,False,1595.0,76.0
+C0206,U0141,Lecture_material_ms204i6x_gqwyya,2,1,2,1.0,True,True,False,True,False,False,False,1528.0,101.5
+C0207,U0329,Lecture_material_ms2lb2ke_c1je8j,2,1,2,1.0,True,True,False,True,False,False,False,1639.5,201.0
+C0208,U0021,Lecture_material_ms2044ey_k6uor3,2,2,1,0.5,False,False,True,False,False,False,False,1476.5,74.5
+C0209,U0078,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1712.0,274.0
+C0210,U0143,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,False,False,False,False,1594.0,107.0
+C0211,U0107,Lecture_material_ms203vsq_ob7vqp,1,1,0,0.0,False,False,True,False,False,False,False,1657.0,96.0
+C0212,U0342,Lecture_material_ms2lb2ke_c1je8j,3,1,3,1.0,True,True,False,True,False,False,False,2376.33,243.0
+C0213,U0034,day02-c301,1,1,0,0.0,False,False,False,False,False,False,False,1636.0,37.0
+C0214,U0318,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1502.0,68.0
+C0215,U0052,Lecture_material_ms204v3b_r9mo78,3,1,0,0.0,False,False,False,False,False,False,False,1483.67,66.0
+C0216,U0075,New learning material,1,1,1,1.0,True,False,True,False,False,False,False,1794.0,102.0
+C0217,U0315,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,6159.0,143.0
+C0218,U0168,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,False,False,False,False,1413.0,77.0
+C0219,U0087,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,False,False,False,False,1726.0,72.0
+C0220,U0282,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,2159.0,282.0
+C0221,U0138,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,False,True,False,False,False,1669.0,201.0
+C0222,U0356,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,True,False,False,False,1808.0,145.0
+C0223,U0106,Lecture_material_ms204yc9_gxpg9y,10,1,10,1.0,True,True,False,True,False,False,False,1877.2,174.5
+C0224,U0276,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2035.0,167.0
+C0225,U0069,Lecture_material_ms2lb2ke_c1je8j,5,1,5,1.0,True,True,True,True,False,False,False,1615.4,52.0
+C0226,U0137,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1810.0,272.0
+C0227,U0159,New learning material,11,2,4,0.36363636363636365,False,True,False,True,False,False,False,2898.27,139.0
+C0228,U0097,Lecture_material_ms203vsq_ob7vqp,3,1,3,1.0,True,True,True,False,False,False,True,1769.0,97.0
+C0229,U0350,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1857.0,185.0
+C0230,U0029,Lecture_material_ms204i6x_gqwyya,2,1,2,1.0,True,True,False,True,False,False,False,1766.0,206.5
+C0231,U0330,Lecture_material_ms204i6x_gqwyya,7,1,7,1.0,True,True,False,True,False,False,False,1675.29,151.0
+C0232,U0105,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2139.0,203.0
+C0233,U0335,day02-c301,1,1,1,1.0,True,False,False,False,False,False,False,1428.0,83.0
+C0234,U0059,New learning material,3,1,3,1.0,True,True,True,True,False,False,False,3961.67,297.0
+C0235,U0352,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,1479.0,64.0
+C0236,U0296,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,True,False,False,False,1749.0,161.0
+C0237,U0356,Lecture_material_ms2044ey_k6uor3,3,1,3,1.0,True,True,True,False,False,False,False,1427.67,65.0
+C0238,U0156,Lecture_material_ms2044ey_k6uor3,3,2,1,0.3333333333333333,False,False,True,False,False,False,False,1709.0,116.0
+C0239,U0014,Day 2,3,1,3,1.0,True,True,False,True,False,False,False,8624.67,92.0
+C0240,U0007,Lecture_material_ms2039d0_hnxpxy,1,1,1,1.0,True,False,False,False,False,False,False,1642.0,83.0
+C0241,U0255,New learning material,1,1,1,1.0,True,False,True,False,False,False,False,1692.0,49.0
+C0242,U0153,Lecture_material_ms204i6x_gqwyya,11,2,10,0.9090909090909091,False,True,True,True,False,False,False,1809.18,221.0
+C0243,U0179,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,False,True,False,False,False,1823.0,213.0
+C0244,U0111,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1802.0,68.0
+C0245,U0204,New learning material,4,1,4,1.0,True,True,True,True,False,False,False,2700.75,337.5
+C0246,U0348,Lecture_material_ms2lb2ke_c1je8j,2,1,2,1.0,True,True,False,False,False,False,False,2264.5,320.0
+C0247,U0031,New learning material,4,2,2,0.5,False,False,False,True,False,False,False,1889.5,228.5
+C0248,U0265,New learning material,6,1,6,1.0,True,True,False,True,False,False,False,2009.5,187.0
+C0249,U0014,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1675.0,189.0
+C0250,U0211,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,1868.0,140.0
+C0251,U0168,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,True,False,False,False,1693.0,172.0
+C0252,U0044,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1687.0,199.0
+C0253,U0311,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,5216.0,94.0
+C0254,U0116,Lecture_material_ms204i6x_gqwyya,2,1,2,1.0,True,True,False,True,False,False,False,1638.5,110.0
+C0255,U0356,Lecture_material_ms4x7dx1_t0qyxg,5,1,5,1.0,True,True,False,True,False,False,False,1657.6,176.0
+C0256,U0080,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1561.0,195.0
+C0257,U0044,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2190.0,209.0
+C0258,U0240,Lecture_material_ms204i6x_gqwyya,3,1,3,1.0,True,True,False,True,False,False,False,1740.0,183.0
+C0259,U0127,Lecture_material_ms4x7dx1_t0qyxg,3,1,3,1.0,True,True,False,True,False,False,False,1562.33,185.0
+C0260,U0242,day02-c301,2,1,2,1.0,True,True,False,True,False,False,False,1440.0,99.0
+C0261,U0262,Lecture_material_ms5rpr5o_wgl8wy,3,1,3,1.0,True,True,False,True,False,False,False,1708.67,108.0
+C0262,U0291,New learning material,2,2,1,0.5,False,False,False,True,False,False,False,5311.0,194.5
+C0263,U0182,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,1552.0,60.0
+C0264,U0213,New learning material,5,2,4,0.8,False,True,True,True,False,False,False,3564.2,188.0
+C0265,U0314,Lecture_material_ms203vsq_ob7vqp,4,2,3,0.75,False,True,False,True,False,False,False,1828.75,275.5
+C0266,U0359,New learning material,1,1,1,1.0,True,False,False,True,False,False,True,1844.0,149.0
+C0267,U0115,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,False,True,False,False,False,2223.5,200.0
+C0268,U0226,Lecture_material_ms2044ey_k6uor3,3,2,2,0.6666666666666666,False,True,True,False,False,False,False,1541.67,51.0
+C0269,U0294,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,False,True,False,False,False,1793.0,236.0
+C0270,U0081,day02-c301,1,1,1,1.0,True,False,False,False,False,False,True,1759.0,56.0
+C0271,U0055,New learning material,2,2,1,0.5,False,False,False,False,False,False,False,1758.0,106.0
+C0272,U0341,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,1687.0,144.0
+C0273,U0006,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1629.0,201.0
+C0274,U0320,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,True,False,False,False,1583.0,170.0
+C0275,U0048,Lecture_material_ms2039d0_hnxpxy,5,1,5,1.0,True,True,False,True,False,False,False,1780.8,201.0
+C0276,U0066,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1537.0,187.0
+C0277,U0088,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1896.0,232.0
+C0278,U0155,Lecture_material_ms2039d0_hnxpxy,1,1,1,1.0,True,False,False,False,False,False,False,1552.0,84.0
+C0279,U0200,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,3780.0,162.5
+C0280,U0091,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,True,1488.0,76.0
+C0281,U0244,New learning material,1,1,0,0.0,False,False,True,False,False,False,False,5293.0,207.0
+C0282,U0008,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,1910.0,237.0
+C0283,U0235,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,True,True,False,False,False,1616.5,116.0
+C0284,U0290,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,4080.0,79.0
+C0285,U0302,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1704.0,153.0
+C0286,U0181,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1617.0,191.0
+C0287,U0175,New learning material,2,2,1,0.5,False,False,False,True,False,False,False,5227.0,233.5
+C0288,U0352,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,1867.0,237.0
+C0289,U0026,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3917.0,124.0
+C0290,U0165,Lecture_material_ms2044ey_k6uor3,4,1,4,1.0,True,True,False,True,False,False,False,1725.75,173.5
+C0291,U0224,Lecture_material_ms4x7dx1_t0qyxg,2,1,2,1.0,True,True,False,True,False,False,False,1822.0,200.0
+C0292,U0345,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,True,True,False,False,False,2006.0,313.0
+C0293,U0264,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,3378.5,316.5
+C0294,U0307,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1416.0,62.0
+C0295,U0014,Day 1,3,3,1,0.3333333333333333,False,False,True,True,False,False,False,3880.0,147.0
+C0296,U0102,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1799.0,169.0
+C0297,U0190,Lecture_material_ms5r18w1_oe5xlz,1,1,1,1.0,True,False,False,False,False,False,False,1356.0,61.0
+C0298,U0138,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1454.0,120.0
+C0299,U0300,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,True,True,False,False,False,1660.0,141.0
+C0300,U0274,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1944.0,83.0
+C0301,U0225,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,3192.5,245.0
+C0302,U0323,day02-c301,4,1,4,1.0,True,True,False,True,False,False,False,2200.0,219.5
+C0303,U0073,New learning material,2,2,1,0.5,False,False,False,True,False,False,False,2829.5,168.5
+C0304,U0310,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,5068.0,118.0
+C0305,U0338,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,False,False,False,False,1479.5,68.0
+C0306,U0076,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1782.0,69.0
+C0307,U0082,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1951.0,253.0
+C0308,U0145,Day1-C401,1,1,1,1.0,True,False,False,True,False,False,False,2663.0,223.0
+C0309,U0177,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,2016.0,261.0
+C0310,U0113,New learning material,3,1,0,0.0,False,False,True,False,False,False,False,5189.67,83.0
+C0311,U0072,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,True,False,False,False,1743.0,208.0
+C0312,U0299,Lecture_material_ms2044ey_k6uor3,5,1,5,1.0,True,True,True,True,False,False,False,1853.0,185.0
+C0313,U0198,Lecture_material_ms203vsq_ob7vqp,7,2,6,0.8571428571428571,False,True,True,True,False,False,False,1607.43,152.0
+C0314,U0259,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,False,False,False,False,1598.0,70.0
+C0315,U0295,Lecture_material_ms2044ey_k6uor3,1,1,0,0.0,False,False,False,False,False,False,False,1785.0,114.0
+C0316,U0218,day02-c301,1,1,0,0.0,False,False,False,False,False,False,True,1819.0,72.0
+C0317,U0103,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,False,False,False,False,1348.0,70.0
+C0318,U0013,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3598.0,240.0
+C0319,U0028,New learning material,3,2,2,0.6666666666666666,False,True,True,True,False,False,False,5157.33,283.0
+C0320,U0047,New learning material,13,2,6,0.46153846153846156,False,True,True,True,False,False,False,2415.46,100.0
+C0321,U0245,Lecture_material_ms2044ey_k6uor3,4,1,4,1.0,True,True,False,True,False,False,False,1703.0,164.5
+C0322,U0167,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,1423.0,83.0
+C0323,U0283,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,False,False,False,False,1425.0,58.0
+C0324,U0136,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,8289.0,87.0
+C0325,U0146,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,True,False,False,False,1995.0,210.5
+C0326,U0252,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,1781.0,152.5
+C0327,U0018,day02-c301,1,1,0,0.0,False,False,False,True,False,False,True,1664.0,130.0
+C0328,U0142,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1841.0,236.0
+C0329,U0184,Lecture_material_ms2044ey_k6uor3,4,1,4,1.0,True,True,False,True,False,False,False,1649.75,175.0
+C0330,U0278,Lecture_material_ms4ahenz_7cpqa2,1,1,0,0.0,False,False,False,True,False,False,False,1709.0,144.0
+C0331,U0124,Lecture_material_ms203vsq_ob7vqp,4,1,4,1.0,True,True,True,True,False,False,False,1577.5,100.5
+C0332,U0223,Lecture_material_ms1wxott_9fsh7f,2,1,2,1.0,True,True,True,False,False,False,False,1472.0,48.5
+C0333,U0015,Lecture_material_ms2044ey_k6uor3,2,2,1,0.5,False,False,False,True,False,False,False,1509.0,95.0
+C0334,U0241,New learning material,3,1,3,1.0,True,True,False,True,False,False,False,1841.67,167.0
+C0335,U0367,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,True,False,False,False,False,1858.0,321.0
+C0336,U0275,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,5733.0,290.0
+C0337,U0028,Lecture_material_ms5r18w1_oe5xlz,9,3,7,0.7777777777777778,False,True,False,False,False,False,True,1522.11,81.0
+C0338,U0308,Lecture_material_ms2lb2ke_c1je8j,2,1,2,1.0,True,True,False,True,False,False,False,1744.0,185.5
+C0339,U0099,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1965.0,112.0
+C0340,U0327,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,1914.5,180.0
+C0341,U0324,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,1637.0,59.0
+C0342,U0168,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,True,False,False,False,1425.0,150.0
+C0343,U0162,Lecture_material_ms2044ey_k6uor3,5,1,5,1.0,True,True,False,True,False,False,True,1693.8,146.0
+C0344,U0098,Lecture_material_ms5rpr5o_wgl8wy,4,1,4,1.0,True,True,True,True,False,False,False,1495.25,101.5
+C0345,U0368,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,False,False,False,False,2082.5,98.5
+C0346,U0093,New learning material,2,1,2,1.0,True,True,False,False,False,False,False,1673.0,73.0
+C0347,U0074,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,4340.0,85.0
+C0348,U0124,Lecture_material_ms2044ey_k6uor3,3,1,3,1.0,True,True,False,True,False,False,False,1738.67,205.0
+C0349,U0208,day02-c301,2,1,2,1.0,True,True,False,True,False,False,False,1832.5,168.0
+C0350,U0085,Lecture_material_ms5rpr5o_wgl8wy,3,1,3,1.0,True,True,False,True,False,False,False,1775.67,231.0
+C0351,U0317,day02-c301,1,1,1,1.0,True,False,False,False,False,False,False,2007.0,195.0
+C0352,U0293,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1762.0,57.0
+C0353,U0076,Lecture_material_ms5r18w1_oe5xlz,2,1,2,1.0,True,True,False,False,False,False,True,1460.5,78.5
+C0354,U0213,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,5822.0,219.0
+C0355,U0014,Lecture_material_ms204v3b_r9mo78,1,1,1,1.0,True,False,False,True,False,False,False,1610.0,152.0
+C0356,U0111,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,False,True,False,False,False,1846.5,242.0
+C0357,U0013,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,1989.0,325.0
+C0358,U0227,day02-c301,2,1,2,1.0,True,True,False,False,False,False,False,1701.0,65.0
+C0359,U0338,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,5886.0,199.0
+C0360,U0212,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1686.0,69.0
+C0361,U0272,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,3987.0,90.0
+C0362,U0211,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,True,False,False,False,1553.0,112.0
+C0363,U0131,Lecture_material_ms2lb2ke_c1je8j,10,1,10,1.0,True,True,True,True,False,False,False,1859.4,220.0
+C0364,U0029,Lecture_material_ms5r18w1_oe5xlz,4,1,4,1.0,True,True,False,True,False,False,False,1875.5,187.0
+C0365,U0277,Day1-C302,10,2,3,0.3,False,True,True,False,False,False,False,1506.6,37.0
+C0366,U0245,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2126.0,206.0
+C0367,U0030,New learning material,3,1,3,1.0,True,True,False,True,False,False,True,1951.0,106.0
+C0368,U0010,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1590.0,195.0
+C0369,U0324,New learning material,3,2,2,0.6666666666666666,False,True,True,False,False,False,False,1818.67,70.0
+C0370,U0141,Lecture_material_ms4ahenz_7cpqa2,3,2,2,0.6666666666666666,False,True,True,True,False,False,False,1455.33,65.0
+C0371,U0323,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,1662.0,242.0
+C0372,U0212,day02-c301,2,1,2,1.0,True,True,False,True,False,False,False,1795.0,213.5
+C0373,U0157,Lecture_material_ms2044ey_k6uor3,3,1,3,1.0,True,True,True,True,False,False,False,1829.33,145.0
+C0374,U0349,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,2009.5,266.0
+C0375,U0250,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,4884.0,232.0
+C0376,U0143,New learning material,4,2,2,0.5,False,False,False,True,False,False,False,1729.75,102.5
+C0377,U0335,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,True,False,False,False,1713.5,185.5
+C0378,U0029,New learning material,14,1,14,1.0,True,True,True,True,False,False,False,3439.57,277.0
+C0379,U0279,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,7521.0,51.0
+C0380,U0030,Lecture_material_ms203vsq_ob7vqp,1,1,0,0.0,False,False,True,False,False,False,False,1594.0,74.0
+C0381,U0046,Lecture_material_ms4ahenz_7cpqa2,3,1,3,1.0,True,True,False,True,False,False,False,1659.33,190.0
+C0382,U0200,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,False,True,False,False,False,1624.0,155.5
+C0383,U0234,Lecture_material_ms1ux6r8_nz0abf,6,1,6,1.0,True,True,False,True,False,False,False,1765.17,195.5
+C0384,U0022,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,True,True,False,False,False,1954.0,224.0
+C0385,U0268,New learning material,4,1,4,1.0,True,True,True,True,False,False,False,2034.0,172.0
+C0386,U0194,Lecture_material_ms4ahenz_7cpqa2,2,1,0,0.0,False,False,False,True,False,False,False,2170.0,214.0
+C0387,U0064,Lecture_material_ms2lb2ke_c1je8j,3,1,3,1.0,True,True,True,False,False,False,False,1573.33,92.0
+C0388,U0141,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,2316.5,290.0
+C0389,U0165,Day1-C302,3,1,3,1.0,True,True,False,True,False,False,False,1605.33,212.0
+C0390,U0141,Lecture_material_ms4ahenz_7cpqa2,2,1,2,1.0,True,True,False,False,False,False,False,1483.0,94.0
+C0391,U0089,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,3172.0,127.0
+C0392,U0123,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,1598.0,228.0
+C0393,U0328,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,2026.5,192.5
+C0394,U0256,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,1962.0,262.0
+C0395,U0172,Lecture_material_ms5r18w1_oe5xlz,1,1,1,1.0,True,False,False,True,False,False,False,1951.0,260.0
+C0396,U0146,Lecture_material_ms4ahenz_7cpqa2,2,2,1,0.5,False,False,False,True,False,False,False,1594.0,132.5
+C0397,U0068,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,1503.0,76.0
+C0398,U0274,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,False,False,False,False,1619.0,61.0
+C0399,U0078,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1447.0,146.0
+C0400,U0106,Lecture_material_ms4ahenz_7cpqa2,8,1,8,1.0,True,True,False,True,False,False,False,1697.12,187.0
+C0401,U0361,Lecture_material_ms2039d0_hnxpxy,1,1,1,1.0,True,False,False,False,False,False,False,1703.0,115.0
+C0402,U0086,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,False,False,False,False,1631.0,78.0
+C0403,U0075,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,False,False,False,False,1607.0,138.0
+C0404,U0183,Lecture_material_ms2044ey_k6uor3,2,2,1,0.5,False,False,False,True,False,False,False,1762.5,195.0
+C0405,U0331,New learning material,1,1,1,1.0,True,False,True,True,False,False,False,4805.0,195.0
+C0406,U0095,Lecture_material_ms4ahenz_7cpqa2,4,2,3,0.75,False,True,False,True,False,False,False,1623.5,144.5
+C0407,U0297,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,False,False,False,False,False,1806.0,201.0
+C0408,U0158,New learning material,2,1,2,1.0,True,True,False,False,False,False,False,1677.5,86.5
+C0409,U0051,New learning material,1,1,1,1.0,True,False,True,False,False,False,False,1651.0,27.0
+C0410,U0109,Lecture_material_ms5r18w1_oe5xlz,1,1,0,0.0,False,False,False,True,False,False,False,1813.0,338.0
+C0411,U0346,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,2994.0,172.0
+C0412,U0064,Lecture_material_ms4ahenz_7cpqa2,3,1,3,1.0,True,True,True,False,False,False,False,1684.0,118.0
+C0413,U0004,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,True,False,False,False,True,1531.0,67.0
+C0414,U0079,Lecture_material_ms4x7dx1_t0qyxg,2,1,2,1.0,True,True,False,False,False,False,True,1383.5,72.0
+C0415,U0099,day02-c301,4,1,4,1.0,True,True,False,True,False,False,False,2080.25,229.5
+C0416,U0222,Lecture_material_ms203mb1_squf06,2,1,2,1.0,True,True,False,False,False,False,False,1583.0,61.5
+C0417,U0304,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1773.0,229.0
+C0418,U0192,New learning material,4,2,3,0.75,False,True,True,True,False,False,False,3665.5,181.0
+C0419,U0318,day02-c301,3,1,3,1.0,True,True,True,True,False,False,False,1606.67,207.0
+C0420,U0336,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3487.0,269.0
+C0421,U0306,Lecture_material_ms4ahenz_7cpqa2,3,1,3,1.0,True,True,False,False,False,False,False,1598.67,95.0
+C0422,U0348,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3936.0,218.0
+C0423,U0302,New learning material,2,1,2,1.0,True,True,False,False,False,False,False,1718.0,81.0
+C0424,U0236,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,True,False,False,False,1437.0,100.0
+C0425,U0229,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,False,False,False,False,1858.0,191.0
+C0426,U0287,New learning material,2,1,0,0.0,False,False,False,False,False,False,False,5664.5,86.5
+C0427,U0202,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,6212.0,248.0
+C0428,U0135,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,1747.0,81.0
+C0429,U0094,Lecture_material_ms204i6x_gqwyya,4,1,4,1.0,True,True,False,False,False,False,False,1594.0,102.5
+C0430,U0135,New learning material,5,1,5,1.0,True,True,False,True,False,False,False,1802.2,103.0
+C0431,U0285,New learning material,2,2,1,0.5,False,False,False,True,False,False,False,2122.5,182.0
+C0432,U0174,Lecture_material_ms5rpr5o_wgl8wy,2,1,2,1.0,True,True,True,True,False,False,False,1502.0,123.5
+C0433,U0074,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,True,False,False,False,1647.0,213.0
+C0434,U0228,Lecture_material_ms2044ey_k6uor3,1,1,0,0.0,False,False,False,False,False,False,False,1602.0,85.0
+C0435,U0040,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1787.0,132.0
+C0436,U0128,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,True,False,False,False,1542.5,137.0
+C0437,U0112,Lecture_material_ms5rpr5o_wgl8wy,3,1,3,1.0,True,True,True,False,False,False,False,1487.33,61.0
+C0438,U0290,Day 1,2,2,1,0.5,False,False,False,True,False,False,False,5595.5,97.5
+C0439,U0243,New learning material,3,1,3,1.0,True,True,False,True,False,False,False,2310.0,203.0
+C0440,U0148,New learning material,3,2,1,0.3333333333333333,False,False,True,True,False,False,False,3452.33,105.0
+C0441,U0176,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,False,False,False,False,1973.5,165.5
+C0442,U0259,New learning material,4,1,4,1.0,True,True,False,True,False,False,False,2331.75,301.0
+C0443,U0155,New learning material,3,2,2,0.6666666666666666,False,True,True,True,False,False,False,2609.33,95.0
+C0444,U0025,Lecture_material_ms4ahenz_7cpqa2,2,2,1,0.5,False,False,False,False,False,False,True,1503.0,84.0
+C0445,U0313,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,True,False,False,False,1903.0,295.0
+C0446,U0292,New learning material,1,1,0,0.0,False,False,True,False,False,False,True,4761.0,62.0
+C0447,U0227,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,4182.0,109.0
+C0448,U0043,New learning material,1,1,0,0.0,False,False,True,False,False,False,False,4704.0,82.0
+C0449,U0311,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,True,False,False,False,1721.0,204.0
+C0450,U0193,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1794.0,45.0
+C0451,U0015,Lecture_material_ms204i6x_gqwyya,5,3,3,0.6,False,False,False,True,False,False,False,1548.6,110.0
+C0452,U0077,day02-c301,2,1,2,1.0,True,True,False,True,False,False,False,2054.0,293.5
+C0453,U0349,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,False,False,False,False,1650.0,293.0
+C0454,U0228,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1601.0,193.0
+C0455,U0010,Lecture_material_ms203vsq_ob7vqp,6,1,6,1.0,True,True,True,True,False,False,False,1582.67,159.5
+C0456,U0330,New learning material,3,1,3,1.0,True,True,False,False,False,False,False,1767.0,81.0
+C0457,U0267,Lecture_material_ms204i6x_gqwyya,3,2,2,0.6666666666666666,False,False,False,True,False,False,False,1628.67,168.0
+C0458,U0101,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,True,False,False,True,1958.0,187.0
+C0459,U0219,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,True,False,False,False,1729.0,163.0
+C0460,U0154,Lecture_material_ms204v3b_r9mo78,1,1,1,1.0,True,False,False,True,False,False,False,1595.0,170.0
+C0461,U0323,New learning material,7,1,7,1.0,True,True,False,True,False,False,False,1987.29,249.0
+C0462,U0061,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3505.0,165.0
+C0463,U0002,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,False,False,False,False,False,1830.0,212.0
+C0464,U0173,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,2234.0,266.0
+C0465,U0104,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,1794.0,83.0
+C0466,U0290,Day 2,2,1,2,1.0,True,True,False,True,False,False,False,4840.0,140.5
+C0467,U0153,Lecture_material_ms203vsq_ob7vqp,9,2,8,0.8888888888888888,False,True,True,True,False,False,False,1697.44,196.0
+C0468,U0183,New learning material,4,1,4,1.0,True,True,False,True,False,False,False,2381.0,229.0
+C0469,U0123,Lecture_material_ms2039d0_hnxpxy,7,2,6,0.8571428571428571,False,True,True,False,False,False,False,1510.57,85.0
+C0470,U0196,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,True,False,False,False,1435.0,59.0
+C0471,U0266,New learning material,1,1,1,1.0,True,False,True,False,False,False,False,1672.0,50.0
+C0472,U0041,Lecture_material_ms5r18w1_oe5xlz,2,1,2,1.0,True,True,False,True,False,False,False,2104.0,322.0
+C0473,U0044,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,True,False,False,False,False,1819.0,328.0
+C0474,U0141,Lecture_material_ms2lb2ke_c1je8j,5,2,4,0.8,False,True,False,True,False,False,True,2028.8,229.0
+C0475,U0330,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1710.0,96.0
+C0476,U0212,Lecture_material_ms5r18w1_oe5xlz,2,2,1,0.5,False,False,True,False,False,False,False,1414.0,67.5
+C0477,U0238,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1593.0,146.0
+C0478,U0125,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,True,False,False,False,1652.0,200.0
+C0479,U0322,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1755.0,208.0
+C0480,U0362,Day1-C302,1,1,1,1.0,True,False,False,True,False,False,False,1793.0,227.0
+C0481,U0197,Lecture_material_ms204v3b_r9mo78,1,1,1,1.0,True,False,True,False,False,False,False,1987.0,283.0
+C0482,U0316,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,False,False,False,False,2111.0,213.0
+C0483,U0201,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,True,False,False,False,1645.0,187.0
+C0484,U0247,New learning material,3,1,0,0.0,False,False,False,True,False,False,False,4160.0,80.0
+C0485,U0096,Lecture_material_ms2039d0_hnxpxy,2,1,2,1.0,True,True,False,True,False,False,False,1582.0,119.5
+C0486,U0119,Lecture_material_ms2039d0_hnxpxy,1,1,1,1.0,True,False,False,True,False,False,False,1564.0,119.0
+C0487,U0271,day02-c301,1,1,0,0.0,False,False,False,False,False,False,False,1550.0,5.0
+C0488,U0255,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,False,True,False,False,False,1696.5,156.5
+C0489,U0027,New learning material,2,1,0,0.0,False,False,True,False,False,False,False,4428.5,55.5
+C0490,U0178,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1704.0,144.0
+C0491,U0084,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,2139.0,270.0
+C0492,U0187,Lecture_material_ms5rpr5o_wgl8wy,8,1,8,1.0,True,True,True,True,False,False,False,1522.0,92.5
+C0493,U0294,Lecture_material_ms4x7dx1_t0qyxg,2,1,2,1.0,True,True,False,False,False,False,False,1738.0,233.5
+C0494,U0217,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,True,False,False,False,1855.0,281.0
+C0495,U0299,New learning material,2,2,1,0.5,False,False,False,True,False,False,False,3596.0,191.5
+C0496,U0347,Lecture_material_ms203vsq_ob7vqp,3,1,3,1.0,True,True,False,True,False,False,False,1590.0,208.0
+C0497,U0140,New learning material,5,1,5,1.0,True,True,False,True,False,False,False,2038.0,109.0
+C0498,U0126,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1905.0,145.0
+C0499,U0234,Lecture_material_ms2044ey_k6uor3,3,1,3,1.0,True,True,False,True,False,False,False,1978.67,247.0
+C0500,U0054,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,False,False,False,False,1697.5,128.0
+C0501,U0217,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1855.0,159.0
+C0502,U0281,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,4728.5,231.5
+C0503,U0007,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,True,False,False,False,1577.0,99.0
+C0504,U0321,Lecture_material_ms203vsq_ob7vqp,5,2,4,0.8,False,True,False,True,False,False,False,1771.8,242.0
+C0505,U0195,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1763.0,188.0
+C0506,U0337,Lecture_material_ms4ahenz_7cpqa2,4,1,4,1.0,True,True,False,False,False,False,False,1541.0,67.0
+C0507,U0147,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,1802.0,180.0
+C0508,U0033,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1726.0,62.0
+C0509,U0259,Lecture_material_ms2044ey_k6uor3,3,2,2,0.6666666666666666,False,False,True,True,False,False,False,2112.0,266.0
+C0510,U0210,Lecture_material_ms5r18w1_oe5xlz,3,1,3,1.0,True,True,True,False,False,False,False,1605.33,111.0
+C0511,U0071,New learning material,2,2,1,0.5,False,False,True,False,False,False,False,2912.0,25.5
+C0512,U0259,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,True,True,False,False,False,1922.0,171.0
+C0513,U0209,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,False,False,False,False,2149.0,309.0
+C0514,U0185,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,True,1416.0,79.0
+C0515,U0074,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,False,False,False,False,1761.0,132.0
+C0516,U0206,New learning material,6,2,5,0.8333333333333334,False,True,True,False,False,False,False,2211.67,56.5
+C0517,U0258,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1663.0,66.0
+C0518,U0009,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,4331.0,225.0
+C0519,U0045,Lecture_material_ms204i6x_gqwyya,1,1,1,1.0,True,False,False,False,False,False,False,1482.0,89.0
+C0520,U0286,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1566.0,66.0
+C0521,U0165,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,False,False,False,False,1574.0,178.0
+C0522,U0363,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,True,False,False,False,False,1763.0,227.0
+C0523,U0186,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,4599.0,72.0
+C0524,U0248,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1886.0,175.0
+C0525,U0106,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,3808.0,198.0
+C0526,U0211,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,True,False,False,False,1722.0,144.0
+C0527,U0169,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1606.0,45.0
+C0528,U0153,Lecture_material_ms4ahenz_7cpqa2,3,1,3,1.0,True,True,False,True,False,False,False,1621.67,152.0
+C0529,U0178,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,False,False,False,False,1489.0,81.0
+C0530,U0191,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,1753.0,145.5
+C0531,U0265,Lecture_material_ms203vsq_ob7vqp,3,1,3,1.0,True,True,False,True,False,False,False,2233.33,269.0
+C0532,U0199,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,False,False,False,False,1712.0,209.0
+C0533,U0301,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,False,False,False,False,False,1430.0,95.0
+C0534,U0081,Lecture_material_ms2lb2ke_c1je8j,1,1,1,1.0,True,False,False,True,False,False,False,1693.0,172.0
+C0535,U0254,New learning material,1,1,1,1.0,True,False,True,False,False,False,False,1872.0,60.0
+C0536,U0161,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,3614.0,191.0
+C0537,U0325,New learning material,1,1,0,0.0,False,False,False,False,False,False,True,4495.0,93.0
+C0538,U0134,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,3284.0,122.0
+C0539,U0078,Lecture_material_ms4x7dx1_t0qyxg,1,1,1,1.0,True,False,False,False,False,False,False,1930.0,247.0
+C0540,U0208,New learning material,4,1,4,1.0,True,True,False,False,False,False,False,1793.25,80.5
+C0541,U0166,Lecture_material_ms2044ey_k6uor3,2,1,2,1.0,True,True,False,True,False,False,False,1743.0,211.0
+C0542,U0290,Day 1,1,1,1,1.0,True,False,False,True,False,False,False,5466.0,305.0
+C0543,U0154,Lecture_material_ms5r18w1_oe5xlz,1,1,1,1.0,True,False,False,True,False,False,False,1607.0,177.0
+C0544,U0290,Day 1,1,1,1,1.0,True,False,False,False,False,False,False,3794.0,38.0
+C0545,U0220,Lecture_material_ms204i6x_gqwyya,2,2,1,0.5,False,False,True,False,False,False,False,1819.0,135.5
+C0546,U0309,Lecture_material_ms5r18w1_oe5xlz,6,2,5,0.8333333333333334,False,True,True,False,False,False,False,1670.33,167.0
+C0547,U0233,New learning material,2,1,2,1.0,True,True,True,True,False,False,True,1924.5,140.0
+C0548,U0297,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1638.0,164.0
+C0549,U0040,Lecture_material_ms4x7dx1_t0qyxg,6,2,5,0.8333333333333334,False,True,True,True,False,False,False,1552.17,119.5
+C0550,U0083,Lecture_material_ms2lb2ke_c1je8j,3,1,3,1.0,True,True,True,True,False,False,False,1879.0,79.0
+C0551,U0009,Lecture_material_ms4ahenz_7cpqa2,6,3,2,0.3333333333333333,False,True,False,True,False,False,False,1716.83,151.0
+C0552,U0139,New learning material,2,1,0,0.0,False,False,False,True,False,False,False,3704.0,134.0
+C0553,U0246,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1790.0,256.0
+C0554,U0239,Lecture_material_ms203vsq_ob7vqp,3,1,3,1.0,True,True,True,False,False,False,False,1426.67,70.0
+C0555,U0005,New learning material,2,2,1,0.5,False,False,False,True,False,False,False,3091.5,141.5
+C0556,U0063,New learning material,4,1,4,1.0,True,True,False,True,False,False,True,1995.25,175.5
+C0557,U0175,day02-c301,1,1,1,1.0,True,False,False,False,False,False,False,1674.0,64.0
+C0558,U0198,Lecture_material_ms2044ey_k6uor3,3,1,3,1.0,True,True,True,True,False,False,False,1654.33,145.0
+C0559,U0330,Day1-C302,3,1,3,1.0,True,True,False,True,False,False,False,1657.0,135.0
+C0560,U0211,New learning material,1,1,1,1.0,True,False,False,False,False,False,False,1747.0,68.0
+C0561,U0150,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,False,False,False,False,1442.0,63.0
+C0562,U0129,Lecture_material_ms204i6x_gqwyya,2,2,1,0.5,False,False,False,True,False,False,False,1514.0,100.0
+C0563,U0085,Lecture_material_ms2lb2ke_c1je8j,2,1,2,1.0,True,True,False,True,False,False,False,1589.0,96.0
+C0564,U0090,New learning material,1,1,0,0.0,False,False,False,False,False,False,False,5714.0,83.0
+C0565,U0073,Lecture_material_ms204v3b_r9mo78,1,1,1,1.0,True,False,False,True,False,False,False,1463.0,138.0
+C0566,U0110,New learning material,2,1,0,0.0,False,False,False,False,False,False,False,1918.5,140.5
+C0567,U0319,New learning material,4,2,3,0.75,False,True,False,True,False,False,False,3698.75,220.5
+C0568,U0042,New learning material,5,1,5,1.0,True,True,False,False,False,False,False,2273.0,287.0
+C0569,U0044,Lecture_material_ms4ahenz_7cpqa2,1,1,1,1.0,True,False,False,True,False,False,False,1442.0,105.0
+C0570,U0304,New learning material,1,1,1,1.0,True,False,False,True,False,False,False,1766.0,106.0
+C0571,U0037,Lecture_material_ms203vsq_ob7vqp,1,1,1,1.0,True,False,False,True,False,False,False,1689.0,113.0
+C0572,U0120,Lecture_material_ms203vsq_ob7vqp,2,2,1,0.5,False,False,False,False,False,False,False,1612.5,93.0
+C0573,U0132,Lecture_material_ms203vsq_ob7vqp,4,1,4,1.0,True,True,True,True,False,False,False,1617.0,96.0
+C0574,U0081,New learning material,2,1,2,1.0,True,True,False,True,False,False,False,3333.0,199.5
+C0575,U0341,New learning material,1,1,1,1.0,True,False,True,False,False,False,True,1709.0,55.0
+C0576,U0100,Lecture_material_ms2044ey_k6uor3,1,1,1,1.0,True,False,False,True,False,False,False,1581.0,146.0
+C0577,U0237,New learning material,1,1,0,0.0,False,False,False,True,False,False,False,4825.0,206.0
+C0578,U0065,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,1646.0,72.0
+C0579,U0144,New learning material,3,1,3,1.0,True,True,False,True,False,False,False,2048.33,184.0
+C0580,U0153,Lecture_material_ms2044ey_k6uor3,9,3,6,0.6666666666666666,False,True,True,True,False,False,False,1885.22,234.0
+C0581,U0141,day02-c301,3,1,3,1.0,True,True,False,True,False,False,True,2103.33,259.0
+C0582,U0303,Lecture_material_ms204v3b_r9mo78,3,1,3,1.0,True,True,False,True,False,False,True,1693.67,138.0
+C0583,U0003,Lecture_material_ms5rpr5o_wgl8wy,1,1,1,1.0,True,False,False,True,False,False,False,1436.0,120.0
+C0584,U0022,day02-c301,1,1,1,1.0,True,False,False,True,False,False,False,1999.0,267.0
+C0585,U0263,Lecture_material_ms203vsq_ob7vqp,2,1,2,1.0,True,True,True,True,False,False,False,1664.5,163.0
