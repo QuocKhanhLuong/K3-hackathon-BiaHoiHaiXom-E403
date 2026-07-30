@@ -4,8 +4,8 @@ import re
 from typing import Literal
 
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
 
+from vlearn_ai.prompts.messages import build_trusted_messages
 from vlearn_ai.prompts.misconception import (
     MISCONCEPTION_SYSTEM_PROMPT,
     MISCONCEPTION_USER_PROMPT_TEMPLATE,
@@ -86,56 +86,47 @@ async def execute_validate_understanding(
     student_answer: str = "",
     correct_option_id: str | None = None,
     options: list[CheckOption] | None = None,
+    previous_check: MicroCheck | None = None,
 ) -> MicroCheck | CheckEvaluation:
     """Execute validate_understanding tool in generate or evaluate mode."""
     if mode == "generate_check":
-        messages = [
-            SystemMessage(content=CHECK_GENERATE_SYSTEM_PROMPT),
-            HumanMessage(
-                content=CHECK_GENERATE_USER_PROMPT_TEMPLATE.format(
-                    selected_context=context,
-                    grounded_answer=grounded_answer,
-                )
-            ),
-        ]
+        prev_text = (
+            f"\nCâu hỏi cũ (hãy tạo câu hỏi khác hẳn, không lặp lại):\n{previous_check.question}"
+            if previous_check
+            else ""
+        )
+        untrusted_payload = (
+            CHECK_GENERATE_USER_PROMPT_TEMPLATE.format(
+                selected_context=context,
+                grounded_answer=grounded_answer,
+            )
+            + prev_text
+        )
+
+        messages = build_trusted_messages(
+            CHECK_GENERATE_SYSTEM_PROMPT, untrusted_payload
+        )
 
         try:
             if hasattr(model, "with_structured_output"):
                 structured = model.with_structured_output(MicroCheck)
                 res = await structured.ainvoke(messages)
                 if isinstance(res, MicroCheck):
+                    if previous_check and _normalize_text(
+                        res.question
+                    ) == _normalize_text(previous_check.question):
+                        raise AIStructuredOutputError(
+                            "Generated check is an exact duplicate of previous check."
+                        )
                     return res
         except Exception as exc:
             raise AIStructuredOutputError(
                 f"generate_check structured output failed: {exc}"
             ) from exc
 
-        try:
-            raw_res = await model.ainvoke(messages)
-            content = raw_res.content if hasattr(raw_res, "content") else str(raw_res)
-            return MicroCheck(
-                question=str(content).strip()
-                or "Khái niệm này có ý nghĩa gì trong bài học?",
-                question_type="multiple_choice",
-                target_concept="core_concept",
-                expected_answer="Lựa chọn A là đáp án chính xác.",
-                correct_option_id="opt_a",
-                options=[
-                    CheckOption(
-                        option_id="opt_a", text="Lựa chọn A là đáp án chính xác."
-                    ),
-                    CheckOption(
-                        option_id="opt_b", text="Lựa chọn B mô tả sai bài học."
-                    ),
-                    CheckOption(option_id="opt_c", text="Lựa chọn C không liên quan."),
-                ],
-                explanation="Giải thích đáp án đúng.",
-                evidence=[context[:100]] if context else [],
-            )
-        except Exception as exc:
-            raise AIStructuredOutputError(
-                f"generate_check invocation failed: {exc}"
-            ) from exc
+        raise AIStructuredOutputError(
+            "generate_check failed to produce valid MicroCheck."
+        )
 
     else:
         # evaluate_answer mode
@@ -146,24 +137,22 @@ async def execute_validate_understanding(
             expected_answer=expected_answer,
         )
 
-        messages = [
-            SystemMessage(content=MISCONCEPTION_SYSTEM_PROMPT),
-            HumanMessage(
-                content=MISCONCEPTION_USER_PROMPT_TEMPLATE.format(
-                    question=question,
-                    expected_answer=expected_answer,
-                    selected_context=context,
-                    student_answer=student_answer,
-                )
-            ),
-        ]
+        untrusted_payload = MISCONCEPTION_USER_PROMPT_TEMPLATE.format(
+            question=question,
+            expected_answer=expected_answer,
+            selected_context=context,
+            student_answer=student_answer,
+        )
+        messages = build_trusted_messages(
+            MISCONCEPTION_SYSTEM_PROMPT, untrusted_payload
+        )
 
         try:
             if hasattr(model, "with_structured_output"):
                 structured = model.with_structured_output(CheckEvaluation)
                 res = await structured.ainvoke(messages)
                 if isinstance(res, CheckEvaluation):
-                    # Override is_correct if deterministic evaluation succeeded
+                    # Enforce deterministic evaluation override for correct MCQ answers
                     if is_mcq_correct:
                         res.is_correct = True
                         res.score = 1.0
@@ -175,22 +164,6 @@ async def execute_validate_understanding(
                 f"evaluate_answer structured output failed: {exc}"
             ) from exc
 
-        # Fallback deterministic evaluation if model fails
-        if is_mcq_correct:
-            return CheckEvaluation(
-                is_correct=True,
-                score=1.0,
-                misconception_code="none",
-                error_explanation="Học viên trả lời đúng.",
-                answer_evidence=student_answer,
-                recommended_repair_strategy="none",
-            )
-        else:
-            return CheckEvaluation(
-                is_correct=False,
-                score=0.0,
-                misconception_code="concept_confusion",
-                error_explanation="Học viên trả lời chưa chính xác so với bối cảnh bài học.",
-                answer_evidence=student_answer,
-                recommended_repair_strategy="review_concept_and_example",
-            )
+        raise AIStructuredOutputError(
+            "evaluate_answer failed to produce valid CheckEvaluation."
+        )

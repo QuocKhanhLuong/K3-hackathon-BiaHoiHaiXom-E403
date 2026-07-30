@@ -1,10 +1,10 @@
 """Pedagogical tool 2: give_direct_answer."""
 
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
 
+from vlearn_ai.prompts.messages import build_trusted_messages
 from vlearn_ai.prompts.pedagogical_tools import GIVE_DIRECT_ANSWER_PROMPT
-from vlearn_ai.schemas import AIStructuredOutputError, Citation, GroundedAnswer
+from vlearn_ai.schemas import AIStructuredOutputError, GroundedAnswer
 
 
 async def execute_give_direct_answer(
@@ -12,16 +12,12 @@ async def execute_give_direct_answer(
     context: str,
     model: BaseChatModel,
 ) -> GroundedAnswer:
-    """Execute give_direct_answer tool using structured model output."""
-    messages = [
-        SystemMessage(content=GIVE_DIRECT_ANSWER_PROMPT),
-        HumanMessage(
-            content=(
-                f"Bối cảnh bài học:\n<untrusted_course_context>\n{context}\n</untrusted_course_context>\n\n"
-                f"Câu hỏi sự thật:\n<untrusted_student_query>\n{query}\n</untrusted_student_query>"
-            )
-        ),
-    ]
+    """Execute give_direct_answer tool using structured model output without secondary text fallback."""
+    untrusted_payload = (
+        f"Bối cảnh bài học:\n<untrusted_course_context>\n{context}\n</untrusted_course_context>\n\n"
+        f"Câu hỏi sự thật:\n<untrusted_student_query>\n{query}\n</untrusted_student_query>"
+    )
+    messages = build_trusted_messages(GIVE_DIRECT_ANSWER_PROMPT, untrusted_payload)
 
     try:
         if hasattr(model, "with_structured_output"):
@@ -34,20 +30,6 @@ async def execute_give_direct_answer(
             f"give_direct_answer structured output failed: {exc}"
         ) from exc
 
-    try:
-        raw_res = await model.ainvoke(messages)
-        content = raw_res.content if hasattr(raw_res, "content") else str(raw_res)
-        if isinstance(content, str) and content.strip():
-            snippet = context[:120].strip() if context else "Tài liệu bài học"
-            return GroundedAnswer(
-                answer=content.strip(),
-                citations=[Citation(citation_id="ctx_1", snippet=snippet)],
-            )
-    except Exception as exc:
-        raise AIStructuredOutputError(
-            f"give_direct_answer invocation failed: {exc}"
-        ) from exc
-
     raise AIStructuredOutputError(
-        "give_direct_answer failed to produce non-empty answer."
+        "give_direct_answer failed to produce valid GroundedAnswer."
     )

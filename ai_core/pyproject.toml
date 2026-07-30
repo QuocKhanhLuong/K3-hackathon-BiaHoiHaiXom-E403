@@ -29,6 +29,7 @@ where = ["."]
 include = ["vlearn_ai*"]
 
 [tool.pytest.ini_options]
+addopts = '-m "not live"'
 markers = [
-    "live: Opt-in integration tests requiring live OpenAI API key"
+    "live: Opt-in integration tests requiring live OpenAI API key and RUN_LIVE_TESTS=1"
 ]

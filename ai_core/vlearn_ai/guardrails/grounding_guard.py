@@ -1,23 +1,22 @@
-"""Grounding guard verifying citations against course context."""
+"""Grounding guard verifying citations and claims against course context."""
 
 import re
 
-from vlearn_ai.schemas import Citation
+from vlearn_ai.schemas import Citation, GroundedClaim
 
 
 def _normalize_text(text: str) -> str:
-    """Normalize whitespace, case, and strip punctuation for deterministic matching."""
-    text = text.strip().lower()
-    text = re.sub(r"[^\w\s]", " ", text)
-    return re.sub(r"\s+", " ", text).strip()
+    """Deterministic whitespace and case normalization."""
+    return re.sub(r"\s+", " ", text.strip().lower())
 
 
 def verify_grounding(
     answer: str,
     citations: list[Citation],
     context: str,
+    claims: list[GroundedClaim] | None = None,
 ) -> tuple[bool, str | None]:
-    """Verify that citations are valid, non-empty, unique, and present in context."""
+    """Strictly verify that citations and claims are valid, non-empty, unique, and present in context."""
     if not context or not context.strip():
         return False, "Course context is empty or missing."
 
@@ -26,7 +25,7 @@ def verify_grounding(
 
     norm_context = _normalize_text(context)
 
-    # Empty citations when citations are required for grounded answers
+    # Empty citations fail for grounded answers
     if not citations:
         return False, "Grounded answer contains no citations."
 
@@ -34,21 +33,32 @@ def verify_grounding(
     if len(citation_ids) != len(set(citation_ids)):
         return False, "Duplicate citation IDs found in answer."
 
+    valid_citation_ids = set(citation_ids)
+
     for citation in citations:
         snippet = citation.snippet.strip()
         if not snippet:
             return False, f"Citation '{citation.citation_id}' has an empty snippet."
 
         norm_snippet = _normalize_text(snippet)
-        if norm_snippet in norm_context:
-            continue
+        # Check strict substring match in normalized course context
+        if norm_snippet not in norm_context:
+            return (
+                False,
+                f"Citation snippet '{snippet[:40]}...' is not grounded in context.",
+            )
 
-        # Word overlap ratio fallback
-        snippet_words = set(norm_snippet.split())
-        context_words = set(norm_context.split())
-        if snippet_words and len(snippet_words & context_words) / len(snippet_words) >= 0.7:
-            continue
+    # Validate structured claims if provided
+    if claims:
+        for claim_obj in claims:
+            if not claim_obj.citation_ids:
+                return (
+                    False,
+                    f"Claim '{claim_obj.claim[:30]}' does not reference any citation ID.",
+                )
 
-        return False, f"Citation snippet '{snippet[:40]}...' is not grounded in context."
+            for cid in claim_obj.citation_ids:
+                if cid not in valid_citation_ids:
+                    return False, f"Claim references unknown citation ID '{cid}'."
 
     return True, None
