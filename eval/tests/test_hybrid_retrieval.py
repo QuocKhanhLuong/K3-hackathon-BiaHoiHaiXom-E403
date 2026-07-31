@@ -155,6 +155,18 @@ def test_semantic_can_be_disabled_explicitly_without_constructing_provider():
     assert result.diagnostics.semantic_fallback_reason == "semantic_disabled"
 
 
+def test_semantic_is_disabled_by_default_without_constructing_provider(monkeypatch):
+    monkeypatch.delenv("AI_RAG_SEMANTIC_ENABLED", raising=False)
+    repo = LocalSlideRepository(
+        slides=[_slide(1, "LLM", "LLM là mô hình ngôn ngữ lớn.")]
+    )
+
+    result = repo.retrieve(page_number=1, deck_id="d1", query="LLM là gì?")
+    assert repo.semantic_enabled is False
+    assert repo.semantic_provider is None
+    assert result.diagnostics.semantic_fallback_reason == "semantic_disabled"
+
+
 def test_embedding_index_cache_is_reused(tmp_path: Path):
     class CountingProvider(DeterministicFakeEmbeddingProvider):
         name = "counting-fake"
