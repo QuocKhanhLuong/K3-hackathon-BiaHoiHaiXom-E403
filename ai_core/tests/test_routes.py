@@ -12,4 +12,4 @@ def test_insufficient_context_bypasses_route_specific_actions(route: str):
         "grounding_valid": True,
         "grounding_retry_count": 0,
     }
-    assert route_after_grounding_guard(state) == "output_guard"
+    assert route_after_grounding_guard(state) == "suggest_followups"

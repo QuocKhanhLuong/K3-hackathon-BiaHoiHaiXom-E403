@@ -3,6 +3,7 @@
 from vlearn_ai.graph.nodes import grounding_guard_node
 from vlearn_ai.guardrails.grounding_guard import (
     _context_source_ids,
+    normalize_citations,
     validate_grounding,
     verify_grounding,
 )
@@ -34,6 +35,89 @@ def test_exact_context_source_id_and_verbatim_snippet_pass():
     )
     assert valid is True
     assert error is None
+
+
+def test_two_claims_can_reference_one_source_citation():
+    context = (
+        '[source source_id="d1-p10" page=10]\n'
+        "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer."
+    )
+    evidence = _citation(
+        "d1-p10", "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer."
+    )
+    result = validate_grounding(
+        "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer.",
+        [evidence],
+        context,
+        [
+            GroundedClaim(
+                claim="LLM là mô hình ngôn ngữ lớn.", citation_ids=["d1-p10"]
+            ),
+            GroundedClaim(claim="LLM dựa trên Transformer.", citation_ids=["d1-p10"]),
+        ],
+    )
+    assert result.valid is True
+
+
+def test_exact_duplicate_citations_are_deduplicated_in_first_seen_order():
+    duplicate = _citation()
+    normalization = normalize_citations([duplicate, duplicate])
+    assert normalization.citations == [duplicate]
+    assert normalization.duplicate_citation_ids == ["d1-p1"]
+    assert normalization.conflicting_citation_ids == []
+
+    state = grounding_guard_node(
+        {
+            "grounded_answer": "LLM là mô hình ngôn ngữ lớn.",
+            "grounded_claims": [
+                {"claim": "LLM là mô hình ngôn ngữ lớn.", "citation_ids": ["d1-p1"]}
+            ],
+            "citations": [duplicate.model_dump(), duplicate.model_dump()],
+            "selected_context": CONTEXT,
+            "tool_trace": [],
+        }
+    )
+    assert state["grounding_valid"] is True
+    assert [citation["citation_id"] for citation in state["citations"]] == ["d1-p1"]
+
+
+def test_same_source_id_with_different_snippets_is_sent_to_repair():
+    context = (
+        '[source source_id="d1-p10" page=10]\n'
+        "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer."
+    )
+    citations = [
+        _citation("d1-p10", "LLM là mô hình ngôn ngữ lớn."),
+        _citation("d1-p10", "LLM dựa trên Transformer."),
+    ]
+    result = validate_grounding(
+        "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer.",
+        citations,
+        context,
+        [
+            GroundedClaim(
+                claim="LLM là mô hình ngôn ngữ lớn.", citation_ids=["d1-p10"]
+            ),
+            GroundedClaim(claim="LLM dựa trên Transformer.", citation_ids=["d1-p10"]),
+        ],
+    )
+    assert result.failure_type == "conflicting_citation_snippets"
+    assert result.conflicting_citation_ids == ["d1-p10"]
+
+    state = grounding_guard_node(
+        {
+            "grounded_answer": "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer.",
+            "grounded_claims": [
+                {"claim": "LLM là mô hình ngôn ngữ lớn.", "citation_ids": ["d1-p10"]},
+                {"claim": "LLM dựa trên Transformer.", "citation_ids": ["d1-p10"]},
+            ],
+            "citations": [citation.model_dump() for citation in citations],
+            "selected_context": context,
+            "tool_trace": [],
+        }
+    )
+    assert state["grounding_valid"] is False
+    assert state["grounding_conflicting_citation_ids"] == ["d1-p10"]
 
 
 def test_invented_or_suffixed_citation_id_fails():

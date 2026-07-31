@@ -104,7 +104,7 @@ class LocalSlideRepository:
         semantic_enabled: bool | None = None,
     ) -> None:
         self.slides = slides if slides is not None else ALL_PDF_SLIDES
-        enabled_by_env = os.getenv("AI_RAG_SEMANTIC_ENABLED", "false").strip().lower()
+        enabled_by_env = os.getenv("AI_RAG_SEMANTIC_ENABLED", "true").strip().lower()
         self.semantic_enabled = (
             semantic_enabled
             if semantic_enabled is not None
@@ -114,7 +114,12 @@ class LocalSlideRepository:
             )
         )
         self.semantic_provider: EmbeddingProvider | None = (
-            (semantic_provider or LocalSentenceTransformerEmbeddingProvider())
+            (
+                semantic_provider
+                or LocalSentenceTransformerEmbeddingProvider(
+                    cache_dir=(cache_dir or DEFAULT_CACHE_DIR) / "models"
+                )
+            )
             if self.semantic_enabled
             else None
         )

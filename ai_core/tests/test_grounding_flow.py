@@ -144,3 +144,88 @@ def test_invalid_grounding_is_repaired_once_before_completion():
     assert [trace["tool"] for trace in state["tool_trace"]].count(
         "grounding_repair"
     ) == 1
+
+
+def test_conflicting_duplicate_source_is_repaired_to_one_d1_p10_citation():
+    context = (
+        '[source source_id="d1-p10" page=10 deck=d1 page_in_deck=10]\n'
+        "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer."
+    )
+    model = DeterministicFakeChatModel(
+        model_script=[
+            {
+                "schema": "RouteOutput",
+                "output": {
+                    "route": "simple",
+                    "confidence": 0.99,
+                    "reason": "factual question",
+                },
+            },
+            {
+                "schema": "GroundedAnswer",
+                "output": {
+                    "answer": "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer.",
+                    "claims": [
+                        {
+                            "claim": "LLM là mô hình ngôn ngữ lớn.",
+                            "citation_ids": ["d1-p10"],
+                        },
+                        {
+                            "claim": "LLM dựa trên Transformer.",
+                            "citation_ids": ["d1-p10"],
+                        },
+                    ],
+                    "citations": [
+                        {
+                            "citation_id": "d1-p10",
+                            "snippet": "LLM là mô hình ngôn ngữ lớn.",
+                        },
+                        {
+                            "citation_id": "d1-p10",
+                            "snippet": "LLM dựa trên Transformer.",
+                        },
+                    ],
+                },
+            },
+            {
+                "schema": "GroundedAnswer",
+                "output": {
+                    "answer": "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer.",
+                    "claims": [
+                        {
+                            "claim": "LLM là mô hình ngôn ngữ lớn.",
+                            "citation_ids": ["d1-p10"],
+                        },
+                        {
+                            "claim": "LLM dựa trên Transformer.",
+                            "citation_ids": ["d1-p10"],
+                        },
+                    ],
+                    "citations": [
+                        {
+                            "citation_id": "d1-p10",
+                            "snippet": "LLM là mô hình ngôn ngữ lớn. LLM dựa trên Transformer.",
+                        }
+                    ],
+                },
+            },
+        ]
+    )
+    core = VLearnAICore(model=model)
+    result = asyncio.run(
+        core.start_turn(
+            thread_id="duplicate-citation-repair",
+            question="LLM là gì?",
+            selected_context=context,
+        )
+    )
+    state = core.app.get_state(
+        {"configurable": {"thread_id": "duplicate-citation-repair"}}
+    ).values
+    assert result["status"] == "completed"
+    assert state["grounding_valid"] is True
+    assert state["grounding_retry_count"] == 1
+    assert [citation["citation_id"] for citation in result["citations"]] == ["d1-p10"]
+    assert [trace["tool"] for trace in state["tool_trace"]].count(
+        "grounding_repair"
+    ) == 1

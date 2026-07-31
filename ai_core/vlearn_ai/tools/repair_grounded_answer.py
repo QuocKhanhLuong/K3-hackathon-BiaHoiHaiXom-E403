@@ -17,6 +17,7 @@ async def execute_repair_grounded_answer(
     grounding_error: str | None,
     grounding_failure_type: str | None,
     grounding_invalid_citation_ids: list[str],
+    grounding_conflicting_citation_ids: list[str],
     grounding_uncovered_sentences: list[str],
     user_query: str,
     context: str,
@@ -31,6 +32,11 @@ async def execute_repair_grounded_answer(
         "grounding_error": grounding_error or "",
         "grounding_failure_type": grounding_failure_type or "",
         "invalid_citation_ids": grounding_invalid_citation_ids,
+        "conflicting_citation_ids": grounding_conflicting_citation_ids,
+        "citation_requirement": (
+            "Each source_id may occur once in citations. Multiple claims may "
+            "reference that one citation_id."
+        ),
         "uncovered_sentences": grounding_uncovered_sentences,
     }
     untrusted_payload = (

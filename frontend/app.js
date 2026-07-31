@@ -483,8 +483,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Only end a non-interactive answer with suggestions. Quiz/clarification
       // branches must wait for the learner's response before deciding next step.
-      if (data.default_suggestions && !data.tool_data) {
-        renderFollowupChips(data.default_suggestions);
+      const respSuggestions = data.suggestions?.length
+        ? data.suggestions
+        : data.default_suggestions;
+      if (respSuggestions && respSuggestions.length > 0 && !data.tool_data && !data.action) {
+        renderFollowupChips(respSuggestions);
+      } else {
+        document.querySelectorAll('.chips-container').forEach(el => el.remove());
       }
 
       selectedTextOnSlide = "";
@@ -885,13 +890,18 @@ document.addEventListener('DOMContentLoaded', () => {
         cardElement.appendChild(feedback);
         activeNodeBadge.textContent = "✓ Kết thúc lượt";
         activeNodeBadge.style.background = "#dcfce7";
-        if (data.default_suggestions && data.default_suggestions.length > 0) {
-          renderFollowupChips(data.default_suggestions);
+        const respSuggestions = data.suggestions?.length
+          ? data.suggestions
+          : data.default_suggestions;
+        if (respSuggestions && respSuggestions.length > 0) {
+          renderFollowupChips(respSuggestions);
+        } else {
+          document.querySelectorAll('.chips-container').forEach(el => el.remove());
         }
       } else {
         cardElement.style.borderColor = "#f43f5e";
+        document.querySelectorAll('.chips-container').forEach(el => el.remove());
         if (data.misconception) renderMisconceptionCard(data.misconception);
-        if (data.default_suggestions) renderFollowupChips(data.default_suggestions);
       }
       return true;
     } catch (err) {
@@ -927,19 +937,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Tool Render 4: Follow-up Suggestion Chips
   function renderFollowupChips(suggestions) {
-    if (!suggestions || suggestions.length === 0) return;
+    document.querySelectorAll('.chips-container').forEach(el => el.remove());
+
+    if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) return;
+
+    const uniqueSuggestions = Array.from(
+      new Set(
+        suggestions
+          .map(s => {
+            if (typeof s === 'string') return s.trim();
+            if (s && typeof s === 'object') return (s.question || s.label || '').trim();
+            return String(s || '').trim();
+          })
+          .filter(Boolean)
+      )
+    );
+
+    if (uniqueSuggestions.length === 0) return;
 
     const container = document.createElement('div');
     container.className = 'chips-container';
     container.innerHTML = `
       <div style="width:100%; font-size:11px; color:#64748b; font-weight:700;">💡 GỢI Ý CÂU HỎI ĐÀO SÂU:</div>
-      ${suggestions.map(s => `<button class="suggestion-chip">${s}</button>`).join('')}
+      ${uniqueSuggestions.map(s => `<button class="suggestion-chip">${escapePreviewText(s)}</button>`).join('')}
     `;
     chatMessages.appendChild(container);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     container.querySelectorAll('.suggestion-chip').forEach(chip => {
       chip.addEventListener('click', () => {
+        container.remove();
         sendMessage(chip.textContent);
       });
     });

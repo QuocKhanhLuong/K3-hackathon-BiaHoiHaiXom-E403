@@ -20,6 +20,15 @@ class GroundingResult(BaseModel):
     invalid_citation_ids: list[str] = Field(default_factory=list)
     uncovered_sentences: list[str] = Field(default_factory=list)
     unsupported_claims: list[str] = Field(default_factory=list)
+    conflicting_citation_ids: list[str] = Field(default_factory=list)
+
+
+class CitationNormalizationResult(BaseModel):
+    """Citation cleanup outcome retained for deterministic grounding decisions."""
+
+    citations: list[Citation]
+    duplicate_citation_ids: list[str] = Field(default_factory=list)
+    conflicting_citation_ids: list[str] = Field(default_factory=list)
 
 
 _HEADER_RE = re.compile(
@@ -81,6 +90,36 @@ def _source_texts(context: str) -> dict[str, list[str]]:
 def _context_source_ids(context: str) -> set[str]:
     """Extract source IDs only from syntactically valid source headers."""
     return set(_source_texts(context))
+
+
+def normalize_citations(citations: list[Citation]) -> CitationNormalizationResult:
+    """Deduplicate repeated identical source evidence without selecting conflicts.
+
+    A source ID remains a single public citation. Repeated claims may reference
+    that ID, but a second, different snippet for the same ID is ambiguous and
+    must be repaired rather than silently selected.
+    """
+    normalized: list[Citation] = []
+    first_by_source: dict[str, Citation] = {}
+    duplicate_ids: list[str] = []
+    conflicting_ids: list[str] = []
+    for citation in citations:
+        first = first_by_source.get(citation.citation_id)
+        if first is None:
+            first_by_source[citation.citation_id] = citation
+            normalized.append(citation)
+            continue
+        if citation.snippet == first.snippet:
+            if citation.citation_id not in duplicate_ids:
+                duplicate_ids.append(citation.citation_id)
+            continue
+        if citation.citation_id not in conflicting_ids:
+            conflicting_ids.append(citation.citation_id)
+    return CitationNormalizationResult(
+        citations=normalized,
+        duplicate_citation_ids=duplicate_ids,
+        conflicting_citation_ids=conflicting_ids,
+    )
 
 
 def _canonicalize(text: str) -> str:
@@ -172,13 +211,19 @@ def validate_grounding(
             failure_type="missing_claims",
         )
 
-    citation_ids = [citation.citation_id for citation in citations]
-    if len(citation_ids) != len(set(citation_ids)):
+    normalized = normalize_citations(citations)
+    if normalized.conflicting_citation_ids:
         return GroundingResult(
             valid=False,
-            error="Duplicate citation IDs found in answer.",
-            failure_type="duplicate_citation_ids",
+            error=(
+                "Citation IDs have conflicting snippets: "
+                f"{', '.join(normalized.conflicting_citation_ids)}."
+            ),
+            failure_type="conflicting_citation_snippets",
+            conflicting_citation_ids=normalized.conflicting_citation_ids,
         )
+    citations = normalized.citations
+    citation_ids = [citation.citation_id for citation in citations]
     source_texts = _source_texts(context)
     for citation in citations:
         if citation.citation_id not in source_texts:

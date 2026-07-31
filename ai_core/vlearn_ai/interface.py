@@ -118,6 +118,7 @@ _TRANSIENT_FIELDS: dict[str, Any] = {
     "grounding_failure_type": None,
     "grounding_uncovered_sentences": [],
     "grounding_invalid_citation_ids": [],
+    "grounding_conflicting_citation_ids": [],
     "abstention_message": None,
     "answerability": None,
     "answerability_code": None,
@@ -429,6 +430,8 @@ class VLearnAICore:
             citations=current_values.get("citations", []),
             blocked_reason=current_values.get("blocked_reason"),
         )
+        if status in ("blocked", "failed", "awaiting_clarification", "awaiting_check"):
+            clean_followups = []
 
         safe_trace = sanitize_tool_trace(current_values.get("tool_trace", []))
 

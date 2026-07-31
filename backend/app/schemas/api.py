@@ -74,6 +74,7 @@ class TurnResponse(StrictAPIModel):
     action: PublicAction | None = None
     citations: list[PublicCitation] = Field(default_factory=list)
     suggestions: list[str] = Field(default_factory=list)
+    default_suggestions: list[str] = Field(default_factory=list)
 
 
 class ConversationResponse(StrictAPIModel):

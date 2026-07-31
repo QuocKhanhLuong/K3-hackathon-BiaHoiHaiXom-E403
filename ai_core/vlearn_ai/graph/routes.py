@@ -60,10 +60,12 @@ def route_after_grounding_guard(
     "grounding_failure",
 ]:
     """Route after grounding guard."""
-    # Insufficient evidence is a successful abstention, never a cue to create
-    # checks, follow-ups, or repairs for a fact we cannot support.
+    # Insufficient evidence is a successful abstention.  It bypasses every
+    # evidence-dependent action (checks and repairs); the follow-up node only
+    # emits deterministic navigation questions and never calls the model here.
     if state.get("answerability") == "insufficient_context":
-        return "output_guard"
+        return "suggest_followups"
+
     valid = state.get("grounding_valid")
     if valid is False:
         if state.get("grounding_retry_count", 0) == 0:
@@ -71,9 +73,7 @@ def route_after_grounding_guard(
         return "grounding_failure"
 
     route = state.get("route")
-    if route == "simple":
-        return "output_guard"
-    if route == "deep":
+    if route in ("simple", "deep"):
         return "suggest_followups"
     # clarify and check both go to generate_check
     return "generate_check"

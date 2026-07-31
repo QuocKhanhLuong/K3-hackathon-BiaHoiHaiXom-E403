@@ -21,6 +21,7 @@ class LearningLoopState(TypedDict, total=False):
     grounding_failure_type: str | None
     grounding_uncovered_sentences: list[str]
     grounding_invalid_citation_ids: list[str]
+    grounding_conflicting_citation_ids: list[str]
     abstention_message: str | None
     answerability: Literal["answerable", "insufficient_context"] | None
     answerability_code: str | None

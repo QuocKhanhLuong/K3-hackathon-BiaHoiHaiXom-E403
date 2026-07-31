@@ -50,6 +50,16 @@ class LocalSentenceTransformerEmbeddingProvider:
             )
         return self._model
 
+    def provision(self) -> None:
+        """Download once during an explicit build step, never during retrieval."""
+        from sentence_transformers import SentenceTransformer
+
+        SentenceTransformer(
+            self.model_name,
+            cache_folder=str(self.cache_dir) if self.cache_dir else None,
+            local_files_only=False,
+        )
+
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         vectors = self._get_model().encode(texts, normalize_embeddings=True)
         return [list(map(float, vector)) for vector in vectors]

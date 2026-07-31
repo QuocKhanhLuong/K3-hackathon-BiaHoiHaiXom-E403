@@ -140,10 +140,17 @@ def to_legacy_tutor_response(request: Request, outcome: TurnOutcome) -> dict[str
         "answer": outcome.result.get("assistant_message") or "",
         "citations": pages,
         "citation_objects": [item.model_dump() for item in citations],
-        "sources": _legacy_sources(request, citations, outcome.page_number, outcome.deck_id),
+        "sources": _legacy_sources(
+            request, citations, outcome.page_number, outcome.deck_id
+        ),
         "orchestrator": _legacy_orchestrator(outcome),
         "tool_data": _legacy_tool_data(outcome),
-        "default_suggestions": suggestions(outcome.result),
+        "default_suggestions": []
+        if _legacy_tool_data(outcome) is not None
+        else suggestions(outcome.result),
+        "suggestions": []
+        if _legacy_tool_data(outcome) is not None
+        else suggestions(outcome.result),
         "page": outcome.page_number,
         "deck_id": outcome.deck_id,
         "ai_core_status": outcome.result.get("status"),
@@ -340,17 +347,31 @@ async def submit_quiz(payload: LegacyQuizRequest, request: Request):
     formatted = to_legacy_tutor_response(request, outcome)
     misconception = None
     if not is_correct:
-        assistant_msg = outcome.result.get("assistant_message") or "Câu trả lời chưa khớp với nội dung bài học."
+        assistant_msg = (
+            outcome.result.get("assistant_message")
+            or "Câu trả lời chưa khớp với nội dung bài học."
+        )
         import re
-        
+
         # Try to extract <example> tags
-        example_match = re.search(r"<example>(.*?)</example>", assistant_msg, flags=re.IGNORECASE | re.DOTALL)
+        example_match = re.search(
+            r"<example>(.*?)</example>", assistant_msg, flags=re.IGNORECASE | re.DOTALL
+        )
         if example_match:
             new_example = example_match.group(1).strip()
-            re_explanation = re.sub(r"<example>.*?</example>", "", assistant_msg, flags=re.IGNORECASE | re.DOTALL).strip()
+            re_explanation = re.sub(
+                r"<example>.*?</example>",
+                "",
+                assistant_msg,
+                flags=re.IGNORECASE | re.DOTALL,
+            ).strip()
         else:
             # Fallback to splitting by "Ví dụ minh họa:" or "Ví dụ:"
-            parts = re.split(r"(?i)(?:Ví dụ minh họa mới:|Ví dụ minh họa:|Ví dụ:)", assistant_msg, maxsplit=1)
+            parts = re.split(
+                r"(?i)(?:Ví dụ minh họa mới:|Ví dụ minh họa:|Ví dụ:)",
+                assistant_msg,
+                maxsplit=1,
+            )
             if len(parts) > 1:
                 re_explanation = parts[0].strip()
                 new_example = parts[1].strip()

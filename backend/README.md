@@ -19,10 +19,13 @@ python -m uvicorn backend.main:app --port 8000
 
 ### Optional local semantic retrieval
 
-The default retrieval mode is deterministic lexical BM25. To enable the local
-semantic component, install `ai_core` with the `rag-semantic` extra, pre-provision
+Semantic retrieval is enabled by default and can be disabled with
+`AI_RAG_SEMANTIC_ENABLED=false`. The deployment build must install
+`sentence-transformers` and run
+`python -m backend.app.retrieval.provision_embeddings` to pre-provision
 `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` into the local
-sentence-transformers cache during deployment, then set `AI_RAG_SEMANTIC_ENABLED=true`.
+sentence-transformers cache. For an existing Render service, set its build command
+to `pip install -r requirements.txt && python -m backend.app.retrieval.provision_embeddings`.
 The request path uses `local_files_only=True`: it never downloads a model. If the
 provider or its pre-provisioned model is unavailable, VLearn records a safe
 `semantic_fallback_reason` and uses lexical retrieval. Generated embedding indexes
