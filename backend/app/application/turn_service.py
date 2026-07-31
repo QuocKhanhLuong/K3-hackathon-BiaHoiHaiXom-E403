@@ -7,7 +7,7 @@ from typing import Any
 
 from backend.app.ai.core_adapter import AICorePort
 from backend.app.ai.result_mapper import action_payloads
-from backend.app.errors import ConflictError, InvalidActionError
+from backend.app.errors import InvalidActionError
 from backend.app.models import CoreInvocation, TurnOutcome, TurnRecord
 from backend.app.persistence.memory import MemoryRepository
 from backend.app.retrieval.local_slides import LocalSlideRepository

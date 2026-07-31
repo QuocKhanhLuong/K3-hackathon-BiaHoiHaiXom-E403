@@ -155,6 +155,9 @@ def public_status(result: dict[str, Any], action: PendingActionRecord | None) ->
 
 
 def suggestions(result: dict[str, Any]) -> list[str]:
+    status = str(result.get("status") or "")
+    if status in ("blocked", "failed", "awaiting_clarification", "awaiting_check"):
+        return []
     output: list[str] = []
     for item in result.get("followups") or []:
         if isinstance(item, dict):
@@ -182,6 +185,7 @@ def to_turn_response(
         if route_data.get("name")
         else None
     )
+    sug_list = [] if outcome.action is not None else suggestions(result)
     return TurnResponse(
         request_id=request_id or f"req_{uuid.uuid4().hex}",
         conversation_id=outcome.conversation.id,
@@ -190,6 +194,9 @@ def to_turn_response(
         message=PublicMessage(role="assistant", content=str(message)),
         route=route,
         action=public_action(outcome.action),
-        citations=public_citations(result.get("citations") or [], outcome.page_number, outcome.deck_id),
-        suggestions=suggestions(result),
+        citations=public_citations(
+            result.get("citations") or [], outcome.page_number, outcome.deck_id
+        ),
+        suggestions=sug_list,
+        default_suggestions=sug_list,
     )

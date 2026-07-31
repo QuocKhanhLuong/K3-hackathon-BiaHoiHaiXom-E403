@@ -1,6 +1,7 @@
 """LangGraph workflow node implementations with pure native interrupt() and strict error handling."""
 
 import asyncio
+import re
 import threading
 import time
 from typing import Any
@@ -11,7 +12,7 @@ from langgraph.types import interrupt
 from vlearn_ai.config import get_settings
 from vlearn_ai.graph.state import LearningLoopState
 from vlearn_ai.guardrails.context_guard import check_context_safety
-from vlearn_ai.guardrails.grounding_guard import validate_grounding
+from vlearn_ai.guardrails.grounding_guard import normalize_citations, validate_grounding
 from vlearn_ai.guardrails.input_guard import assess_input_injection
 from vlearn_ai.guardrails.output_guard import (
     sanitize_all_output_fields,
@@ -402,6 +403,7 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
                 "grounding_error": "insufficient_context must not include claims or citations.",
                 "grounding_failure_type": "invalid_insufficient_context",
                 "grounding_invalid_citation_ids": [],
+                "grounding_conflicting_citation_ids": [],
                 "grounding_uncovered_sentences": [],
                 "status": "running",
                 "tool_trace": _record_trace(state, "grounding_guard", "failed"),
@@ -411,6 +413,7 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
             "grounding_error": None,
             "grounding_failure_type": None,
             "grounding_invalid_citation_ids": [],
+            "grounding_conflicting_citation_ids": [],
             "grounding_uncovered_sentences": [],
             "status": "running",
             "tool_trace": _record_trace(state, "grounding_guard", "success"),
@@ -425,6 +428,7 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
             "grounding_error": f"Invalid grounded structure: {exc}",
             "grounding_failure_type": "invalid_grounded_structure",
             "grounding_invalid_citation_ids": [],
+            "grounding_conflicting_citation_ids": [],
             "grounding_uncovered_sentences": [],
             "status": "running",
             "tool_trace": _record_trace(
@@ -435,13 +439,16 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
             ),
         }
 
+    normalization = normalize_citations(citations)
     result = validate_grounding(answer, citations, context, claims=claims)
 
     return {
+        "citations": [citation.model_dump() for citation in normalization.citations],
         "grounding_valid": result.valid,
         "grounding_error": result.error,
         "grounding_failure_type": result.failure_type,
         "grounding_invalid_citation_ids": result.invalid_citation_ids,
+        "grounding_conflicting_citation_ids": result.conflicting_citation_ids,
         "grounding_uncovered_sentences": result.uncovered_sentences,
         "status": "running",
         "tool_trace": _record_trace(
@@ -493,6 +500,9 @@ def grounding_repair_node(
             grounding_failure_type=state.get("grounding_failure_type"),
             grounding_invalid_citation_ids=list(
                 state.get("grounding_invalid_citation_ids", [])
+            ),
+            grounding_conflicting_citation_ids=list(
+                state.get("grounding_conflicting_citation_ids", [])
             ),
             grounding_uncovered_sentences=list(
                 state.get("grounding_uncovered_sentences", [])
@@ -748,22 +758,120 @@ def safe_end_node(state: LearningLoopState) -> dict[str, Any]:
 
 # =====================================================================
 # Node 10: Suggest Follow-ups
+def _generate_insufficient_context_followups(
+    state: LearningLoopState,
+) -> list[dict[str, str]]:
+    """Generate 2-3 deterministic clarification/next-step suggestions for insufficient context without LLM invocation."""
+    query = (state.get("user_query") or "").strip()
+    clean_topic = query
+    for prefix in [
+        "cho tôi biết",
+        "giải thích",
+        "nói về",
+        "khái niệm",
+        "là gì",
+        "thế nào",
+        "tìm hiểu về",
+        "trình bày",
+        "chi tiết về",
+        "so sánh",
+        "hỏi về",
+    ]:
+        if clean_topic.lower().startswith(prefix):
+            clean_topic = clean_topic[len(prefix) :].strip()
+            break
+    clean_topic = re.sub(r"[?.,!]", "", clean_topic).strip()
+    topic_display = clean_topic[:30] if clean_topic else "khái niệm này"
+
+    return [
+        {
+            "label": f"Làm rõ câu hỏi về '{topic_display}'",
+            "question": f"Bạn có thể làm rõ hơn khía cạnh nào của '{topic_display}' mà bạn muốn tìm hiểu không?",
+        },
+        {
+            "label": "Tra cứu toàn bộ bài học",
+            "question": f"Nội dung về '{topic_display}' xuất hiện ở những slide hay chương nào trong khóa học?",
+        },
+        {
+            "label": "Mối liên hệ bài học",
+            "question": f"Khái niệm '{topic_display}' liên quan như thế nào đến nội dung bài học hiện tại?",
+        },
+    ]
+
+
+def _generate_fallback_answerable_followups(
+    state: LearningLoopState,
+) -> list[dict[str, str]]:
+    """Generate 2-3 fallback follow-up questions if LLM generation fails or returns empty."""
+    query = (state.get("user_query") or "").strip()
+    clean_topic = query
+    for prefix in [
+        "cho tôi biết",
+        "giải thích",
+        "nói về",
+        "khái niệm",
+        "là gì",
+        "thế nào",
+        "tìm hiểu về",
+        "trình bày",
+        "chi tiết về",
+        "so sánh",
+        "hỏi về",
+    ]:
+        if clean_topic.lower().startswith(prefix):
+            clean_topic = clean_topic[len(prefix) :].strip()
+            break
+    clean_topic = re.sub(r"[?.,!]", "", clean_topic).strip()
+    topic_display = clean_topic[:30] if clean_topic else "chủ đề này"
+
+    return [
+        {
+            "label": "Ví dụ thực tế",
+            "question": f"Cho tôi xin ví dụ minh họa thực tế về '{topic_display}'?",
+        },
+        {
+            "label": "Điểm cần lưu ý",
+            "question": f"Những điểm quan trọng cần lưu ý khi ứng dụng '{topic_display}' là gì?",
+        },
+        {
+            "label": "Đào sâu hơn",
+            "question": f"Bạn có thể giải thích chi tiết hơn về các thành phần cốt lõi của '{topic_display}' không?",
+        },
+    ]
+
+
+# =====================================================================
+# Node 10: Suggest Follow-ups
 # =====================================================================
 @_safe_node("suggest_followups")
 def suggest_followups_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
     """Generate follow-up suggestions."""
+    if state.get("answerability") == "insufficient_context":
+        f_list = _generate_insufficient_context_followups(state)
+        return {
+            "followups": f_list,
+            "status": "running",
+            "tool_trace": _record_trace(
+                state, "suggest_followups", "success", model=model
+            ),
+        }
+
     query = state.get("user_query", "")
     context = state.get("selected_context", "")
     grounded_ans = state.get("grounded_answer", "")
     llm = model or get_fast_model()
 
+    f_list = []
     try:
         sug = _run_async(run_suggest_followups(query, context, grounded_ans, llm))
         f_list = [f.model_dump() for f in sug.followups]
     except Exception:  # noqa: BLE001 - optional follow-up enhancement
         f_list = []
+
+    if not f_list or len(f_list) < 2:
+        f_list = _generate_fallback_answerable_followups(state)
 
     return {
         "followups": f_list,
@@ -798,6 +906,14 @@ def output_guard_node(state: LearningLoopState) -> dict[str, Any]:
     ans = state.get("grounded_answer", "")
     sanitized, _leak = sanitize_output(ans)
 
+    curr_status = state.get("status", "running")
+    raw_followups = state.get("followups", [])
+    if curr_status in ("blocked", "failed", "awaiting_clarification", "awaiting_check"):
+        final_status = curr_status
+        raw_followups = []
+    else:
+        final_status = "completed"
+
     (
         clean_msg,
         clean_clar,
@@ -809,16 +925,10 @@ def output_guard_node(state: LearningLoopState) -> dict[str, Any]:
         assistant_message=sanitized,
         clarification_question=state.get("clarification_question"),
         check_question=state.get("check_question"),
-        followups=state.get("followups", []),
+        followups=raw_followups,
         citations=state.get("citations", []),
         blocked_reason=state.get("blocked_reason"),
     )
-
-    curr_status = state.get("status", "running")
-    if curr_status in ("blocked", "failed", "awaiting_clarification", "awaiting_check"):
-        final_status = curr_status
-    else:
-        final_status = "completed"
 
     clean_trace = sanitize_tool_trace(state.get("tool_trace", []))
 

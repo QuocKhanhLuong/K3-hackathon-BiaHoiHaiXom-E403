@@ -92,7 +92,10 @@ class FakeAICore(AICorePort):
                         "source_location": "trang 1",
                     }
                 ],
-                "followups": [],
+                "followups": [
+                    {"label": "Gợi ý 1", "question": "Gợi ý 1?"},
+                    {"label": "Gợi ý 2", "question": "Gợi ý 2?"},
+                ],
                 "tool_trace": [{"tool": "router", "model": "private-model"}],
             },
             state={},
@@ -246,11 +249,26 @@ def test_v1_simple_contract_strips_internal_trace_and_reason(client: TestClient)
     body = response.json()
     assert body["status"] == "completed"
     assert body["route"] == {"name": "simple", "confidence": 0.99}
+    assert "suggestions" in body
+    assert "default_suggestions" in body
+    assert body["suggestions"] == ["Gợi ý 1?", "Gợi ý 2?"]
+    assert body["default_suggestions"] == body["suggestions"]
     encoded = response.text
     assert "tool_trace" not in encoded
     assert "private-model" not in encoded
     assert "internal reason" not in encoded
     assert "correct_option" not in encoded
+
+
+def test_suggestions_contract_and_empty_on_awaiting(client: TestClient):
+    conversation_id = _create_conversation(client)
+    res_clar = client.post(
+        f"/api/v1/conversations/{conversation_id}/turns",
+        json={"question": "làm rõ câu này", "page_number": 1},
+    ).json()
+    assert res_clar["status"] == "awaiting_response"
+    assert res_clar["suggestions"] == []
+    assert res_clar["default_suggestions"] == []
 
 
 def test_quiz_answer_is_private_and_server_scores_by_action(client: TestClient):
