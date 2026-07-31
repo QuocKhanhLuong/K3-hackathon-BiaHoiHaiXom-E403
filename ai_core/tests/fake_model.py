@@ -78,19 +78,31 @@ class DeterministicFakeChatModel(BaseChatModel):
             target_tool = tool_mapping.get(schema_name, schema_name)
 
             for f in self.faults:
-                f_target = f.get("target") if isinstance(f, dict) else getattr(f, "target", "")
-                f_type = f.get("type") if isinstance(f, dict) else getattr(f, "type", "")
-                f_exc = f.get("exception") if isinstance(f, dict) else getattr(f, "exception", None)
+                f_target = (
+                    f.get("target") if isinstance(f, dict) else getattr(f, "target", "")
+                )
+                f_type = (
+                    f.get("type") if isinstance(f, dict) else getattr(f, "type", "")
+                )
+                f_exc = (
+                    f.get("exception")
+                    if isinstance(f, dict)
+                    else getattr(f, "exception", None)
+                )
 
                 if f_target in (schema_name, target_tool):
                     if f_target not in self.faults_triggered:
                         self.faults_triggered.append(f_target)
                     if f_type == "raise":
-                        raise RuntimeError(f_exc or f"Injected fault raise on {f_target}")
+                        raise RuntimeError(
+                            f_exc or f"Injected fault raise on {f_target}"
+                        )
                     if f_type == "timeout":
                         raise TimeoutError(f"Injected timeout fault on {f_target}")
                     if f_type == "invalid_structured_output":
-                        raise ValueError(f"Injected invalid structured output on {f_target}")
+                        raise ValueError(
+                            f"Injected invalid structured output on {f_target}"
+                        )
                     if f_type == "empty_output":
                         return schema()
 
@@ -98,7 +110,9 @@ class DeterministicFakeChatModel(BaseChatModel):
             if self.model_script:
                 for idx, script_item in enumerate(self.model_script):
                     if isinstance(script_item, dict):
-                        s_name = script_item.get("schema") or script_item.get("schema_name")
+                        s_name = script_item.get("schema") or script_item.get(
+                            "schema_name"
+                        )
                     else:
                         s_name = getattr(script_item, "schema_name", "")
                         if callable(s_name):

@@ -5,7 +5,7 @@ import json
 import pytest
 from fake_model import DeterministicFakeChatModel
 from vlearn_ai.interface import VLearnAICore
-from vlearn_ai.schemas import InvalidResumeStateError
+from vlearn_ai.schemas import InvalidResumeStateError, ToolTrace
 
 
 @pytest.mark.asyncio
@@ -24,6 +24,8 @@ async def test_full_simple_flow():
     assert res["assistant_message"] != ""
     assert len(res["citations"]) > 0
     assert len(res["tool_trace"]) > 0
+    for trace in res["tool_trace"]:
+        ToolTrace(**trace)
     json.dumps(res)
 
 
@@ -117,6 +119,22 @@ async def test_check_flow_incorrect_answer_and_retry_limit():
         student_input="Key và Value là một.",
     )
     assert res2["status"] == "awaiting_check"
+    assert "Ví dụ minh họa (giả định):" in res2["assistant_message"]
+    assert "Ví dụ minh họa Key-Value" in res2["assistant_message"]
+    repair_state = ai_core.app.get_state(
+        {"configurable": {"thread_id": thread_id}}
+    ).values
+    assert repair_state["grounding_valid"] is True
+    assert repair_state["supplemental_actions"]["illustrative_example"]
+    assert repair_state["grounded_claims"]
+    assert [trace["tool"] for trace in repair_state["tool_trace"]].count(
+        "give_example"
+    ) == 1
+    assert [trace["tool"] for trace in repair_state["tool_trace"]].count(
+        "repair_misconception"
+    ) == 1
+    for trace in repair_state["tool_trace"]:
+        ToolTrace(**trace)
 
     # Turn 3: Resume with incorrect answer -> misconception repair -> awaiting_check (retry 2)
     res3 = await ai_core.resume_turn(

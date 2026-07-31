@@ -64,7 +64,9 @@ def test_write_run_reports_generates_files():
             "git_branch": "main",
             "mode": "offline",
         }
-        metrics = compute_aggregate_metrics([scen1], mode="offline", total_latency_ms=100)
+        metrics = compute_aggregate_metrics(
+            [scen1], mode="offline", total_latency_ms=100
+        )
 
         write_run_reports("test_run", run_dir, metadata, [scen1], metrics)
 

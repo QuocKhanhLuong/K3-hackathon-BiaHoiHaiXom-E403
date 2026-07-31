@@ -50,6 +50,7 @@ class LearningLoopState(TypedDict, total=False):
 
     misconception: dict[str, Any] | None
     repair_plan: dict[str, Any] | None
+    supplemental_actions: dict[str, Any]
     retry_count: int
 
     followups: list[dict[str, Any]]

@@ -23,8 +23,12 @@ from vlearn_ai.prompts.grounding_repair import GROUNDING_REPAIR_PROMPT_VERSION
 from vlearn_ai.prompts.messages import build_trusted_messages
 from vlearn_ai.prompts.pedagogical_tools import (
     GIVE_DIRECT_ANSWER_PROMPT_VERSION,
+    GIVE_EXAMPLE_PROMPT_VERSION,
+    GIVE_HINT_PROMPT_VERSION,
+    MOTIVATE_PROMPT_VERSION,
     REVIEW_CONCEPT_PROMPT_VERSION,
 )
+from vlearn_ai.prompts.repair import REPAIR_PROMPT_VERSION
 from vlearn_ai.prompts.router import ROUTER_SYSTEM_PROMPT, ROUTER_USER_PROMPT_TEMPLATE
 from vlearn_ai.schemas import (
     AICoreBaseError,
@@ -91,7 +95,7 @@ def _run_async(coro):
     def runner() -> None:
         try:
             outcome["value"] = asyncio.run(coro)
-        except BaseException as exc:  # pragma: no cover - background thread bridge
+        except BaseException as exc:  # noqa: BLE001 - background thread bridge
             error.append(exc)
 
     thread = threading.Thread(target=runner, daemon=True)
@@ -671,7 +675,7 @@ def misconception_node(
         )
     )
 
-    plan, grounded_repair, executed_tools = _run_async(
+    repair_execution = _run_async(
         run_repair_misconception(
             check_eval=eval_obj,
             context=context,
@@ -684,22 +688,43 @@ def misconception_node(
     )
 
     trace = list(state.get("tool_trace", []))
-    for t_name in executed_tools:
+    trace.append(
+        {
+            "tool": "repair_misconception",
+            "status": "success",
+            "prompt_version": REPAIR_PROMPT_VERSION,
+            "model": _get_model_name(llm),
+            "details": {"repair_planner": True},
+        }
+    )
+    prompt_versions = {
+        "review_concept": REVIEW_CONCEPT_PROMPT_VERSION,
+        "give_example": GIVE_EXAMPLE_PROMPT_VERSION,
+        "give_hint": GIVE_HINT_PROMPT_VERSION,
+        "motivate": MOTIVATE_PROMPT_VERSION,
+    }
+    for t_name in repair_execution.executed_tools:
         trace.append(
             {
                 "tool": t_name,
                 "status": "success",
-                "prompt_version": "1.0.0",
+                "prompt_version": prompt_versions[t_name],
                 "model": _get_model_name(llm),
                 "details": {"repair_step": True},
             }
         )
 
     return {
-        "repair_plan": plan.model_dump(),
-        "grounded_answer": grounded_repair.answer,
-        "grounded_claims": [claim.model_dump() for claim in grounded_repair.claims],
-        "citations": [citation.model_dump() for citation in grounded_repair.citations],
+        "repair_plan": repair_execution.plan.model_dump(),
+        "grounded_answer": repair_execution.grounded_repair.answer,
+        "grounded_claims": [
+            claim.model_dump() for claim in repair_execution.grounded_repair.claims
+        ],
+        "citations": [
+            citation.model_dump()
+            for citation in repair_execution.grounded_repair.citations
+        ],
+        "supplemental_actions": repair_execution.supplemental_actions.model_dump(),
         "retry_count": retry + 1,
         "tool_trace": trace,
         "status": "running",
@@ -737,7 +762,7 @@ def suggest_followups_node(
     try:
         sug = _run_async(run_suggest_followups(query, context, grounded_ans, llm))
         f_list = [f.model_dump() for f in sug.followups]
-    except Exception:
+    except Exception:  # noqa: BLE001 - optional follow-up enhancement
         f_list = []
 
     return {

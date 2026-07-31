@@ -3,7 +3,8 @@
 import pytest
 from fake_model import DeterministicFakeChatModel
 from vlearn_ai.guardrails.plan_guard import validate_plan_tools
-from vlearn_ai.schemas import AIStructuredOutputError
+from vlearn_ai.prompts.repair import REPAIR_USER_PROMPT_TEMPLATE
+from vlearn_ai.schemas import AIStructuredOutputError, CheckEvaluation
 from vlearn_ai.workflows.detect_misconception import run_detect_misconception
 from vlearn_ai.workflows.repair_misconception import run_repair_misconception
 
@@ -53,15 +54,65 @@ async def test_repair_misconception_plan_retry_zero_no_motivate():
         model=fake_llm,
     )
 
-    plan, _text, tools = await run_repair_misconception(
+    execution = await run_repair_misconception(
         check_eval=eval_res,
         context="Key dùng để so khớp với Query.",
         target_concept="Transformer Key",
         retry_count=0,
         model=fake_llm,
     )
-    assert "motivate" not in plan.planned_tools
-    assert len(tools) > 0
+    assert "motivate" not in execution.plan.planned_tools
+    assert execution.supplemental_actions.illustrative_example is not None
+    assert execution.supplemental_actions.illustrative_example.example
+    assert len(execution.executed_tools) > 0
+    assert execution.grounded_repair.citations
+
+
+@pytest.mark.asyncio
+async def test_repair_retry_can_render_hint_and_motivation_separately():
+    fake_llm = DeterministicFakeChatModel(
+        model_script=[
+            {
+                "schema": "RepairPlan",
+                "output": {
+                    "misconception_code": "key_value_confusion",
+                    "recommended_strategy": "retry_support",
+                    "planned_tools": ["motivate", "give_hint", "review_concept"],
+                },
+            }
+        ]
+    )
+    execution = await run_repair_misconception(
+        check_eval=CheckEvaluation(
+            is_correct=False,
+            score=0.0,
+            misconception_code="key_value_confusion",
+            error_explanation="Học viên nhầm Key và Value.",
+            answer_evidence="Lưu dữ liệu",
+            recommended_repair_strategy="retry_support",
+        ),
+        context='[source source_id="ctx_1"]\nKey dùng để so khớp với Query.',
+        target_concept="Transformer Key",
+        retry_count=1,
+        model=fake_llm,
+    )
+    assert execution.supplemental_actions.hint is not None
+    assert execution.supplemental_actions.motivation is not None
+    assert "give_hint" in execution.executed_tools
+    assert "motivate" in execution.executed_tools
+    assert len(execution.executed_tools) == len(set(execution.executed_tools))
+
+
+def test_repair_planner_payload_includes_retry_as_untrusted_data():
+    payload = REPAIR_USER_PROMPT_TEMPLATE.format(
+        misconception_code="code",
+        error_explanation="error",
+        student_answer="answer",
+        recommended_strategy="strategy",
+        retry_count=2,
+    )
+    assert "<untrusted_repair_input>" in payload
+    assert "Số lần thử lại trước đó: 2" in payload
 
 
 def test_validate_plan_tools_rejects_unsupported_tools():
@@ -76,3 +127,6 @@ def test_validate_plan_tools_rejects_unsupported_tools():
     # motivate forbidden on retry_count == 0
     with pytest.raises(AIStructuredOutputError):
         validate_plan_tools(["motivate", "review_concept"], retry_count=0)
+
+    with pytest.raises(AIStructuredOutputError):
+        validate_plan_tools(["review_concept", "review_concept"], retry_count=1)

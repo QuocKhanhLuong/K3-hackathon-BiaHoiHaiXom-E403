@@ -229,8 +229,10 @@ def test_grounding_fully_grounded_multi_claim_passes():
     from vlearn_ai.guardrails.grounding_guard import verify_grounding
     from vlearn_ai.schemas import Citation, GroundedClaim
 
-    ctx = ('[source source_id="c1"]\nKey dùng để so khớp với Query.\n'
-           '[source source_id="c2"]\nValue chứa thông tin nội dung.')
+    ctx = (
+        '[source source_id="c1"]\nKey dùng để so khớp với Query.\n'
+        '[source source_id="c2"]\nValue chứa thông tin nội dung.'
+    )
     cits = [
         Citation(citation_id="c1", snippet="Key dùng để so khớp với Query."),
         Citation(citation_id="c2", snippet="Value chứa thông tin nội dung."),

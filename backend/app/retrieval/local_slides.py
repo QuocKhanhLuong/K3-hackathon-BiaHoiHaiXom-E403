@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import re
 import time
 import unicodedata
@@ -100,15 +101,29 @@ class LocalSlideRepository:
         slides: list[dict[str, Any]] | None = None,
         semantic_provider: EmbeddingProvider | None = None,
         cache_dir: Path | None = None,
+        semantic_enabled: bool | None = None,
     ) -> None:
         self.slides = slides if slides is not None else ALL_PDF_SLIDES
-        self.semantic_provider = (
-            semantic_provider or LocalSentenceTransformerEmbeddingProvider()
+        enabled_by_env = os.getenv("AI_RAG_SEMANTIC_ENABLED", "false").strip().lower()
+        self.semantic_enabled = (
+            semantic_enabled
+            if semantic_enabled is not None
+            else (
+                semantic_provider is not None
+                or enabled_by_env in {"1", "true", "yes", "on"}
+            )
+        )
+        self.semantic_provider: EmbeddingProvider | None = (
+            (semantic_provider or LocalSentenceTransformerEmbeddingProvider())
+            if self.semantic_enabled
+            else None
         )
         self.cache_dir = cache_dir or DEFAULT_CACHE_DIR
         self._embeddings: dict[str, list[float]] | None = None
         self._embedding_fingerprint: str | None = None
-        self._semantic_fallback_reason: str | None = None
+        self._semantic_fallback_reason: str | None = (
+            None if self.semantic_enabled else "semantic_disabled"
+        )
         self._index_load_build_ms = 0
         self._query_cache: dict[str, list[float]] = {}
         self._query_cache_limit = 64
@@ -317,6 +332,9 @@ class LocalSlideRepository:
     def _document_embeddings(
         self, chunks: list[EvidenceChunk]
     ) -> dict[str, list[float]] | None:
+        if not self.semantic_enabled or self.semantic_provider is None:
+            self._semantic_fallback_reason = "semantic_disabled"
+            return None
         if self._embeddings is not None:
             return self._embeddings
         started = time.perf_counter()
@@ -355,6 +373,9 @@ class LocalSlideRepository:
         self, chunks: list[EvidenceChunk], query: str
     ) -> tuple[list[float], int]:
         started = time.perf_counter()
+        if not self.semantic_enabled or self.semantic_provider is None:
+            self._semantic_fallback_reason = "semantic_disabled"
+            return [0.0] * len(chunks), int((time.perf_counter() - started) * 1000)
         embeddings = self._document_embeddings(chunks)
         if embeddings is None:
             return [0.0] * len(chunks), int((time.perf_counter() - started) * 1000)

@@ -1,0 +1,9 @@
+{"case": "llm_definition", "question": "LLM là gì?", "page": 6, "retrieved_sources": ["d1-p6", "d1-p10", "d1-p4", "d1-p1", "d1-p2"], "status": "failed", "route": "simple", "answerability": "insufficient_context", "answerability_code": "grounding_unavailable", "assistant_message": "Ngữ cảnh bài học hiện tại chưa đủ để tạo câu trả lời có căn cứ. Bạn hãy chọn thêm nội dung liên quan hoặc làm rõ câu hỏi.", "citation_ids": [], "grounding_valid": false, "grounding_failure_type": "duplicate_citation_ids", "grounding_retry_count": 1, "tool_sequence": ["context_guard", "router", "give_direct_answer", "grounding_guard", "grounding_repair", "grounding_guard", "grounding_failure"], "latency_ms": 52555, "semantic_fallback_reason": "semantic_disabled"}
+Traceback (most recent call last):
+  File "<stdin>", line 68, in <module>
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/asyncio/base_events.py", line 641, in run_until_complete
+    return future.result()
+  File "<stdin>", line 56, in main
+AssertionError: {'case': 'llm_definition', 'question': 'LLM là gì?', 'page': 6, 'retrieved_sources': ['d1-p6', 'd1-p10', 'd1-p4', 'd1-p1', 'd1-p2'], 'status': 'failed', 'route': 'simple', 'answerability': 'insufficient_context', 'answerability_code': 'grounding_unavailable', 'assistant_message': 'Ngữ cảnh bài học hiện tại chưa đủ để tạo câu trả lời có căn cứ. Bạn hãy chọn thêm nội dung liên quan hoặc làm rõ câu hỏi.', 'citation_ids': [], 'grounding_valid': False, 'grounding_failure_type': 'duplicate_citation_ids', 'grounding_retry_count': 1, 'tool_sequence': ['context_guard', 'router', 'give_direct_answer', 'grounding_guard', 'grounding_repair', 'grounding_guard', 'grounding_failure'], 'latency_ms': 52555, 'semantic_fallback_reason': 'semantic_disabled'}

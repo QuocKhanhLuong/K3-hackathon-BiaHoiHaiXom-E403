@@ -1,0 +1,34 @@
+[
+  {
+    "case": "llm_definition",
+    "question": "LLM là gì?",
+    "page": 6,
+    "retrieved_sources": [
+      "d1-p6",
+      "d1-p10",
+      "d1-p4",
+      "d1-p1",
+      "d1-p2"
+    ],
+    "status": "failed",
+    "route": "simple",
+    "answerability": "insufficient_context",
+    "answerability_code": "grounding_unavailable",
+    "assistant_message": "Ngữ cảnh bài học hiện tại chưa đủ để tạo câu trả lời có căn cứ. Bạn hãy chọn thêm nội dung liên quan hoặc làm rõ câu hỏi.",
+    "citation_ids": [],
+    "grounding_valid": false,
+    "grounding_failure_type": "duplicate_citation_ids",
+    "grounding_retry_count": 1,
+    "tool_sequence": [
+      "context_guard",
+      "router",
+      "give_direct_answer",
+      "grounding_guard",
+      "grounding_repair",
+      "grounding_guard",
+      "grounding_failure"
+    ],
+    "latency_ms": 52555,
+    "semantic_fallback_reason": "semantic_disabled"
+  }
+]

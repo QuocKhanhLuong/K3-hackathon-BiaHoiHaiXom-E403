@@ -139,7 +139,7 @@ class ScenarioRunner:
                             thread_id=thread_id,
                             student_input=turn_def.input,
                         )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - evaluator execution boundary
                 error_msg = f"{type(exc).__name__}: {exc}"
                 res = {
                     "status": "failed",

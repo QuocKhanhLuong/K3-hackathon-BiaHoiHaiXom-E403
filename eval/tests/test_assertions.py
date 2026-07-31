@@ -81,6 +81,8 @@ def test_assertions_stale_citations_detected():
         citation_ids=["cit_1", "cit_2"],
     )
     expected = TurnExpectations(no_stale_citations=True)
-    assertions = evaluate_turn_assertions(curr_turn, expected, previous_turn_res=prev_turn)
+    assertions = evaluate_turn_assertions(
+        curr_turn, expected, previous_turn_res=prev_turn
+    )
     stale_assert = next(a for a in assertions if a.name == "no_stale_citations")
     assert stale_assert.passed is False
