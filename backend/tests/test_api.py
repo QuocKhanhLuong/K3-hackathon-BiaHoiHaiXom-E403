@@ -96,6 +96,9 @@ class FakeAICore(AICorePort):
                     {"label": "Gợi ý 1", "question": "Gợi ý 1?"},
                     {"label": "Gợi ý 2", "question": "Gợi ý 2?"},
                 ],
+                "answerability": "course_grounded",
+                "source_mode": "course",
+                "answerability_code": "course_evidence_found",
                 "tool_trace": [{"tool": "router", "model": "private-model"}],
             },
             state={},
@@ -253,6 +256,9 @@ def test_v1_simple_contract_strips_internal_trace_and_reason(client: TestClient)
     assert "default_suggestions" in body
     assert body["suggestions"] == ["Gợi ý 1?", "Gợi ý 2?"]
     assert body["default_suggestions"] == body["suggestions"]
+    assert body["answerability"] == "course_grounded"
+    assert body["source_mode"] == "course"
+    assert body["answerability_code"] == "course_evidence_found"
     encoded = response.text
     assert "tool_trace" not in encoded
     assert "private-model" not in encoded

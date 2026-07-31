@@ -33,7 +33,9 @@ def _has_direct_definition_evidence(query: str, context: str) -> bool | None:
     if not source_headers:
         return None
     direct = re.compile(
-        rf"\b{re.escape(entity)}\s*(?:\([^)]{{1,120}}\)|(?:là|la|=)\s+(?!gì\b).+)",
+        rf"\b{re.escape(entity)}\s*(?:\([^)]{{1,120}}\)\s*)?"
+        rf"(?:(?:là|la)\s+|=\s*|(?:được\s+)?dùng\s+(?:để\s+)?|"
+        rf"có\s+vai\s+trò\s+(?:là\s+)?|giúp\s+)(?!gì\b).+",
         re.IGNORECASE,
     )
     for index, header in enumerate(source_headers):

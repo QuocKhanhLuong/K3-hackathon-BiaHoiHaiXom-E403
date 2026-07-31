@@ -28,6 +28,7 @@ from vlearn_ai.graph.nodes import (
     suggest_followups_node,
 )
 from vlearn_ai.graph.routes import (
+    route_after_answer_generation,
     route_after_await_check,
     route_after_await_clarification,
     route_after_check_eval,
@@ -188,11 +189,16 @@ def build_learning_loop_graph(
         },
     )
 
-    # Grounded answer → grounding guard
+    # Course answers are source-grounded; approved model-knowledge answers
+    # bypass this guard and retain their zero-citation contract.
     builder.add_conditional_edges(
         "grounded_answer",
-        _route_or_failure(lambda state: "grounding_guard"),
-        {"grounding_guard": "grounding_guard", "failure": "failure"},
+        _route_or_failure(route_after_answer_generation),
+        {
+            "grounding_guard": "grounding_guard",
+            "suggest_followups": "suggest_followups",
+            "failure": "failure",
+        },
     )
     builder.add_conditional_edges(
         "grounding_guard",

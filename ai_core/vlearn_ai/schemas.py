@@ -89,30 +89,41 @@ class GroundedClaim(StrictBaseModel):
 
 
 class GroundedAnswer(StrictBaseModel):
-    """Conditionally validated factual answerability result.
+    """Conditionally validated course-grounded answerability result.
 
-    ``insufficient_context`` is a normal course-evidence outcome, not a model
-    or infrastructure failure.  It deliberately cannot carry factual claims or
-    citations because there is no evidence to ground them.
+    ``course_grounded`` has exact course citations. ``insufficient_context``
+    is a normal course-evidence outcome, not a model or infrastructure failure.
+    It deliberately cannot carry factual claims or citations because there is
+    no evidence to ground them.
     """
 
     answer: str = Field(..., min_length=1)
-    answerability: Literal["answerable", "insufficient_context"] = "answerable"
-    answerability_code: str = "answerable"
+    answerability: Literal["course_grounded", "insufficient_context"] = (
+        "course_grounded"
+    )
+    answerability_code: str = "course_grounded"
     claims: list[GroundedClaim] = Field(default_factory=list)
     citations: list[Citation] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_answerability(self) -> "GroundedAnswer":
-        if self.answerability == "answerable":
+        if self.answerability == "course_grounded":
             if not self.claims or not self.citations:
-                raise ValueError("Answerable outputs require claims and citations.")
+                raise ValueError(
+                    "Course-grounded outputs require claims and citations."
+                )
             return self
         if self.claims or self.citations:
             raise ValueError(
                 "insufficient_context outputs must have zero claims and citations."
             )
         return self
+
+
+class GeneralKnowledgeAnswer(StrictBaseModel):
+    """Safe standalone answer generated without course evidence."""
+
+    answer: str = Field(..., min_length=1)
 
 
 class ClarificationRequest(StrictBaseModel):
@@ -280,6 +291,7 @@ class ToolTrace(StrictBaseModel):
         "grounded_answer",
         "review_concept",
         "give_direct_answer",
+        "general_knowledge_answer",
         "give_example",
         "motivate",
         "give_hint",
@@ -331,7 +343,10 @@ class AICoreResult(StrictBaseModel):
     followups: list[dict[str, Any]] = Field(default_factory=list)
     tool_trace: list[dict[str, Any]] = Field(default_factory=list)
     blocked_reason: str | None = None
-    answerability: Literal["answerable", "insufficient_context"] | None = None
+    answerability: (
+        Literal["course_grounded", "general_knowledge", "insufficient_context"] | None
+    ) = None
+    source_mode: Literal["course", "model_knowledge", "none"] | None = None
     answerability_code: str | None = None
     failure_code: str | None = None
     failure_stage: str | None = None

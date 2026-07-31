@@ -27,7 +27,7 @@ def test_candidate_output_survives_grounding_failure_and_is_not_public():
     assert "candidate_citations" not in result
 
 
-def test_title_only_definition_question_returns_insufficient_context_without_repair():
+def test_title_only_definition_question_uses_general_knowledge_without_repair():
     core = VLearnAICore(model=DeterministicFakeChatModel())
     result = asyncio.run(
         core.start_turn(
@@ -44,8 +44,9 @@ def test_title_only_definition_question_returns_insufficient_context_without_rep
     ).values
     assert result["status"] == "completed"
     assert result["citations"] == []
-    assert state["answerability"] == "insufficient_context"
-    assert state["answerability_code"] == "definition_evidence_missing"
+    assert state["answerability"] == "general_knowledge"
+    assert state["source_mode"] == "model_knowledge"
+    assert state["answerability_code"] == "general_knowledge_no_course_evidence"
     assert state["grounding_retry_count"] == 0
 
 

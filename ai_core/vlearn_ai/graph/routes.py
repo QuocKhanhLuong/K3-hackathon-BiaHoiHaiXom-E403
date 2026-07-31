@@ -50,6 +50,15 @@ def route_after_guard_clarification_input(
     return "grounded_answer"
 
 
+def route_after_answer_generation(
+    state: LearningLoopState,
+) -> Literal["grounding_guard", "suggest_followups"]:
+    """Keep model-knowledge outputs outside the course grounding guard."""
+    if state.get("answerability") == "general_knowledge":
+        return "suggest_followups"
+    return "grounding_guard"
+
+
 def route_after_grounding_guard(
     state: LearningLoopState,
 ) -> Literal[

@@ -43,7 +43,7 @@ def _append_supplemental_actions(
     if (
         not grounded_answer
         or grounding_valid is not True
-        or answerability != "answerable"
+        or answerability != "course_grounded"
         or not supplemental_actions
     ):
         return grounded_answer
@@ -122,6 +122,7 @@ _TRANSIENT_FIELDS: dict[str, Any] = {
     "abstention_message": None,
     "answerability": None,
     "answerability_code": None,
+    "source_mode": None,
     "check_question": None,
     "student_check_answer": None,
     "check_result": None,
@@ -199,8 +200,8 @@ class VLearnAICore:
             raise ValueError("thread_id must be a non-empty string.")
         if not question or not question.strip():
             raise ValueError("question must be a non-empty string.")
-        if not selected_context or not selected_context.strip():
-            raise ValueError("selected_context must be a non-empty string.")
+        if selected_context is None:
+            raise ValueError("selected_context must be a string.")
 
         config = {"configurable": {"thread_id": thread_id}}
         settings = get_settings()
@@ -446,6 +447,7 @@ class VLearnAICore:
             "blocked_reason": clean_blocked,
             "answerability": current_values.get("answerability"),
             "answerability_code": current_values.get("answerability_code"),
+            "source_mode": current_values.get("source_mode"),
             "failure_code": current_values.get("failure_code"),
             "failure_stage": current_values.get("failure_stage"),
         }

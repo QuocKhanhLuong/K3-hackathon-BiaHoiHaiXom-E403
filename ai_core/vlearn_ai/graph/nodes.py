@@ -11,6 +11,7 @@ from langgraph.types import interrupt
 
 from vlearn_ai.config import get_settings
 from vlearn_ai.graph.state import LearningLoopState
+from vlearn_ai.guardrails.answerability_guard import decide_answerability
 from vlearn_ai.guardrails.context_guard import check_context_safety
 from vlearn_ai.guardrails.grounding_guard import normalize_citations, validate_grounding
 from vlearn_ai.guardrails.input_guard import assess_input_injection
@@ -23,6 +24,7 @@ from vlearn_ai.model import get_fast_model, get_generation_model
 from vlearn_ai.prompts.grounding_repair import GROUNDING_REPAIR_PROMPT_VERSION
 from vlearn_ai.prompts.messages import build_trusted_messages
 from vlearn_ai.prompts.pedagogical_tools import (
+    GENERAL_KNOWLEDGE_ANSWER_PROMPT_VERSION,
     GIVE_DIRECT_ANSWER_PROMPT_VERSION,
     GIVE_EXAMPLE_PROMPT_VERSION,
     GIVE_HINT_PROMPT_VERSION,
@@ -40,6 +42,7 @@ from vlearn_ai.schemas import (
     MicroCheck,
     RouteOutput,
 )
+from vlearn_ai.tools.general_knowledge_answer import execute_general_knowledge_answer
 from vlearn_ai.tools.give_direct_answer import execute_give_direct_answer
 from vlearn_ai.tools.repair_grounded_answer import execute_repair_grounded_answer
 from vlearn_ai.tools.review_concept import execute_review_concept
@@ -346,7 +349,7 @@ def guard_clarification_input_node(
 def grounded_answer_node(
     state: LearningLoopState, model: BaseChatModel | None = None
 ) -> dict[str, Any]:
-    """Produce grounded answer using direct answer or review concept tool."""
+    """Produce course-grounded, model-knowledge, or abstaining answer safely."""
     query = state.get("user_query", "")
     if state.get("clarification_answer"):
         query = f"{query} (Làm rõ: {state.get('clarification_answer')})"
@@ -355,6 +358,56 @@ def grounded_answer_node(
     route = state.get("route", "simple")
     llm = model or get_generation_model()
     trace = list(state.get("tool_trace", []))
+
+    decision = decide_answerability(query, context)
+    if decision.answerability == "insufficient_context":
+        message = (
+            "Mình chưa tìm thấy bằng chứng trực tiếp trong bài học để trả lời "
+            "câu hỏi này. Bạn có thể chọn slide liên quan hoặc làm rõ nội dung cần hỏi."
+        )
+        return {
+            "grounded_answer": message,
+            "grounded_claims": [],
+            "citations": [],
+            "candidate_answer": None,
+            "candidate_claims": [],
+            "candidate_citations": [],
+            "answerability": decision.answerability,
+            "answerability_code": decision.answerability_code,
+            "source_mode": decision.source_mode,
+            "tool_trace": _record_trace(
+                state,
+                "grounded_answer",
+                "success",
+                {"answerability": decision.answerability},
+            ),
+        }
+
+    if decision.answerability == "general_knowledge":
+        general = _run_async(execute_general_knowledge_answer(query, llm))
+        answer = (
+            "Kiến thức nền ngoài bài học (không tìm thấy slide hỗ trợ trực tiếp): "
+            f"{general.answer.strip()}"
+        )
+        return {
+            "grounded_answer": answer,
+            "grounded_claims": [],
+            "citations": [],
+            "candidate_answer": None,
+            "candidate_claims": [],
+            "candidate_citations": [],
+            "answerability": decision.answerability,
+            "answerability_code": decision.answerability_code,
+            "source_mode": decision.source_mode,
+            "tool_trace": _record_trace(
+                state,
+                "general_knowledge_answer",
+                "success",
+                {"answerability": decision.answerability},
+                llm,
+                prompt_version=GENERAL_KNOWLEDGE_ANSWER_PROMPT_VERSION,
+            ),
+        }
 
     if route == "simple":
         ans_obj = _run_async(execute_give_direct_answer(query, context, llm))
@@ -383,6 +436,9 @@ def grounded_answer_node(
         "candidate_citations": citations_list,
         "answerability": ans_obj.answerability,
         "answerability_code": ans_obj.answerability_code,
+        "source_mode": "course"
+        if ans_obj.answerability == "course_grounded"
+        else "none",
         "tool_trace": trace,
     }
 
@@ -396,6 +452,14 @@ def grounding_guard_node(state: LearningLoopState) -> dict[str, Any]:
     citations_data = state.get("citations", [])
     context = state.get("selected_context", "")
     claims_data = state.get("grounded_claims", [])
+    if state.get("answerability") == "general_knowledge":
+        return {
+            "grounding_valid": False,
+            "grounding_error": "general_knowledge must bypass the slide grounding guard.",
+            "grounding_failure_type": "invalid_general_knowledge_routing",
+            "status": "running",
+            "tool_trace": _record_trace(state, "grounding_guard", "failed"),
+        }
     if state.get("answerability") == "insufficient_context":
         if citations_data or claims_data:
             return {
@@ -472,6 +536,7 @@ def grounding_failure_node(state: LearningLoopState) -> dict[str, Any]:
         "grounding_failure_type": state.get("grounding_failure_type"),
         "answerability": "insufficient_context",
         "answerability_code": "grounding_unavailable",
+        "source_mode": "none",
         "citations": [],
         "grounded_claims": [],
         "status": "failed",
@@ -524,6 +589,9 @@ def grounding_repair_node(
         "candidate_citations": citations,
         "answerability": repaired.answerability,
         "answerability_code": repaired.answerability_code,
+        "source_mode": "course"
+        if repaired.answerability == "course_grounded"
+        else "none",
         "grounding_retry_count": retry_count,
         "tool_trace": _record_trace(
             state,

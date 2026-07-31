@@ -210,6 +210,9 @@ class ScenarioRunner:
                 "action": ui_payload if ui_payload else None,
                 "citations": citations,
                 "suggestions": followups,
+                "answerability": res.get("answerability"),
+                "source_mode": res.get("source_mode"),
+                "answerability_code": res.get("answerability_code"),
             }
 
             safe_state = {
@@ -233,6 +236,7 @@ class ScenarioRunner:
                 ),
                 "answerability": internal_state.get("answerability"),
                 "answerability_code": internal_state.get("answerability_code"),
+                "source_mode": internal_state.get("source_mode"),
                 "candidate_answer": internal_state.get("candidate_answer"),
                 "candidate_claims": internal_state.get("candidate_claims", []),
                 "candidate_citations": internal_state.get("candidate_citations", []),
@@ -285,6 +289,7 @@ class ScenarioRunner:
                 ),
                 answerability=internal_state.get("answerability"),
                 answerability_code=internal_state.get("answerability_code"),
+                source_mode=internal_state.get("source_mode"),
                 candidate_answer=internal_state.get("candidate_answer"),
                 candidate_claims=internal_state.get("candidate_claims", []),
                 candidate_citations=internal_state.get("candidate_citations", []),

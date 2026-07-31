@@ -199,4 +199,7 @@ def to_turn_response(
         ),
         suggestions=sug_list,
         default_suggestions=sug_list,
+        answerability=result.get("answerability"),
+        source_mode=result.get("source_mode"),
+        answerability_code=result.get("answerability_code"),
     )

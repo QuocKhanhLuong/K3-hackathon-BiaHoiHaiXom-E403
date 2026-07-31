@@ -23,8 +23,11 @@ class LearningLoopState(TypedDict, total=False):
     grounding_invalid_citation_ids: list[str]
     grounding_conflicting_citation_ids: list[str]
     abstention_message: str | None
-    answerability: Literal["answerable", "insufficient_context"] | None
+    answerability: (
+        Literal["course_grounded", "general_knowledge", "insufficient_context"] | None
+    )
     answerability_code: str | None
+    source_mode: Literal["course", "model_knowledge", "none"] | None
 
     # Router classification
     route: Literal["simple", "clarify", "check", "deep"] | None
