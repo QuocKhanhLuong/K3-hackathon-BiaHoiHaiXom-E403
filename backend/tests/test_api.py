@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.ai.core_adapter import AICorePort, VLearnAICoreAdapter
+from backend.app.api import compatibility
 from backend.app.application.turn_service import TurnService
 from backend.app.config import BackendSettings
 from backend.app.main import create_app
@@ -365,6 +367,25 @@ def test_sse_has_safe_progress_and_one_result(client: TestClient):
     assert '"type": "trace"' in response.text
     assert "private-model" not in response.text
     assert "tool_trace" not in response.text
+
+
+def test_sse_emits_heartbeat_while_waiting_for_a_slow_turn(app, monkeypatch):
+    class SlowFakeAICore(FakeAICore):
+        async def start_turn(self, **kwargs: Any) -> CoreInvocation:
+            await asyncio.sleep(0.02)
+            return await super().start_turn(**kwargs)
+
+    monkeypatch.setattr(compatibility, "SSE_HEARTBEAT_SECONDS", 0.001)
+    with TestClient(app) as test_client:
+        app.state.turn_service.ai_core = SlowFakeAICore()
+        response = test_client.post(
+            "/api/tutor/ask/stream",
+            json={"question": "Câu hỏi đơn giản", "page_number": 1},
+        )
+
+    assert response.status_code == 200
+    assert '"tool": "heartbeat"' in response.text
+    assert response.text.count('"type": "result"') == 1
 
 
 def test_conversation_is_scoped_to_signed_anonymous_session(app):
