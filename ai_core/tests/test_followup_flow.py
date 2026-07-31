@@ -9,7 +9,7 @@ _VALID_CONTEXT = (
     "Key dùng để so khớp với Query."
 )
 
-_CHUNK_CONTEXT = (
+_NO_DEFINITION_CONTEXT = (
     '[source source_id="d1-p1" chunk_id="chunk_1" page=1 deck=d1 page_in_deck=1]\n'
     "AI IN ACTION - Day 1 AI & LLM Foundation"
 )
@@ -55,16 +55,15 @@ async def test_insufficient_context_has_deterministic_suggestions_without_extra_
 
     res = await ai_core.start_turn(
         thread_id="test_followup_insufficient",
-        question="Quantum Computing là gì?",
-        selected_context=_CHUNK_CONTEXT,
+        question="Đoạn này nghĩa là gì?",
+        selected_context=_NO_DEFINITION_CONTEXT,
     )
 
     assert res["answerability"] == "insufficient_context"
     followups = res.get("followups") or []
     assert 2 <= len(followups) <= 3
     assert any(
-        "Quantum Computing" in f.get("question", "")
-        or "Quantum Computing" in f.get("label", "")
+        "Đoạn này" in f.get("question", "") or "Đoạn này" in f.get("label", "")
         for f in followups
     )
     trace_tools = [t.get("tool") for t in res.get("tool_trace", [])]

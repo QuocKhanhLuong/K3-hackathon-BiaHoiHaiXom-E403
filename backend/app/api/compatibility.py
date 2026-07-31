@@ -154,6 +154,9 @@ def to_legacy_tutor_response(request: Request, outcome: TurnOutcome) -> dict[str
         "page": outcome.page_number,
         "deck_id": outcome.deck_id,
         "ai_core_status": outcome.result.get("status"),
+        "answerability": outcome.result.get("answerability"),
+        "source_mode": outcome.result.get("source_mode"),
+        "answerability_code": outcome.result.get("answerability_code"),
         "model_engine": os.environ.get("OPENAI_MODEL", "gpt-5-nano"),
     }
 

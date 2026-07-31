@@ -468,7 +468,12 @@ document.addEventListener('DOMContentLoaded', () => {
       // Render Grounded Answer (contains Deep-dive Expansion if branch == 'followup')
       const hasAnswer = Boolean(data.answer && String(data.answer).trim());
       if (hasAnswer) {
-        appendTutorAnswer(data.answer, data.citation_objects || data.citations, data.orchestrator);
+        appendTutorAnswer(
+          data.answer,
+          data.citation_objects || data.citations,
+          data.orchestrator,
+          { answerability: data.answerability, sourceMode: data.source_mode }
+        );
       }
 
       // Render Tool Card based on Orchestrator decision
@@ -600,17 +605,23 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  function appendTutorAnswer(text, citations = [], orchestrator = {}) {
+  function appendTutorAnswer(text, citations = [], orchestrator = {}, provenance = {}) {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'msg-bubble msg-tutor';
 
     const meta = document.createElement('div');
     meta.style.cssText = 'font-size:11px; color:#64748b; margin-bottom:4px;';
-    meta.textContent = `Tutor trả lời · ${orchestrator.title || 'VLearn'}`;
+    const sourceBadge = provenance.sourceMode === 'course'
+      ? 'Theo bài học'
+      : provenance.sourceMode === 'model_knowledge'
+        ? 'Kiến thức nền ngoài bài'
+        : '';
+    meta.textContent = `Tutor trả lời · ${orchestrator.title || 'VLearn'}${sourceBadge ? ` · ${sourceBadge}` : ''}`;
     const body = document.createElement('div');
     body.textContent = String(text || '');
     msgDiv.append(meta, body);
-    if (citations && citations.length > 0) citations.forEach(c => {
+    const visibleCitations = provenance.sourceMode === 'model_knowledge' ? [] : citations;
+    if (visibleCitations && visibleCitations.length > 0) visibleCitations.forEach(c => {
       const page = parseInt(String(typeof c === 'object' ? c.page_number : c).match(/\d+/)?.[0], 10);
       if (!Number.isFinite(page)) return;
       const button = document.createElement('button');

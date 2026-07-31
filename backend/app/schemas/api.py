@@ -75,6 +75,11 @@ class TurnResponse(StrictAPIModel):
     citations: list[PublicCitation] = Field(default_factory=list)
     suggestions: list[str] = Field(default_factory=list)
     default_suggestions: list[str] = Field(default_factory=list)
+    answerability: (
+        Literal["course_grounded", "general_knowledge", "insufficient_context"] | None
+    ) = None
+    source_mode: Literal["course", "model_knowledge", "none"] | None = None
+    answerability_code: str | None = None
 
 
 class ConversationResponse(StrictAPIModel):

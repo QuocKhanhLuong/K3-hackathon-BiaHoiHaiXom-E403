@@ -15,6 +15,7 @@ from vlearn_ai.schemas import (
     ClarificationRequest,
     FollowUp,
     FollowUpSuggestions,
+    GeneralKnowledgeAnswer,
     GiveExampleOutput,
     GiveHintOutput,
     GroundedAnswer,
@@ -67,6 +68,7 @@ class DeterministicFakeChatModel(BaseChatModel):
                 "RouteOutput": "router",
                 "ClarificationRequest": "generate_clarification",
                 "GroundedAnswer": "give_direct_answer",
+                "GeneralKnowledgeAnswer": "general_knowledge_answer",
                 "MicroCheck": "generate_check",
                 "CheckEvaluation": "evaluate_check",
                 "RepairPlan": "repair_misconception",
@@ -174,6 +176,11 @@ class DeterministicFakeChatModel(BaseChatModel):
                             snippet="Key dùng để so khớp với Query.",
                         )
                     ],
+                )
+
+            if schema == GeneralKnowledgeAnswer:
+                return GeneralKnowledgeAnswer(
+                    answer="Transformer là một kiến trúc mạng nơ-ron dùng cơ chế attention."
                 )
 
             if schema == MicroCheck:
