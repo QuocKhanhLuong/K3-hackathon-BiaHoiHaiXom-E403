@@ -19,17 +19,17 @@ python -m uvicorn backend.main:app --port 8000
 
 ### Optional local semantic retrieval
 
-Semantic retrieval is enabled by default and can be disabled with
-`AI_RAG_SEMANTIC_ENABLED=false`. The deployment build must install
-`sentence-transformers` and run
-`python -m backend.app.retrieval.provision_embeddings` to pre-provision
-`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` into the local
-sentence-transformers cache. For an existing Render service, set its build command
-to `pip install -r requirements.txt && python -m backend.app.retrieval.provision_embeddings`.
-The request path uses `local_files_only=True`: it never downloads a model. If the
-provider or its pre-provisioned model is unavailable, VLearn records a safe
-`semantic_fallback_reason` and uses lexical retrieval. Generated embedding indexes
-live under `backend/.generated/vlearn_rag/`, which is Git-ignored.
+Semantic retrieval is disabled by default (`AI_RAG_SEMANTIC_ENABLED=false`) so
+the normal deployment is BM25/lexical-only and does not load or provision an
+embedding model. To opt in on a sufficiently sized machine, install
+`ai_core[rag-semantic]`, pre-provision
+`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` with
+`python -m backend.app.retrieval.provision_embeddings`, then set
+`AI_RAG_SEMANTIC_ENABLED=true`. The request path uses `local_files_only=True`:
+it never downloads a model. If the optional provider is unavailable, VLearn
+records `semantic_fallback_reason` and uses lexical retrieval. Generated
+embedding indexes live under `backend/.generated/vlearn_rag/`, which is
+Git-ignored.
 
 Open `http://localhost:8000`.
 
