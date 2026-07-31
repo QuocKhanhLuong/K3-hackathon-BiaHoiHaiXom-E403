@@ -24,7 +24,7 @@ class LiveJudgeEvaluator:
                     api_key=self.api_key,
                     temperature=0.0,
                 )
-            except Exception:
+            except Exception:  # noqa: BLE001 - optional live judge dependency
                 self._llm = None
         return self._llm
 
@@ -71,7 +71,7 @@ Reply in JSON format with:
                 "score": float(data.get("score", 1.0)),
                 "reason": str(data.get("reason", "Live judge evaluated successfully.")),
             }
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - judge response data boundary
             return {
                 "judge_passed": True,
                 "score": 1.0,

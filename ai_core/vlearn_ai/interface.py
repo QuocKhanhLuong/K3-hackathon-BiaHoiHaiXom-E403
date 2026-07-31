@@ -32,6 +32,47 @@ _ALLOWED_HISTORY_FIELDS = {"role", "content"}
 _ALLOWED_ROLES = {"user", "assistant"}
 
 
+def _append_supplemental_actions(
+    grounded_answer: str | None,
+    supplemental_actions: dict[str, Any] | None,
+    *,
+    grounding_valid: bool | None,
+    answerability: str | None,
+) -> str | None:
+    """Render trusted pedagogy only after its factual section passed grounding."""
+    if (
+        not grounded_answer
+        or grounding_valid is not True
+        or answerability != "answerable"
+        or not supplemental_actions
+    ):
+        return grounded_answer
+
+    sections: list[str] = [grounded_answer]
+    example = supplemental_actions.get("illustrative_example")
+    if isinstance(example, dict) and example.get("example"):
+        relevance = str(example.get("relevance_explanation", "")).strip()
+        text = f"Ví dụ minh họa (giả định): {example['example']}"
+        if relevance:
+            text += f"\nLiên hệ: {relevance}"
+        sections.append(text)
+    hint = supplemental_actions.get("hint")
+    if isinstance(hint, dict) and hint.get("hint"):
+        question = str(hint.get("guiding_question", "")).strip()
+        text = f"Gợi ý: {hint['hint']}"
+        if question:
+            text += f"\nCâu hỏi gợi mở: {question}"
+        sections.append(text)
+    motivation = supplemental_actions.get("motivation")
+    if isinstance(motivation, dict) and motivation.get("message"):
+        next_step = str(motivation.get("next_small_step", "")).strip()
+        text = f"Lời động viên: {motivation['message']}"
+        if next_step:
+            text += f"\nBước tiếp theo: {next_step}"
+        sections.append(text)
+    return "\n\n".join(sections)
+
+
 def _normalize_conversation_history(
     raw: list[dict[str, Any]] | None,
 ) -> list[dict[str, str]]:
@@ -86,6 +127,7 @@ _TRANSIENT_FIELDS: dict[str, Any] = {
     "last_check_result": None,
     "misconception": None,
     "repair_plan": None,
+    "supplemental_actions": {},
     "retry_count": 0,
     "followups": [],
     "blocked_reason": None,
@@ -185,7 +227,7 @@ class VLearnAICore:
             )
         except AICoreBaseError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - public API failure boundary
             _log_interaction(
                 {
                     "event": "start_turn_error",
@@ -377,7 +419,12 @@ class VLearnAICore:
             clean_citations,
             clean_blocked,
         ) = sanitize_all_output_fields(
-            assistant_message=current_values.get("grounded_answer"),
+            assistant_message=_append_supplemental_actions(
+                current_values.get("grounded_answer"),
+                current_values.get("supplemental_actions"),
+                grounding_valid=current_values.get("grounding_valid"),
+                answerability=current_values.get("answerability"),
+            ),
             followups=current_values.get("followups", []),
             citations=current_values.get("citations", []),
             blocked_reason=current_values.get("blocked_reason"),
@@ -394,6 +441,10 @@ class VLearnAICore:
             "followups": clean_followups,
             "tool_trace": safe_trace,
             "blocked_reason": clean_blocked,
+            "answerability": current_values.get("answerability"),
+            "answerability_code": current_values.get("answerability_code"),
+            "failure_code": current_values.get("failure_code"),
+            "failure_stage": current_values.get("failure_stage"),
         }
 
     def _format_error_result(

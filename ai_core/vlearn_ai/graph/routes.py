@@ -53,9 +53,17 @@ def route_after_guard_clarification_input(
 def route_after_grounding_guard(
     state: LearningLoopState,
 ) -> Literal[
-    "output_guard", "suggest_followups", "generate_check", "grounding_repair", "grounding_failure"
+    "output_guard",
+    "suggest_followups",
+    "generate_check",
+    "grounding_repair",
+    "grounding_failure",
 ]:
     """Route after grounding guard."""
+    # Insufficient evidence is a successful abstention, never a cue to create
+    # checks, follow-ups, or repairs for a fact we cannot support.
+    if state.get("answerability") == "insufficient_context":
+        return "output_guard"
     valid = state.get("grounding_valid")
     if valid is False:
         if state.get("grounding_retry_count", 0) == 0:

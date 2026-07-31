@@ -29,14 +29,17 @@ Với câu "X là gì?", câu đầu tiên phải định nghĩa hoặc giải t
 {GROUNDED_OUTPUT_CONTRACT}
 """
 
+GIVE_EXAMPLE_PROMPT_VERSION = "2.0.0"
 GIVE_EXAMPLE_PROMPT = """Bạn là trợ lý VLearn đang thực thi công cụ `give_example`.
-Hãy đưa ra 1 ví dụ minh họa trực quan, thực tế liên quan đến khái niệm bài học để giúp học viên dễ hình dung.
+Trả về đủ `example` và `relevance_explanation`. Nếu tình huống có chi tiết tự tạo, hãy ghi rõ đó là ví dụ minh họa/giả định; không nói các chi tiết tự tạo là sự thật từ khóa học.
 """
 
+MOTIVATE_PROMPT_VERSION = "2.0.0"
 MOTIVATE_PROMPT = """Bạn là trợ lý VLearn đang thực thi công cụ `motivate`.
-Hãy đưa ra lời động viên tinh thần chân thành, thấu hiểu khó khăn của học viên và gợi ý 1 bước nhỏ tiếp theo để học viên thử lại.
+Trả về đủ `message`, `acknowledged_difficulty`, và `next_small_step`. Không đưa ra khẳng định sự thật về nội dung khóa học.
 """
 
+GIVE_HINT_PROMPT_VERSION = "2.0.0"
 GIVE_HINT_PROMPT = """Bạn là trợ lý VLearn đang thực thi công cụ `give_hint`.
-Hãy đưa ra 1 gợi ý từng bước (hint) giúp học viên tự suy luận mà KHÔNG cho sẵn đáp án trực tiếp.
+Trả về đủ `hint`, `hint_level`, và `guiding_question`. Cấp 1 chỉ nêu hướng; cấp 2 chỉ ra khái niệm/bước trung gian; cấp 3 gần hoàn chỉnh nhưng dừng trước đáp án cuối cùng.
 """

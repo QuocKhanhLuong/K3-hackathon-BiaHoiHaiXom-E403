@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "<stdin>", line 99, in <module>
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/asyncio/base_events.py", line 641, in run_until_complete
+    return future.result()
+  File "<stdin>", line 86, in main
+AssertionError: {'case': 'llm_definition', 'question': 'LLM là gì?', 'page': 6, 'retrieved_sources': ['d1-p6', 'd1-p10', 'd1-p4', 'd1-p1', 'd1-p2'], 'status': 'failed', 'route': None, 'answerability': None, 'answerability_code': None, 'assistant_message': 'Hệ thống chưa thể tạo phản hồi ổn định cho lượt này. Bạn hãy thử lại hoặc chọn lại nội dung bài học.', 'citation_ids': [], 'grounding_valid': None, 'grounding_failure_type': None, 'grounding_retry_count': None, 'tool_sequence': ['input_guard', 'failure_node'], 'latency_ms': 1300, 'semantic_fallback_reason': 'semantic_disabled'}

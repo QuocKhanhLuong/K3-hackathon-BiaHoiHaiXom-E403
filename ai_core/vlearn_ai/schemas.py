@@ -232,7 +232,26 @@ class RepairPlan(StrictBaseModel):
             "give_hint",
             "motivate",
         ]
-    ] = Field(..., min_length=1)
+    ] = Field(..., min_length=1, max_length=3)
+
+
+class SupplementalActions(StrictBaseModel):
+    """Trusted pedagogical additions kept outside factual grounding claims."""
+
+    illustrative_example: GiveExampleOutput | None = None
+    hint: GiveHintOutput | None = None
+    motivation: MotivateOutput | None = None
+
+
+class RepairExecution(StrictBaseModel):
+    """Typed result of a repair plan before its factual output is grounded."""
+
+    plan: RepairPlan
+    grounded_repair: GroundedAnswer
+    supplemental_actions: SupplementalActions = Field(
+        default_factory=SupplementalActions
+    )
+    executed_tools: list[str] = Field(default_factory=list)
 
 
 class FollowUp(StrictBaseModel):
@@ -255,7 +274,10 @@ class ToolTrace(StrictBaseModel):
         "input_guard",
         "context_guard",
         "router",
+        "generate_clarification",
         "ask_clarification",
+        "guard_clarification_input",
+        "grounded_answer",
         "review_concept",
         "give_direct_answer",
         "give_example",
@@ -267,13 +289,20 @@ class ToolTrace(StrictBaseModel):
         "suggest_followups",
         "output_guard",
         "grounding_guard",
+        "grounding_repair",
         "grounding_failure",
+        "generate_check",
+        "guard_check_input",
+        "evaluate_check",
+        "misconception",
+        "safe_end",
         "failure_node",
     ]
     status: Literal["success", "blocked", "failed", "awaiting"]
     prompt_version: str = Field(default="1.0.0")
     model: str = Field(..., min_length=1)
     details: dict[str, Any] = Field(default_factory=dict)
+    latency_ms: int | None = Field(default=None, ge=0)
 
 
 class InjectionAssessment(StrictBaseModel):
@@ -302,3 +331,7 @@ class AICoreResult(StrictBaseModel):
     followups: list[dict[str, Any]] = Field(default_factory=list)
     tool_trace: list[dict[str, Any]] = Field(default_factory=list)
     blocked_reason: str | None = None
+    answerability: Literal["answerable", "insufficient_context"] | None = None
+    answerability_code: str | None = None
+    failure_code: str | None = None
+    failure_stage: str | None = None

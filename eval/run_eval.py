@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -51,8 +52,10 @@ def load_all_scenarios(
                     for item in data:
                         scen = ScenarioDefinition(**item)
                         scenarios.append(scen)
-        except Exception as exc:
-            print(f"[Eval Warning] Failed to load scenario file {json_file.name}: {exc}")
+        except Exception as exc:  # noqa: BLE001 - scenario file data boundary
+            print(
+                f"[Eval Warning] Failed to load scenario file {json_file.name}: {exc}"
+            )
 
     # Apply filters
     if scenario_id_filter:
@@ -78,17 +81,45 @@ async def main():
         default="offline",
         help="Evaluation execution mode (offline=fake model, live=OpenAI model)",
     )
-    parser.add_argument("--tags", type=str, help="Comma-separated tag filter (e.g. multi_turn,followup)")
-    parser.add_argument("--scenario", type=str, help="Specific scenario ID filter (e.g. MT-REPAIR-001)")
-    parser.add_argument("--max-cases", type=int, help="Maximum number of scenarios to run")
-    parser.add_argument("--verbose", action="store_true", help="Print detailed debug traces for each turn")
-    parser.add_argument("--stream-events", action="store_true", help="Stream tool events in real time")
-    parser.add_argument("--fail-fast", action="store_true", help="Stop execution immediately on first failure")
-    parser.add_argument("--output-dir", type=str, help="Custom output directory for run reports")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
-    parser.add_argument("--repeat", type=int, default=1, help="Repeat scenario execution count")
-    parser.add_argument("--judge", action="store_true", help="Enable LLM-as-a-Judge for soft quality scoring")
-    parser.add_argument("--no-judge", action="store_true", help="Disable LLM-as-a-Judge")
+    parser.add_argument(
+        "--tags", type=str, help="Comma-separated tag filter (e.g. multi_turn,followup)"
+    )
+    parser.add_argument(
+        "--scenario", type=str, help="Specific scenario ID filter (e.g. MT-REPAIR-001)"
+    )
+    parser.add_argument(
+        "--max-cases", type=int, help="Maximum number of scenarios to run"
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print detailed debug traces for each turn",
+    )
+    parser.add_argument(
+        "--stream-events", action="store_true", help="Stream tool events in real time"
+    )
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop execution immediately on first failure",
+    )
+    parser.add_argument(
+        "--output-dir", type=str, help="Custom output directory for run reports"
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed for reproducibility"
+    )
+    parser.add_argument(
+        "--repeat", type=int, default=1, help="Repeat scenario execution count"
+    )
+    parser.add_argument(
+        "--judge",
+        action="store_true",
+        help="Enable LLM-as-a-Judge for soft quality scoring",
+    )
+    parser.add_argument(
+        "--no-judge", action="store_true", help="Disable LLM-as-a-Judge"
+    )
     parser.add_argument("--model", type=str, help="Override LLM model name")
 
     args = parser.parse_args()
@@ -99,17 +130,23 @@ async def main():
 
     # Enforce live mode gate: requires both --mode live AND RUN_LIVE_TESTS=1 AND OPENAI_API_KEY
     if mode == "live" and (not run_live_env or not api_key):
-        print("[Eval Gate] Live mode requested but RUN_LIVE_TESTS=1 or OPENAI_API_KEY is missing.")
+        print(
+            "[Eval Gate] Live mode requested but RUN_LIVE_TESTS=1 or OPENAI_API_KEY is missing."
+        )
         print("[Eval Gate] Falling back to OFFLINE mode for safety.")
         mode = "offline"
 
-    model_name = (
-        args.model
-        or (DEFAULT_LIVE_MODEL if mode == "live" else DEFAULT_OFFLINE_MODEL)
+    model_name = args.model or (
+        DEFAULT_LIVE_MODEL if mode == "live" else DEFAULT_OFFLINE_MODEL
     )
 
     tags_filter = [t.strip() for t in args.tags.split(",")] if args.tags else None
-    scenarios = load_all_scenarios(SCENARIOS_DIR, tags_filter=tags_filter, scenario_id_filter=args.scenario, mode=mode)
+    scenarios = load_all_scenarios(
+        SCENARIOS_DIR,
+        tags_filter=tags_filter,
+        scenario_id_filter=args.scenario,
+        mode=mode,
+    )
 
     if not scenarios:
         print("[Eval Error] No scenarios found matching filters.")
@@ -145,7 +182,9 @@ async def main():
     for rep in range(args.repeat):
         for idx, scenario in enumerate(scenarios, start=1):
             curr_idx = rep * len(scenarios) + idx
-            print(f"[{curr_idx}/{total_scenarios}] Running Scenario: {scenario.id} — {scenario.name}")
+            print(
+                f"[{curr_idx}/{total_scenarios}] Running Scenario: {scenario.id} — {scenario.name}"
+            )
 
             res = await runner.run_scenario(scenario, verbose=args.verbose)
             results.append(res)
@@ -161,19 +200,27 @@ async def main():
 
     # Git metadata
     try:
-        import subprocess
-
         git_sha = (
-            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT_DIR)
+            (
+                await asyncio.to_thread(
+                    subprocess.check_output, ["git", "rev-parse", "HEAD"], cwd=ROOT_DIR
+                )
+            )
             .decode()
             .strip()
         )
         git_branch = (
-            subprocess.check_output(["git", "branch", "--show-current"], cwd=ROOT_DIR)
+            (
+                await asyncio.to_thread(
+                    subprocess.check_output,
+                    ["git", "branch", "--show-current"],
+                    cwd=ROOT_DIR,
+                )
+            )
             .decode()
             .strip()
         )
-    except Exception:
+    except (OSError, subprocess.SubprocessError, UnicodeError):
         git_sha = "unknown"
         git_branch = "unknown"
 
@@ -201,7 +248,9 @@ async def main():
     rate_str = f"{rate_val:.1f}%" if rate_val is not None else "NOT EVALUATED"
 
     print("\n========================================================")
-    print(f"  Eval Completed! Passed: {pass_count}/{eval_count} evaluated scenarios ({rate_str})")
+    print(
+        f"  Eval Completed! Passed: {pass_count}/{eval_count} evaluated scenarios ({rate_str})"
+    )
     print(f"  Report written to: {run_dir / 'report.md'}")
     print("========================================================\n")
 

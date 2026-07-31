@@ -2,10 +2,10 @@
 
 from collections.abc import Sequence
 
-from vlearn_ai.config import get_settings
 from vlearn_ai.schemas import AIStructuredOutputError
 
 ALLOWED_REPAIR_TOOLS = {"review_concept", "give_example", "give_hint", "motivate"}
+MAX_REPAIR_TOOL_STEPS = 3
 
 
 def validate_plan_tools(
@@ -13,17 +13,18 @@ def validate_plan_tools(
     retry_count: int = 0,
 ) -> bool:
     """Validate that planned repair tools are strictly allowed and comply with retry rules."""
-    settings = get_settings()
-
     if not planned_tools:
         raise AIStructuredOutputError(
             "Repair plan must contain at least one tool step."
         )
 
-    if len(planned_tools) > settings.AI_MAX_TOOL_STEPS:
+    if len(planned_tools) > MAX_REPAIR_TOOL_STEPS:
         raise AIStructuredOutputError(
-            f"Repair plan exceeds maximum allowed tool steps ({settings.AI_MAX_TOOL_STEPS})."
+            f"Repair plan exceeds maximum allowed tool steps ({MAX_REPAIR_TOOL_STEPS})."
         )
+
+    if len(set(planned_tools)) != len(planned_tools):
+        raise AIStructuredOutputError("Repair plan must not contain duplicate tools.")
 
     for tool in planned_tools:
         if tool not in ALLOWED_REPAIR_TOOLS:

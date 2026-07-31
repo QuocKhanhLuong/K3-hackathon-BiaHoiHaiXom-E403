@@ -60,6 +60,11 @@ _STOPWORDS = {
     "a",
     "an",
 }
+_NEGATION_RE = re.compile(
+    r"(?<!\\w)(?:không\\s+phải|khong\\s+phai|không|khong|chẳng|chua|chưa|"
+    r"not|no|never|without)(?!\\w)",
+    re.IGNORECASE,
+)
 
 
 def _source_texts(context: str) -> dict[str, list[str]]:
@@ -96,14 +101,24 @@ def _protected_facts(text: str) -> set[str]:
     canonical = _canonicalize(text)
     values = set(re.findall(r"(?<!\w)-?\d+(?:\.\d+)?%?", canonical))
     values.update(re.findall(r"(?:<=|>=|!=|==|=|\+|/|\*)", canonical))
-    if re.search(r"\b(?:không|khong|not|never|no)\b", canonical):
+    if _NEGATION_RE.search(canonical):
         values.add("__negation__")
     return values
+
+
+def _has_negation(text: str) -> bool:
+    """Return the polarity marker without deleting it from lexical comparison."""
+    return bool(_NEGATION_RE.search(_canonicalize(text)))
 
 
 def _claim_supported_by_citation(claim: str, snippet: str) -> bool:
     claim_normalized = _canonicalize(claim)
     snippet_normalized = _canonicalize(snippet)
+    # Token overlap cannot establish an opposite claim.  Check polarity before
+    # accepting a substring or high-overlap match, while preserving all factual
+    # punctuation and numeric values in the normal comparison below.
+    if _has_negation(claim_normalized) != _has_negation(snippet_normalized):
+        return False
     if claim_normalized in snippet_normalized or snippet_normalized in claim_normalized:
         return True
     claim_facts = _protected_facts(claim)

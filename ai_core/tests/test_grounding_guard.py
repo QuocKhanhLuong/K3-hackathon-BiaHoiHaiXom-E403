@@ -203,3 +203,40 @@ def test_unicode_normalization_allows_quotes_and_dashes_but_not_example_bypass()
         [GroundedClaim(claim="LLM là mô hình ngôn ngữ lớn.", citation_ids=["d1-p1"])],
     )
     assert bypass.failure_type == "uncovered_factual_sentence"
+
+
+def test_claim_negation_polarity_must_match_its_cited_snippet():
+    negative_context = (
+        '[source source_id="d1-p10" page=10]\n'
+        "LLM không phải là chatbot. Mô hình không sử dụng attention."
+    )
+    negative_citation = _citation("d1-p10", "LLM không phải là chatbot.")
+
+    same_negative = validate_grounding(
+        "LLM không phải là chatbot.",
+        [negative_citation],
+        negative_context,
+        [GroundedClaim(claim="LLM không phải là chatbot.", citation_ids=["d1-p10"])],
+    )
+    assert same_negative.valid is True
+
+    removed_negation = validate_grounding(
+        "LLM là chatbot.",
+        [negative_citation],
+        negative_context,
+        [GroundedClaim(claim="LLM là chatbot.", citation_ids=["d1-p10"])],
+    )
+    assert removed_negation.failure_type == "unsupported_claim"
+
+    added_negation = validate_grounding(
+        "LLM không phải là mô hình ngôn ngữ lớn.",
+        [_citation()],
+        CONTEXT,
+        [
+            GroundedClaim(
+                claim="LLM không phải là mô hình ngôn ngữ lớn.",
+                citation_ids=["d1-p1"],
+            )
+        ],
+    )
+    assert added_negation.failure_type == "unsupported_claim"

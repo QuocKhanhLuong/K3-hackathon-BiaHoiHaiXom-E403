@@ -17,6 +17,17 @@ Copy-Item .env.example .env
 python -m uvicorn backend.main:app --port 8000
 ```
 
+### Optional local semantic retrieval
+
+The default retrieval mode is deterministic lexical BM25. To enable the local
+semantic component, install `ai_core` with the `rag-semantic` extra, pre-provision
+`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` into the local
+sentence-transformers cache during deployment, then set `AI_RAG_SEMANTIC_ENABLED=true`.
+The request path uses `local_files_only=True`: it never downloads a model. If the
+provider or its pre-provisioned model is unavailable, VLearn records a safe
+`semantic_fallback_reason` and uses lexical retrieval. Generated embedding indexes
+live under `backend/.generated/vlearn_rag/`, which is Git-ignored.
+
 Open `http://localhost:8000`.
 
 The OpenAI key is configured only in the server environment. API requests do

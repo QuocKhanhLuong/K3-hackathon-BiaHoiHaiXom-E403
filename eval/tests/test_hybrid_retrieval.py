@@ -133,6 +133,17 @@ def test_semantic_failure_uses_lexical_results_without_downloading_model():
     assert result.diagnostics.semantic_fallback_reason == "RuntimeError"
 
 
+def test_semantic_can_be_disabled_explicitly_without_constructing_provider():
+    repo = LocalSlideRepository(
+        slides=[_slide(1, "LLM", "LLM là mô hình ngôn ngữ lớn.")],
+        semantic_enabled=False,
+    )
+    result = repo.retrieve(page_number=1, deck_id="d1", query="LLM là gì?")
+    assert result.chunks[0].lexical_score > 0
+    assert result.chunks[0].semantic_score == 0.0
+    assert result.diagnostics.semantic_fallback_reason == "semantic_disabled"
+
+
 def test_embedding_index_cache_is_reused(tmp_path: Path):
     class CountingProvider(DeterministicFakeEmbeddingProvider):
         name = "counting-fake"

@@ -25,20 +25,26 @@ def lint_scenario_files(scenarios_dir: Path = SCENARIOS_DIR) -> tuple[int, list[
                 data = json.load(f)
 
             if not isinstance(data, list):
-                errors.append(f"File {json_file.name}: root content must be a list of scenarios")
+                errors.append(
+                    f"File {json_file.name}: root content must be a list of scenarios"
+                )
                 continue
 
             for idx, item in enumerate(data, start=1):
                 total_count += 1
                 try:
                     scen = ScenarioDefinition(**item)
-                except Exception as exc:
-                    errors.append(f"File {json_file.name} [# {idx}]: Pydantic validation failed: {exc}")
+                except Exception as exc:  # noqa: BLE001 - scenario data boundary
+                    errors.append(
+                        f"File {json_file.name} [# {idx}]: Pydantic validation failed: {exc}"
+                    )
                     continue
 
                 # ID Uniqueness
                 if scen.id in seen_ids:
-                    errors.append(f"Duplicate scenario ID '{scen.id}' in file {json_file.name}")
+                    errors.append(
+                        f"Duplicate scenario ID '{scen.id}' in file {json_file.name}"
+                    )
                 seen_ids.add(scen.id)
 
                 # Gold / Hard Scenario assertions depth check
@@ -53,21 +59,23 @@ def lint_scenario_files(scenarios_dir: Path = SCENARIOS_DIR) -> tuple[int, list[
                             )
 
                         # Check 2: At least one structural assertion beyond status/message
-                        has_deep_assert = any([
-                            exp.required_tools,
-                            exp.allowed_tools,
-                            exp.forbidden_tools,
-                            exp.expected_tool_order,
-                            exp.min_citations is not None,
-                            exp.expected_citation_pages,
-                            exp.min_followups is not None,
-                            exp.grounding_required,
-                            exp.new_check_required,
-                            exp.no_stale_citations,
-                            exp.required_source_ids,
-                            exp.expected_failure_code,
-                            exp.expected_blocked,
-                        ])
+                        has_deep_assert = any(
+                            [
+                                exp.required_tools,
+                                exp.allowed_tools,
+                                exp.forbidden_tools,
+                                exp.expected_tool_order,
+                                exp.min_citations is not None,
+                                exp.expected_citation_pages,
+                                exp.min_followups is not None,
+                                exp.grounding_required,
+                                exp.new_check_required,
+                                exp.no_stale_citations,
+                                exp.required_source_ids,
+                                exp.expected_failure_code,
+                                exp.expected_blocked,
+                            ]
+                        )
                         if not has_deep_assert:
                             errors.append(
                                 f"Scenario '{scen.id}' Turn {t_idx}: Gold hard scenario lacks structural assertions beyond status/message"
@@ -76,8 +84,13 @@ def lint_scenario_files(scenarios_dir: Path = SCENARIOS_DIR) -> tuple[int, list[
                 # Tag-driven check consistency
                 tags_lower = [t.lower() for t in scen.tags]
                 if "failure_recovery" in tags_lower or "failure" in scen.id.lower():
-                    has_fault = scen.offline_fixture and len(scen.offline_fixture.faults) > 0
-                    has_exp_err = any(t.expected.expected_failure_code or t.expected.expected_blocked for t in scen.turns)
+                    has_fault = (
+                        scen.offline_fixture and len(scen.offline_fixture.faults) > 0
+                    )
+                    has_exp_err = any(
+                        t.expected.expected_failure_code or t.expected.expected_blocked
+                        for t in scen.turns
+                    )
                     if not has_fault and not has_exp_err:
                         errors.append(
                             f"Scenario '{scen.id}': Failure scenario lacks fault injection or failure expectations"
@@ -85,14 +98,16 @@ def lint_scenario_files(scenarios_dir: Path = SCENARIOS_DIR) -> tuple[int, list[
 
                 if "cross_slide" in tags_lower or "cross" in scen.id.lower():
                     has_src_exp = any(
-                        t.expected.required_source_ids or t.expected.expected_citation_pages for t in scen.turns
+                        t.expected.required_source_ids
+                        or t.expected.expected_citation_pages
+                        for t in scen.turns
                     )
                     if not has_src_exp:
                         errors.append(
                             f"Scenario '{scen.id}': Cross-slide scenario lacks required source or page expectations"
                         )
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - scenario file data boundary
             errors.append(f"File {json_file.name}: JSON parse error: {exc}")
 
     return len(errors), errors
