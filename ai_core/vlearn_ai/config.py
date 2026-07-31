@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     )
 
     AI_MAX_TOOL_STEPS: int = Field(default=4, ge=1, le=10)
+    AI_MAX_REPAIR_TOOL_STEPS: int = Field(default=3, ge=1, le=3)
     AI_MAX_RETRY_COUNT: int = Field(default=2, ge=1, le=5)
     AI_CONTEXT_MAX_CHARS: int = Field(default=12000, ge=1000, le=50000)
     AI_RECURSION_LIMIT: int = Field(default=25, ge=5, le=100)

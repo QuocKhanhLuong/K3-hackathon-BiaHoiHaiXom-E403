@@ -10,6 +10,8 @@ from vlearn_ai.tools.give_hint import execute_give_hint
 from vlearn_ai.tools.motivate import execute_motivate
 from vlearn_ai.tools.review_concept import execute_review_concept
 from vlearn_ai.tools.validate_understanding import (
+    are_semantically_duplicate_checks,
+    classify_mcq_student_answer,
     evaluate_mcq_student_answer,
     execute_validate_understanding,
 )
@@ -110,6 +112,88 @@ def test_mcq_evaluation_option_letter_matching():
         )
         is True
     )
+
+
+def test_mcq_classification_recognizes_incorrect_option():
+    opts = [
+        CheckOption(option_id="opt_a", text="So khớp với Query."),
+        CheckOption(option_id="opt_b", text="Lưu dữ liệu."),
+        CheckOption(option_id="opt_c", text="Tính điểm chú ý."),
+    ]
+
+    assert (
+        classify_mcq_student_answer(
+            student_answer="opt_b",
+            correct_option_id="opt_a",
+            options=opts,
+            expected_answer="So khớp với Query.",
+        )
+        == "recognized_incorrect"
+    )
+    assert (
+        classify_mcq_student_answer(
+            student_answer="mình chưa chắc",
+            correct_option_id="opt_a",
+            options=opts,
+            expected_answer="So khớp với Query.",
+        )
+        == "unrecognized"
+    )
+
+
+@pytest.mark.asyncio
+async def test_mcq_recognized_wrong_option_overrides_llm_correct_result():
+    opts = [
+        CheckOption(option_id="opt_a", text="So khớp với Query."),
+        CheckOption(option_id="opt_b", text="Lưu dữ liệu."),
+        CheckOption(option_id="opt_c", text="Tính điểm chú ý."),
+    ]
+    fake_llm = DeterministicFakeChatModel(misconception_to_return=False)
+
+    result = await execute_validate_understanding(
+        mode="evaluate_answer",
+        question="Key dùng để làm gì?",
+        expected_answer="So khớp với Query.",
+        student_answer="opt_b",
+        correct_option_id="opt_a",
+        options=opts,
+        context="Key dùng để so khớp với Query.",
+        model=fake_llm,
+    )
+
+    assert result.is_correct is False
+    assert result.score == 0.0
+    assert result.misconception_code == "incorrect_option"
+    assert result.evaluation_source == "deterministic_mcq"
+
+
+def test_semantic_duplicate_check_detection():
+    previous = MicroCheck(
+        question="Key có vai trò gì trong cơ chế attention?",
+        question_type="multiple_choice",
+        target_concept="Transformer Key",
+        expected_answer="Key dùng để so khớp với Query.",
+        correct_option_id="opt_a",
+        options=[
+            CheckOption(option_id="opt_a", text="So khớp với Query."),
+            CheckOption(option_id="opt_b", text="Lưu nội dung."),
+            CheckOption(option_id="opt_c", text="Tạo đầu ra."),
+        ],
+        explanation="Key được so khớp với Query.",
+        evidence=["Key dùng để so khớp với Query."],
+    )
+    paraphrase = previous.model_copy(
+        update={"question": "Trong attention, Key có vai trò gì?"}
+    )
+    different_angle = previous.model_copy(
+        update={
+            "question": "Điều gì xảy ra nếu hai Key giống hệt nhau?",
+            "expected_answer": "Hai Key có thể nhận điểm tương quan tương tự.",
+        }
+    )
+
+    assert are_semantically_duplicate_checks(previous, paraphrase) is True
+    assert are_semantically_duplicate_checks(previous, different_angle) is False
 
 
 def test_micro_check_validation_rules():

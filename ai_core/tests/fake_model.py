@@ -181,6 +181,41 @@ class DeterministicFakeChatModel(BaseChatModel):
                         evidence=["Key dùng để so khớp với Query."],
                     )
 
+                if "Value có vai trò gì trong Transformer?" in input_str:
+                    return MicroCheck(
+                        question=(
+                            "Nếu Value không chứa thông tin hữu ích, đầu ra attention "
+                            "sẽ bị ảnh hưởng thế nào?"
+                        ),
+                        question_type="multiple_choice",
+                        target_concept="Ứng dụng Transformer Value",
+                        expected_answer=(
+                            "Đầu ra thiếu nội dung hữu ích dù trọng số attention đúng."
+                        ),
+                        correct_option_id="opt_b",
+                        options=[
+                            CheckOption(
+                                option_id="opt_a",
+                                text="Query không thể được tạo.",
+                            ),
+                            CheckOption(
+                                option_id="opt_b",
+                                text=(
+                                    "Đầu ra thiếu nội dung hữu ích dù trọng số "
+                                    "attention đúng."
+                                ),
+                            ),
+                            CheckOption(
+                                option_id="opt_c",
+                                text="Key tự động thay thế Value.",
+                            ),
+                        ],
+                        explanation=(
+                            "Value cung cấp nội dung được tổng hợp bởi trọng số attention."
+                        ),
+                        evidence=["Key dùng để so khớp với Query."],
+                    )
+
                 if "Câu hỏi cũ" in input_str:
                     return MicroCheck(
                         question="Value có vai trò gì trong Transformer?",

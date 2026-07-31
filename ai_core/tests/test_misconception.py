@@ -2,7 +2,10 @@
 
 import pytest
 from fake_model import DeterministicFakeChatModel
-from vlearn_ai.guardrails.plan_guard import validate_plan_tools
+from vlearn_ai.guardrails.plan_guard import (
+    normalize_plan_tools,
+    validate_plan_tools,
+)
 from vlearn_ai.schemas import AIStructuredOutputError
 from vlearn_ai.workflows.detect_misconception import run_detect_misconception
 from vlearn_ai.workflows.repair_misconception import run_repair_misconception
@@ -76,3 +79,31 @@ def test_validate_plan_tools_rejects_unsupported_tools():
     # motivate forbidden on retry_count == 0
     with pytest.raises(AIStructuredOutputError):
         validate_plan_tools(["motivate", "review_concept"], retry_count=0)
+
+
+def test_normalize_plan_tools_enforces_final_invariants():
+    normalized = normalize_plan_tools(
+        ["give_example", "give_example", "give_hint", "motivate"],
+        retry_count=0,
+    )
+    assert normalized == ["review_concept", "give_hint", "give_example"]
+    assert len(normalized) == 3
+    validate_plan_tools(normalized, retry_count=0)
+
+    retry_plan = normalize_plan_tools(
+        ["give_example", "motivate", "give_hint"],
+        retry_count=1,
+    )
+    assert retry_plan == ["motivate", "review_concept", "give_hint"]
+    validate_plan_tools(retry_plan, retry_count=1)
+
+
+def test_validate_plan_tools_rejects_missing_review_and_duplicates():
+    with pytest.raises(AIStructuredOutputError):
+        validate_plan_tools(["give_example"], retry_count=1)
+
+    with pytest.raises(AIStructuredOutputError):
+        validate_plan_tools(
+            ["review_concept", "give_example", "give_example"],
+            retry_count=1,
+        )

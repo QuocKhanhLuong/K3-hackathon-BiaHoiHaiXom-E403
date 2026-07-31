@@ -52,7 +52,7 @@ class StrictBaseModel(BaseModel):
 class RouteOutput(StrictBaseModel):
     """Structured classification output from router node."""
 
-    route: Literal["simple", "clarify", "check", "deep"]
+    route: Literal["simple", "clarify", "check", "deep", "out_of_context"]
     confidence: float = Field(..., ge=0.0, le=1.0)
     reason: str = Field(..., min_length=1)
 
@@ -94,6 +94,12 @@ class GroundedAnswer(StrictBaseModel):
     answer: str = Field(..., min_length=1)
     claims: list[GroundedClaim] = Field(..., min_length=1)
     citations: list[Citation] = Field(..., min_length=1)
+
+
+class GeneralAnswer(StrictBaseModel):
+    """Answer using general knowledge without claims or citations."""
+
+    answer: str = Field(..., min_length=1)
 
 
 class ClarificationRequest(StrictBaseModel):

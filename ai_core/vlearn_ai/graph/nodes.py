@@ -517,7 +517,15 @@ def generate_check_node(
         "check_result": None,
         "status": "awaiting_check",
         "tool_trace": _record_trace(
-            state, "validate_understanding", "success", model=llm
+            state,
+            "validate_understanding",
+            "success",
+            {
+                "check_id": micro_check.check_id,
+                "previous_check_id": prev_check.check_id if prev_check else None,
+                "retry_count": state.get("retry_count", 0),
+            },
+            model=llm,
         ),
     }
 
@@ -605,10 +613,24 @@ def evaluate_check_node(
     )
     return {
         "check_result": eval_res.model_dump(),
+        "last_check_result": eval_res.model_dump(),
+        "misconception": (
+            eval_res.model_dump() if not eval_res.is_correct else None
+        ),
         "grounded_answer": grounded_msg,
         "status": "running",
         "tool_trace": _record_trace(
-            state, "evaluate_check", "success", model=llm
+            state,
+            "evaluate_check",
+            "success",
+            {
+                "check_id": check_q.get("check_id"),
+                "attempt_index": state.get("retry_count", 0) + 1,
+                "retry_count": state.get("retry_count", 0),
+                "evaluation_source": eval_res.evaluation_source,
+                "misconception_code": eval_res.misconception_code,
+            },
+            model=llm,
         ),
     }
 
@@ -662,12 +684,33 @@ def misconception_node(
                 "details": {"repair_step": True},
             }
         )
+    trace.append(
+        {
+            "tool": "repair_misconception",
+            "status": "success",
+            "prompt_version": "1.0.0",
+            "model": _get_model_name(llm),
+            "details": {
+                "check_id": state.get("check_question", {}).get("check_id"),
+                "retry_count": retry,
+                "misconception_code": eval_obj.misconception_code,
+                "repair_tools": executed_tools,
+            },
+        }
+    )
 
     return {
         "repair_plan": plan.model_dump(),
         "grounded_answer": grounded_repair.answer,
         "grounded_claims": [claim.model_dump() for claim in grounded_repair.claims],
         "citations": [citation.model_dump() for citation in grounded_repair.citations],
+        "candidate_answer": grounded_repair.answer,
+        "candidate_claims": [
+            claim.model_dump() for claim in grounded_repair.claims
+        ],
+        "candidate_citations": [
+            citation.model_dump() for citation in grounded_repair.citations
+        ],
         "retry_count": retry + 1,
         "tool_trace": trace,
         "status": "running",

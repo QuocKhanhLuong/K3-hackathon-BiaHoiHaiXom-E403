@@ -2,7 +2,7 @@
 
 from langchain_core.language_models import BaseChatModel
 
-from vlearn_ai.guardrails.plan_guard import validate_plan_tools
+from vlearn_ai.guardrails.plan_guard import normalize_plan_tools, validate_plan_tools
 from vlearn_ai.prompts.messages import build_trusted_messages
 from vlearn_ai.prompts.repair import (
     REPAIR_SYSTEM_PROMPT,
@@ -53,19 +53,22 @@ async def run_repair_misconception(
     if not plan:
         raise AIStructuredOutputError("Failed to generate valid RepairPlan.")
 
-    # Validate repair plan tools
-    validate_plan_tools(plan.planned_tools, retry_count=retry_count)
+    normalized_tools = normalize_plan_tools(
+        plan.planned_tools, retry_count=retry_count
+    )
+    validate_plan_tools(normalized_tools, retry_count=retry_count)
+    plan = RepairPlan(
+        misconception_code=plan.misconception_code,
+        recommended_strategy=plan.recommended_strategy,
+        planned_tools=normalized_tools,
+    )
 
     repair_responses: list[str] = []
     grounded_claims: list[GroundedClaim] = []
     grounded_citations: list[Citation] = []
     executed_tools: list[str] = []
 
-    planned = list(plan.planned_tools)
-    if "review_concept" not in planned:
-        planned.insert(0, "review_concept")
-
-    for tool_name in planned:
+    for tool_name in plan.planned_tools:
         if tool_name == "review_concept":
             r_obj = await execute_review_concept(target_concept, context, model)
             repair_responses.append(r_obj.answer)

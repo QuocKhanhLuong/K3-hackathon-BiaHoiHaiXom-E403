@@ -113,15 +113,32 @@ def sanitize_all_output_fields(
 
 def sanitize_tool_trace(trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Sanitize tool execution trace to prevent leaking internal prompts or raw tool arguments."""
+    safe_detail_fields = {
+        "check_id",
+        "attempt_index",
+        "retry_count",
+        "evaluation_source",
+        "misconception_code",
+        "repair_tools",
+        "previous_check_id",
+    }
     safe_trace = []
     for item in trace:
         if isinstance(item, dict):
-            safe_trace.append(
-                {
-                    "tool": item.get("tool", "unknown"),
-                    "status": item.get("status", "success"),
-                    "model": item.get("model", "gpt-5-nano"),
-                    "prompt_version": item.get("prompt_version", "1.0.0"),
+            safe_item = {
+                "tool": item.get("tool", "unknown"),
+                "status": item.get("status", "success"),
+                "model": item.get("model", "gpt-5-nano"),
+                "prompt_version": item.get("prompt_version", "1.0.0"),
+            }
+            raw_details = item.get("details")
+            if isinstance(raw_details, dict):
+                safe_details = {
+                    key: value
+                    for key, value in raw_details.items()
+                    if key in safe_detail_fields
                 }
-            )
+                if safe_details:
+                    safe_item["details"] = safe_details
+            safe_trace.append(safe_item)
     return safe_trace

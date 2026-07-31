@@ -117,6 +117,22 @@ async def test_check_flow_incorrect_answer_and_retry_limit():
         student_input="Key và Value là một.",
     )
     assert res2["status"] == "awaiting_check"
+    snapshot2 = ai_core.app.get_state({"configurable": {"thread_id": thread_id}})
+    state2 = snapshot2.values
+    assert state2["check_result"] is None
+    assert state2["last_check_result"]["misconception_code"] == "key_value_confusion"
+    assert state2["misconception"]["misconception_code"] == "key_value_confusion"
+    assert state2["candidate_answer"] == state2["grounded_answer"]
+    assert state2["candidate_claims"] == state2["grounded_claims"]
+    assert state2["candidate_citations"] == state2["citations"]
+    evaluation_traces = [
+        item for item in res2["tool_trace"] if item["tool"] == "evaluate_check"
+    ]
+    assert evaluation_traces[-1]["details"]["evaluation_source"] == "llm_semantic"
+    assert (
+        evaluation_traces[-1]["details"]["misconception_code"]
+        == "key_value_confusion"
+    )
 
     # Turn 3: Resume with incorrect answer -> misconception repair -> awaiting_check (retry 2)
     res3 = await ai_core.resume_turn(
