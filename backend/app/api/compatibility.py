@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import os
@@ -20,6 +21,7 @@ from backend.app.schemas.api import (
 )
 
 router = APIRouter(tags=["frontend-compatibility"])
+SSE_HEARTBEAT_SECONDS = 8.0
 
 
 def _service(request: Request):
@@ -266,8 +268,21 @@ async def tutor_ask_stream(payload: LegacyAskRequest, request: Request):
             status="running",
             detail="Đang phân tích ngữ cảnh và chọn bước hỗ trợ.",
         )
+        turn_task = asyncio.create_task(_run_legacy_ask(payload, request))
         try:
-            outcome = await _run_legacy_ask(payload, request)
+            while not turn_task.done():
+                done, _ = await asyncio.wait({turn_task}, timeout=SSE_HEARTBEAT_SECONDS)
+                if done:
+                    break
+                yield emit(
+                    "trace",
+                    tool="heartbeat",
+                    title="VLearn Learning Loop",
+                    status="running",
+                    detail="Đang chờ phản hồi từ trợ lý.",
+                )
+
+            outcome = turn_task.result()
             yield emit(
                 "trace",
                 tool="learning_loop",
@@ -291,6 +306,9 @@ async def tutor_ask_stream(payload: LegacyAskRequest, request: Request):
                 },
                 message="Không thể hoàn tất luồng xử lý.",
             )
+        finally:
+            if not turn_task.done():
+                turn_task.cancel()
 
     return StreamingResponse(
         event_stream(),
