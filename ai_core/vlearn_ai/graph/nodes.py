@@ -11,7 +11,10 @@ from langgraph.types import interrupt
 
 from vlearn_ai.config import get_settings
 from vlearn_ai.graph.state import LearningLoopState
-from vlearn_ai.guardrails.answerability_guard import decide_answerability
+from vlearn_ai.guardrails.answerability_guard import (
+    decide_answerability,
+    extract_direct_definition_evidence,
+)
 from vlearn_ai.guardrails.context_guard import check_context_safety
 from vlearn_ai.guardrails.grounding_guard import normalize_citations, validate_grounding
 from vlearn_ai.guardrails.input_guard import assess_input_injection
@@ -21,6 +24,7 @@ from vlearn_ai.guardrails.output_guard import (
     sanitize_tool_trace,
 )
 from vlearn_ai.model import get_fast_model, get_generation_model
+from vlearn_ai.prompts.followups import FOLLOWUPS_PROMPT_VERSION
 from vlearn_ai.prompts.grounding_repair import GROUNDING_REPAIR_PROMPT_VERSION
 from vlearn_ai.prompts.messages import build_trusted_messages
 from vlearn_ai.prompts.pedagogical_tools import (
@@ -51,6 +55,40 @@ from vlearn_ai.workflows.check_understanding import run_check_understanding
 from vlearn_ai.workflows.detect_misconception import run_detect_misconception
 from vlearn_ai.workflows.repair_misconception import run_repair_misconception
 from vlearn_ai.workflows.suggest_followups import run_suggest_followups
+
+_EXPLICIT_CHECK_REQUEST = re.compile(
+    r"\b(?:kiểm\s+tra|quiz|trắc\s+nghiệm|đánh\s+giá|chấm\s+điểm|"
+    r"test\s+(?:tôi|mình)|kiểm\s+tra\s+hiểu\s+biết)\b",
+    re.IGNORECASE,
+)
+_EXPLANATORY_REQUEST = re.compile(
+    r"\b(?:kể|cho(?:\s+(?:tôi|mình))?)(?:\s+(?:một|thêm))?\s+ví\s+dụ|"
+    r"\b(?:mô\s+tả|giải\s+thích|trình\s+bày|tóm\s+tắt|tại\s+sao|cách|quy\s+trình)\b|"
+    r"\b(?:là|la)\s+gì\b",
+    re.IGNORECASE,
+)
+_DEICTIC_CONTEXT_REQUEST = re.compile(
+    r"\b(?:cái|đoạn|slide|trang)\s+(?:này|đó|ấy)\b",
+    re.IGNORECASE,
+)
+
+
+def _explanation_route(query: str) -> tuple[str, float, str]:
+    """Choose a non-assessment route for explanatory learner requests."""
+    lowered = query.casefold()
+    if any(
+        phrase in lowered
+        for phrase in (
+            "tại sao",
+            "chi tiết",
+            "phân tích",
+            "cơ chế",
+            "quy trình",
+            "so sánh",
+        )
+    ):
+        return "deep", 0.85, "Explanatory deep-dive question"
+    return "simple", 0.9, "Explanatory learner question"
 
 
 def _get_model_name(model: BaseChatModel | None) -> str:
@@ -246,13 +284,27 @@ def router_node(
         q_lower = query.lower()
         if "cái này hoạt động" in q_lower or len(context.strip()) < 10:
             r, c, reason = "clarify", 0.9, "Context or query ambiguous"
-        elif "khác nhau" in q_lower or "so sánh" in q_lower:
-            r, c, reason = "check", 0.85, "Conceptual check question"
-        elif "tại sao" in q_lower or "chi tiết" in q_lower:
-            r, c, reason = "deep", 0.85, "Deep dive question"
+        elif _EXPLICIT_CHECK_REQUEST.search(query):
+            r, c, reason = "check", 0.85, "Learner requested an assessment"
         else:
-            r, c, reason = "simple", 0.9, "Simple factual question"
+            r, c, reason = _explanation_route(query)
         route_out = RouteOutput(route=r, confidence=c, reason=reason)
+
+    # A structured model may over-classify an explanatory request as `check`.
+    # Keep assessment interactions opt-in: the learner must explicitly ask to
+    # be quizzed or evaluated before the graph can generate a check.
+    should_override_check = (
+        route_out.route == "check" and not _EXPLICIT_CHECK_REQUEST.search(query)
+    )
+    should_override_clarify = (
+        route_out.route == "clarify"
+        and _EXPLANATORY_REQUEST.search(query)
+        and not _DEICTIC_CONTEXT_REQUEST.search(query)
+    )
+    if should_override_check or should_override_clarify:
+        r, c, reason = _explanation_route(query)
+        route_out = RouteOutput(route=r, confidence=c, reason=reason)
+        route_src = "policy_override"
 
     ms = int((time.time() - t0) * 1000)
     return {
@@ -406,6 +458,43 @@ def grounded_answer_node(
                 {"answerability": decision.answerability},
                 llm,
                 prompt_version=GENERAL_KNOWLEDGE_ANSWER_PROMPT_VERSION,
+            ),
+        }
+
+    direct_definition = extract_direct_definition_evidence(query, context)
+    # Only retrieval-rendered evidence has chunk metadata.  Legacy caller-provided
+    # context stays on the normal model-and-repair path so its provenance is not
+    # mistaken for a ranked slide chunk.
+    if route == "simple" and "chunk_id=" in context and direct_definition is not None:
+        answer = direct_definition.snippet
+        citations_list = [
+            {
+                "citation_id": direct_definition.source_id,
+                "snippet": direct_definition.snippet,
+            }
+        ]
+        claims_list = [
+            {
+                "claim": answer,
+                "citation_ids": [direct_definition.source_id],
+            }
+        ]
+        return {
+            "grounded_answer": answer,
+            "grounded_claims": claims_list,
+            "citations": citations_list,
+            "candidate_answer": answer,
+            "candidate_claims": claims_list,
+            "candidate_citations": citations_list,
+            "answerability": "course_grounded",
+            "answerability_code": "course_direct_definition",
+            "source_mode": "course",
+            "tool_trace": _record_trace(
+                state,
+                "give_direct_answer",
+                "success",
+                {"answer_source": "deterministic_direct_evidence"},
+                prompt_version="deterministic-evidence-v1",
             ),
         }
 
@@ -854,7 +943,7 @@ def _generate_insufficient_context_followups(
     return [
         {
             "label": f"Làm rõ câu hỏi về '{topic_display}'",
-            "question": f"Bạn có thể làm rõ hơn khía cạnh nào của '{topic_display}' mà bạn muốn tìm hiểu không?",
+            "question": f"Hãy giải thích rõ hơn khía cạnh cần tìm hiểu về '{topic_display}'.",
         },
         {
             "label": "Tra cứu toàn bộ bài học",
@@ -903,9 +992,61 @@ def _generate_fallback_answerable_followups(
         },
         {
             "label": "Đào sâu hơn",
-            "question": f"Bạn có thể giải thích chi tiết hơn về các thành phần cốt lõi của '{topic_display}' không?",
+            "question": f"Hãy giải thích chi tiết hơn các thành phần cốt lõi của '{topic_display}'.",
         },
     ]
+
+
+def _generate_general_knowledge_followups() -> list[dict[str, str]]:
+    """Return safe standalone questions for a model-knowledge response.
+
+    Each prompt is intentionally phrased as a general informational question.
+    If the deck later contains direct evidence, normal course-first retrieval
+    may answer it with citations instead.
+    """
+    return [
+        {
+            "label": "Giải thích thêm",
+            "question": "Các khái niệm cốt lõi trong câu trả lời này là gì?",
+        },
+        {
+            "label": "Ví dụ minh họa",
+            "question": "Cho tôi một ví dụ minh họa về cách áp dụng những khái niệm này.",
+        },
+        {
+            "label": "Vì sao quan trọng",
+            "question": "Tại sao các điểm trên quan trọng khi sử dụng mô hình?",
+        },
+    ]
+
+
+_TUTOR_VOICE_PREFIXES = (
+    (re.compile(r"^bạn\s+có\s+thể\s+", re.IGNORECASE), ""),
+    (re.compile(r"^bạn\s+hãy\s+(?:thử\s+)?", re.IGNORECASE), "Hãy "),
+    (re.compile(r"^bạn\s+muốn\s+mình\s+", re.IGNORECASE), "Hãy "),
+    (re.compile(r"^theo\s+bạn[,\s]*", re.IGNORECASE), "Hãy giải thích "),
+)
+
+
+def _normalize_followup_questions(
+    followups: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    """Make model suggestions safe to send verbatim as learner requests."""
+    normalized: list[dict[str, str]] = []
+    seen_questions: set[str] = set()
+    for item in followups:
+        raw_question = str(item.get("question") or "").strip()
+        label = str(item.get("label") or raw_question).strip()
+        question = raw_question
+        for pattern, replacement in _TUTOR_VOICE_PREFIXES:
+            if pattern.search(question):
+                question = pattern.sub(replacement, question, count=1).strip()
+                break
+        if not question or question.casefold() in seen_questions:
+            continue
+        seen_questions.add(question.casefold())
+        normalized.append({"label": label or question, "question": question})
+    return normalized[:3]
 
 
 # =====================================================================
@@ -926,6 +1067,19 @@ def suggest_followups_node(
             ),
         }
 
+    if state.get("answerability") == "general_knowledge":
+        return {
+            "followups": _generate_general_knowledge_followups(),
+            "status": "running",
+            "tool_trace": _record_trace(
+                state,
+                "suggest_followups",
+                "success",
+                {"source_mode": "model_knowledge", "strategy": "deterministic"},
+                model=model,
+            ),
+        }
+
     query = state.get("user_query", "")
     context = state.get("selected_context", "")
     grounded_ans = state.get("grounded_answer", "")
@@ -933,8 +1087,16 @@ def suggest_followups_node(
 
     f_list = []
     try:
-        sug = _run_async(run_suggest_followups(query, context, grounded_ans, llm))
-        f_list = [f.model_dump() for f in sug.followups]
+        sug = _run_async(
+            run_suggest_followups(
+                query,
+                context,
+                grounded_ans,
+                state.get("source_mode") or "course",
+                llm,
+            )
+        )
+        f_list = _normalize_followup_questions([f.model_dump() for f in sug.followups])
     except Exception:  # noqa: BLE001 - optional follow-up enhancement
         f_list = []
 
@@ -944,7 +1106,13 @@ def suggest_followups_node(
     return {
         "followups": f_list,
         "status": "running",
-        "tool_trace": _record_trace(state, "suggest_followups", "success", model=llm),
+        "tool_trace": _record_trace(
+            state,
+            "suggest_followups",
+            "success",
+            model=llm,
+            prompt_version=FOLLOWUPS_PROMPT_VERSION,
+        ),
     }
 
 

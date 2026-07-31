@@ -76,7 +76,7 @@ async def test_check_flow_correct_answer():
     # Step 1: Start turn -> pauses at await_check
     res1 = await ai_core.start_turn(
         thread_id="test_check_correct_1",
-        question="Key và Value khác nhau như thế nào?",
+        question="Hãy kiểm tra hiểu biết của tôi về sự khác nhau giữa Key và Value.",
         selected_context='[source source_id="ctx_1"]\nKey dùng để so khớp với Query.',
     )
 
@@ -108,7 +108,7 @@ async def test_check_flow_incorrect_answer_and_retry_limit():
     # Turn 1: Start turn -> awaiting_check (initial)
     res1 = await ai_core.start_turn(
         thread_id=thread_id,
-        question="Key và Value khác nhau như thế nào?",
+        question="Hãy kiểm tra hiểu biết của tôi về sự khác nhau giữa Key và Value.",
         selected_context='[source source_id="ctx_1"]\nKey dùng để so khớp với Query.',
     )
     assert res1["status"] == "awaiting_check"

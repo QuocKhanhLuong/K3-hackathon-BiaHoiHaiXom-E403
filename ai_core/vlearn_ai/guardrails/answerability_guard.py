@@ -19,7 +19,17 @@ class AnswerabilityDecision:
     source_mode: Literal["course", "model_knowledge", "none"]
 
 
-_SOURCE_HEADER = re.compile(r'^\[source\s+source_id="[^"]+"[^\]]*\]\s*$', re.MULTILINE)
+@dataclass(frozen=True)
+class DirectDefinitionEvidence:
+    """Verbatim direct definition tied to its exact retrieved source."""
+
+    source_id: str
+    snippet: str
+
+
+_SOURCE_HEADER = re.compile(
+    r'^\[source\s+source_id="(?P<source_id>[^"]+)"[^\]]*\]\s*$', re.MULTILINE
+)
 _WORD = re.compile(r"[\wÀ-ỹ]+", re.UNICODE)
 _DEFINITION = re.compile(
     r"^\s*(?:hãy\s+)?(?:giải\s+thích\s+|cho\s+(?:tôi|mình)\s+biết\s+)?"
@@ -27,14 +37,17 @@ _DEFINITION = re.compile(
     re.IGNORECASE,
 )
 _COURSE_REFERENCE = re.compile(
-    r"\b(?:slide|trang|đoạn|theo\s+(?:bài|slide|thầy|cô)|"
-    r"trong\s+(?:bài|khóa\s+học)|agenda|bài\s+học|giáo\s+trình|"
-    r"nội\s+dung\s+bài)\b",
+    r"\b(?:slide|trang|page)\s*(?:này|đó|ấy|\d+)\b|"
+    r"\b(?:đoạn|phần|chương)\s+(?:này|đó|ấy)\b|"
+    r"\btheo\s+(?:bài|slide|trang|đoạn|thầy|cô)\b|"
+    r"\btrong\s+(?:bài|khóa\s+học|giáo\s+trình)\b|"
+    r"\b(?:agenda|bài\s+học|giáo\s+trình|nội\s+dung\s+bài|khóa\s+học)\b",
     re.IGNORECASE,
 )
 _EXACT_COURSE_FACT = re.compile(
-    r"\b(?:bao\s+nhiêu|mấy|tiêu\s+đề|bước|phần|chương|slide|trang|"
-    r"agenda|người\s+dạy|thầy|cô)\b",
+    r"\b(?:bao\s+nhiêu|mấy|tiêu\s+đề|người\s+dạy)\b.{0,80}\b"
+    r"(?:slide|trang|agenda|bài\s+học|khóa\s+học|giáo\s+trình|chương|phần)\b|"
+    r"\b(?:slide|trang|page)\s*\d+\b",
     re.IGNORECASE,
 )
 _HIGH_RISK = re.compile(
@@ -49,9 +62,12 @@ _NON_STANDALONE = re.compile(
     re.IGNORECASE,
 )
 _STANDALONE_INFORMATION = re.compile(
-    r"(?:\b(?:là|la)\s+gì\b|\b(?:hoạt\s+động|vận\s+hành|khác\s+nhau)\s+"
-    r"(?:như\s+thế\s+nào|ra\s+sao|thế\s+nào)\b|\bwhat\s+is\b|"
-    r"\bhow\s+(?:does|do)\b|\bdifference\s+between\b)",
+    r"\b(?:là|la)\s+gì\b|\b(?:hoạt\s+động|vận\s+hành|khác\s+nhau)\s+"
+    r"(?:như\s+thế\s+nào|ra\s+sao|thế\s+nào)\b|"
+    r"\b(?:kể|cho(?:\s+(?:tôi|mình))?)(?:\s+(?:một|thêm))?\s+ví\s+dụ\b|"
+    r"\b(?:mô\s+tả|giải\s+thích|tóm\s+tắt|trình\s+bày|cho\s+biết|tại\s+sao)\b|"
+    r"\bcách\b|\b(?:quy\s+trình|giai\s+đoạn)\b|\bwhat\s+is\b|"
+    r"\bhow\s+(?:does|do)\b|\bdifference\s+between\b",
     re.IGNORECASE,
 )
 _STOP_WORDS = {
@@ -95,12 +111,53 @@ def _source_bodies(context: str) -> list[str]:
     return bodies
 
 
+def _source_sections(context: str) -> list[tuple[str, str]]:
+    """Return source IDs with their original body text for exact citations."""
+    headers = list(_SOURCE_HEADER.finditer(context))
+    sections: list[tuple[str, str]] = []
+    for index, header in enumerate(headers):
+        end = headers[index + 1].start() if index + 1 < len(headers) else len(context)
+        sections.append(
+            (header.group("source_id"), context[header.end() : end].strip())
+        )
+    return sections
+
+
 def _keywords(query: str) -> set[str]:
     return {
         token
         for token in _WORD.findall(_normalized(query))
         if len(token) > 1 and token not in _STOP_WORDS
     }
+
+
+def extract_direct_definition_evidence(
+    query: str, context: str
+) -> DirectDefinitionEvidence | None:
+    """Find one verbatim body-level definition for a ``X là gì?`` question."""
+    definition = _DEFINITION.match(query)
+    if not definition:
+        return None
+    entity = re.escape(
+        unicodedata.normalize("NFKC", definition.group("entity")).strip()
+    )
+    direct_pattern = re.compile(
+        rf"\b{entity}\s*(?:\([^)]{{1,120}}\)\s*)?"
+        rf"(?:(?:là|la)\s+|=\s*|(?:được\s+)?dùng\s+(?:để\s+)?|"
+        rf"có\s+vai\s+trò\s+(?:là\s+)?|giúp\s+)(?!gì\b)[^.!?]+[.!?]?",
+        re.IGNORECASE,
+    )
+    for source_id, body in _source_sections(context):
+        match = direct_pattern.search(unicodedata.normalize("NFKC", body))
+        if match:
+            return DirectDefinitionEvidence(
+                source_id=source_id,
+                # PDF slide extraction wraps visual lines.  Grounding
+                # canonicalizes whitespace too, so this remains the exact
+                # source sentence while rendering naturally in the UI.
+                snippet=re.sub(r"\s+", " ", match.group(0)).strip(),
+            )
+    return None
 
 
 def has_direct_course_evidence(query: str, context: str) -> bool:
@@ -118,22 +175,19 @@ def has_direct_course_evidence(query: str, context: str) -> bool:
     if not bodies:
         return bool(context.strip())
 
-    definition = _DEFINITION.match(query)
-    if definition:
-        entity = re.escape(_normalized(definition.group("entity")))
-        direct_pattern = re.compile(
-            rf"\b{entity}\s*(?:\([^)]{{1,120}}\)\s*)?"
-            rf"(?:(?:là|la)\s+|=\s*|(?:được\s+)?dùng\s+(?:để\s+)?|"
-            rf"có\s+vai\s+trò\s+(?:là\s+)?|giúp\s+)(?!gì\b).+",
-            re.IGNORECASE,
-        )
-        return any(direct_pattern.search(body) for body in bodies)
+    if _DEFINITION.match(query):
+        return extract_direct_definition_evidence(query, context) is not None
 
     keywords = _keywords(query)
     if not keywords:
         return False
+    # A title-only mention is not direct evidence.  For non-definition
+    # questions require at least two meaningful query terms in one body;
+    # this still admits a directly described relation such as Key + Query.
+    minimum_matches = min(2, len(keywords))
     return any(
-        any(re.search(rf"\b{re.escape(word)}\b", body) for word in keywords)
+        sum(bool(re.search(rf"\b{re.escape(word)}\b", body)) for word in keywords)
+        >= minimum_matches
         for body in bodies
     )
 

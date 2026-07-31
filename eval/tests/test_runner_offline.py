@@ -88,7 +88,9 @@ async def test_offline_runner_multi_turn_start_and_resume():
         description="Multi turn test exercising start_turn then resume_turn",
         tags=["multi_turn", "route_check"],
         mode="offline",
-        setup=ScenarioSetup(selected_text="Key dùng để so khớp với Query."),
+        setup=ScenarioSetup(
+            selected_text="Key dùng để so khớp với Query. Value chứa nội dung."
+        ),
         offline_fixture=OfflineFixture(
             context_fixture=ContextFixture(
                 type="synthetic_slides",
@@ -96,7 +98,7 @@ async def test_offline_runner_multi_turn_start_and_resume():
                     ContextSlideFixture(
                         source_id="d1-p1",
                         page=1,
-                        raw_text="Key dùng để so khớp với Query.",
+                        raw_text="Key dùng để so khớp với Query. Value chứa nội dung.",
                     )
                 ],
             ),
@@ -164,7 +166,7 @@ async def test_offline_runner_multi_turn_start_and_resume():
         turns=[
             ScenarioTurn(
                 type="user_turn",
-                input="So sánh Key và Value.",
+                input="Hãy kiểm tra hiểu biết của tôi về Key và Value.",
                 expected=TurnExpectations(
                     routes=["check"],
                     statuses=["awaiting_check"],

@@ -437,6 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function sendMessage(textOverride = null) {
     const text = textOverride || chatInput.value.trim();
     if (!text || isSending) return;
+    document.querySelectorAll('.chips-container').forEach(el => el.remove());
     isSending = true;
     setComposerProcessing(true);
 
@@ -952,33 +953,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) return;
 
-    const uniqueSuggestions = Array.from(
-      new Set(
-        suggestions
-          .map(s => {
-            if (typeof s === 'string') return s.trim();
-            if (s && typeof s === 'object') return (s.question || s.label || '').trim();
-            return String(s || '').trim();
-          })
-          .filter(Boolean)
-      )
-    );
+    const seenQuestions = new Set();
+    const executableSuggestions = suggestions
+      .map(s => {
+        const question = typeof s === 'string'
+          ? s.trim()
+          : String(s?.question || '').trim();
+        const label = typeof s === 'string'
+          ? s.trim()
+          : String(s?.label || question).trim();
+        return { label, question };
+      })
+      .filter(({ question }) => {
+        if (!question || seenQuestions.has(question)) return false;
+        seenQuestions.add(question);
+        return true;
+      });
 
-    if (uniqueSuggestions.length === 0) return;
+    if (executableSuggestions.length === 0) return;
 
     const container = document.createElement('div');
     container.className = 'chips-container';
-    container.innerHTML = `
-      <div style="width:100%; font-size:11px; color:#64748b; font-weight:700;">💡 GỢI Ý CÂU HỎI ĐÀO SÂU:</div>
-      ${uniqueSuggestions.map(s => `<button class="suggestion-chip">${escapePreviewText(s)}</button>`).join('')}
-    `;
+    const heading = document.createElement('div');
+    heading.style.cssText = 'width:100%; font-size:11px; color:#64748b; font-weight:700;';
+    heading.textContent = '💡 GỢI Ý CÂU HỎI ĐÀO SÂU:';
+    container.appendChild(heading);
+    executableSuggestions.forEach(({ label, question }) => {
+      const chip = document.createElement('button');
+      chip.className = 'suggestion-chip';
+      chip.dataset.question = question;
+      chip.textContent = label;
+      container.appendChild(chip);
+    });
     chatMessages.appendChild(container);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     container.querySelectorAll('.suggestion-chip').forEach(chip => {
       chip.addEventListener('click', () => {
-        container.remove();
-        sendMessage(chip.textContent);
+        const question = chip.dataset.question;
+        if (!question) return;
+        document.querySelectorAll('.chips-container').forEach(el => el.remove());
+        sendMessage(question);
       });
     });
   }

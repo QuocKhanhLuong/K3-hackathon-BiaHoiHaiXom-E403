@@ -14,6 +14,7 @@ async def run_suggest_followups(
     query: str,
     context: str,
     grounded_answer: str,
+    source_mode: str,
     model: BaseChatModel,
 ) -> FollowUpSuggestions:
     """Run suggest followups workflow without secondary raw text fallback."""
@@ -21,6 +22,7 @@ async def run_suggest_followups(
         selected_context=context,
         user_query=query,
         grounded_answer=grounded_answer,
+        source_mode=source_mode,
     )
     messages = build_trusted_messages(FOLLOWUPS_SYSTEM_PROMPT, untrusted_payload)
 

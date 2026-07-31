@@ -91,7 +91,7 @@ async def test_resumed_check_answer_injection_blocked():
     # Turn 1: check query -> awaiting_check
     await ai_core.start_turn(
         thread_id="test_inj_check_1",
-        question="Key và Value khác nhau thế nào?",
+        question="Hãy kiểm tra hiểu biết của tôi về sự khác nhau giữa Key và Value.",
         selected_context='[source source_id="ctx_1"]\nKey dùng để so khớp với Query.',
     )
 

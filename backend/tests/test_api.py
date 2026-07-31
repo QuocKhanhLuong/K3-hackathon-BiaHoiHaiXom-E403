@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -39,6 +41,38 @@ class FakeAICore(AICorePort):
         conversation_history: list[dict[str, Any]],
     ) -> CoreInvocation:
         lowered = question.lower()
+        if "pre-training" in lowered and "sft/rlhf" in lowered:
+            return CoreInvocation(
+                result={
+                    "status": "completed",
+                    "assistant_message": (
+                        "Kiến thức nền ngoài bài học (không tìm thấy slide hỗ trợ "
+                        "trực tiếp): Pre-training học quy luật từ dữ liệu lớn; "
+                        "SFT/RLHF căn chỉnh cách phản hồi."
+                    ),
+                    "route": {
+                        "name": "simple",
+                        "confidence": 0.95,
+                        "reason": "private",
+                    },
+                    "citations": [],
+                    "followups": [
+                        {
+                            "label": "Giải thích thêm",
+                            "question": "Giải thích sâu hơn các khái niệm cốt lõi là gì?",
+                        },
+                        {
+                            "label": "Ví dụ",
+                            "question": "Cách áp dụng những khái niệm này trong ví dụ như thế nào?",
+                        },
+                    ],
+                    "answerability": "general_knowledge",
+                    "source_mode": "model_knowledge",
+                    "answerability_code": "general_knowledge_no_course_evidence",
+                    "tool_trace": [{"tool": "general_knowledge_answer"}],
+                },
+                state={},
+            )
         if "clarify" in lowered or "làm rõ" in lowered:
             self.states[thread_id] = "clarification"
             return CoreInvocation(
@@ -367,6 +401,48 @@ def test_sse_has_safe_progress_and_one_result(client: TestClient):
     assert '"type": "trace"' in response.text
     assert "private-model" not in response.text
     assert "tool_trace" not in response.text
+
+
+def test_training_process_general_knowledge_sse_includes_renderable_suggestions(
+    client: TestClient,
+):
+    query = (
+        "Mô tả ngắn gọn cách một LLM được huấn luyện từ pre-training đến "
+        "fine-tuning (SFT/RLHF) và tại sao các bước này quan trọng"
+    )
+    response = client.post(
+        "/api/tutor/ask/stream",
+        json={"question": query, "page_number": 1, "deck_id": "test"},
+    )
+
+    assert response.status_code == 200
+    result_event = next(
+        json.loads(line.removeprefix("data: "))
+        for line in response.text.splitlines()
+        if line.startswith("data: ")
+        and json.loads(line.removeprefix("data: ")).get("type") == "result"
+    )
+    result = result_event["data"]
+    assert result["status"] == "success"
+    assert result["answerability"] == "general_knowledge"
+    assert result["source_mode"] == "model_knowledge"
+    assert result["citations"] == []
+    assert result["citation_objects"] == []
+    assert result["answer"].startswith("Kiến thức nền ngoài bài học")
+    assert 2 <= len(result["suggestions"]) <= 3
+    assert result["default_suggestions"] == result["suggestions"]
+
+
+def test_frontend_stream_result_uses_suggestions_to_render_chips():
+    script = (Path(__file__).resolve().parents[2] / "frontend" / "app.js").read_text(
+        encoding="utf-8"
+    )
+    assert "data.suggestions?.length" in script
+    assert "data.default_suggestions" in script
+    assert "renderFollowupChips(respSuggestions)" in script
+    assert "chip.dataset.question = question" in script
+    assert "sendMessage(question)" in script
+    assert "sendMessage(chip.textContent)" not in script
 
 
 def test_sse_emits_heartbeat_while_waiting_for_a_slow_turn(app, monkeypatch):
