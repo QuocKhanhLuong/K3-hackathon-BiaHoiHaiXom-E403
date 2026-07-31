@@ -33,7 +33,7 @@ async def test_router_clarify_query():
 async def test_router_check_query():
     fake_llm = DeterministicFakeChatModel(route_to_return="check")
     state: LearningLoopState = {
-        "user_query": "Key và Value khác nhau như thế nào?",
+        "user_query": "Hãy kiểm tra hiểu biết của tôi về sự khác nhau giữa Key và Value.",
         "selected_context": "Key dùng để so khớp với Query, Value chứa nội dung.",
     }
     res = router_node(state, model=fake_llm)
